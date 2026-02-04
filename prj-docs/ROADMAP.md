@@ -1,6 +1,6 @@
 # Backend API - 개발 로드맵
 
-## 🎯 목표: 고성능 선착순 예매 시스템 (Ticket-Rush)
+## 목표: 고성능 선착순 예매 시스템 (Ticket-Rush)
 
 - **핵심 학습 목표**: 대규모 트래픽(Traffic Spike) 대응 및 데이터 정합성 보장
 - **Tech Stack**:
@@ -10,9 +10,9 @@
   - Message Queue: **Kafka** (대기열 버퍼링, 트래픽 제어)
   - ORM: JPA, QueryDSL
 
-## 📋 기능 백로그
+## 기능 백로그
 
-### 🏛️ 아키텍처 전략 (Architecture Strategy)
+### 아키텍처 전략 (Architecture Strategy)
 
 현재는 **모듈러 모놀리스(Modular Monolith)** 형태로 시작하여, 티켓팅 코어(Core)부터 단단하게 구축합니다. 추후 트래픽 증가 및 기능 확장에 따라 다음과 같이 분리할 예정입니다.
 
