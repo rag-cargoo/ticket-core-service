@@ -37,4 +37,23 @@ public class ReservationService {
 
         return ReservationResponse.from(reservation);
     }
+
+    @Transactional
+    public ReservationResponse createReservationWithPessimisticLock(ReservationRequest request) {
+        // 1. 유저 조회
+        User user = userService.getUser(request.userId());
+
+        // 2. 좌석 조회 (비관적 락 적용)
+        // SELECT ... FOR UPDATE 쿼리가 실행되어, 트랜잭션이 끝날 때까지 다른 접근을 대기시킴
+        Seat seat = concertService.getSeatWithPessimisticLock(request.seatId());
+
+        // 3. 좌석 점유 시도
+        seat.reserve();
+
+        // 4. 예약 생성
+        Reservation reservation = new Reservation(user, seat);
+        reservationRepository.save(reservation);
+
+        return ReservationResponse.from(reservation);
+    }
 }

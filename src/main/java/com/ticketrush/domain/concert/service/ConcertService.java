@@ -13,4 +13,5 @@ public interface ConcertService {
     
     // ReservationService에서 사용할 메서드
     Seat getSeat(Long seatId);
+    Seat getSeatWithPessimisticLock(Long seatId);
 }

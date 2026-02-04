@@ -44,4 +44,11 @@ public class ConcertServiceImpl implements ConcertService {
         return seatRepository.findById(seatId)
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found"));
     }
+
+    @Override
+    @Transactional
+    public Seat getSeatWithPessimisticLock(Long seatId) {
+        return seatRepository.findByIdWithPessimisticLock(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("Seat not found"));
+    }
 }
