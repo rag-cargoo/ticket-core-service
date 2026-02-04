@@ -1,0 +1,10 @@
+spring:
+  profiles:
+    active: local # 기본 프로필은 local로 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
