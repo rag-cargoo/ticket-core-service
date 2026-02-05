@@ -15,7 +15,7 @@ echo -e "${BLUE}[Admin] Setting up new test environment...${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 # 역슬래시(\)를 사용하여 명령어를 연결합니다.
-RESPONSE=$(curl -v -s -X POST "http://localhost:8080/api/concerts/setup" \
+RESPONSE=$(curl -v -s -X POST "http://127.0.0.1:8080/api/concerts/setup" \
      -H "${CONTENT_TYPE}" \
      -d "{
        \"title\": \"${CONCERT_TITLE}\",
@@ -38,7 +38,7 @@ fi
 
 # 1번 좌석의 ID 조회
 echo -e "\n${YELLOW}[Step 2] Fetching the first available seat ID...${NC}"
-SEAT_ID=$(curl -s "http://localhost:8080/api/concerts/options/${OPTION_ID}/seats" \
+SEAT_ID=$(curl -s "http://127.0.0.1:8080/api/concerts/options/${OPTION_ID}/seats" \
     | grep -oP '"id":\s*\K\d+' | head -n 1)
 
 if [ -z "$SEAT_ID" ]; then

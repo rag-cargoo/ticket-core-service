@@ -5,7 +5,7 @@
 # ==============================================================================
 
 # Server Configuration
-BASE_URL="http://localhost:8080/api/reservations"
+BASE_URL="http://127.0.0.1:8080/api/reservations"
 CONTENT_TYPE="Content-Type: application/json"
 
 # Curl Timeout 설정

@@ -15,7 +15,7 @@ echo -e "${BLUE}====================================================${NC}"
 
 # 1. 테스트 유저 생성
 echo -e "${YELLOW}[Step 1] Creating temporary user: ${TMP_USERNAME}${NC}"
-USER_ID=$(curl -s -X POST "http://localhost:8080/api/users" \
+USER_ID=$(curl -s -X POST "http://127.0.0.1:8080/api/users" \
      -H "${CONTENT_TYPE}" \
      -d "{\"username\": \"${TMP_USERNAME}\"}" | grep -oP '"id":\s*\K\d+')
 
@@ -34,6 +34,6 @@ curl ${CURL_OPTS} -X POST "${BASE_URL}/v1/optimistic" \
 
 # 3. 데이터 삭제 (Cleanup)
 echo -e "\n${YELLOW}[Step 3] Cleaning up temporary user (ID: ${USER_ID})${NC}"
-curl -s -X DELETE "http://localhost:8080/api/users/${USER_ID}"
+curl -s -X DELETE "http://127.0.0.1:8080/api/users/${USER_ID}"
 echo -e " - Done."
 echo -e "${BLUE}====================================================${NC}"
