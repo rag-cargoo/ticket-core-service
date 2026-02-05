@@ -6,3 +6,16 @@ GET http://localhost:8080/api/concerts/1/options
 
 ### 3. 특정 날짜의 예약 가능 좌석 조회 (Option ID: 1)
 GET http://localhost:8080/api/concerts/options/1/seats
+
+### 4. [Admin] 테스트용 공연 및 좌석 일괄 셋업
+# 이 요청 한 번으로 아티스트, 공연, 옵션, 좌석(50개)이 생성됩니다.
+POST http://localhost:8080/api/concerts/setup
+Content-Type: application/json
+
+{
+  "title": "NewJeans Tokyo Dome Special",
+  "artistName": "NewJeans",
+  "agencyName": "ADOR",
+  "concertDate": "2026-06-01T18:00:00",
+  "seatCount": 50
+}
