@@ -1,8 +1,8 @@
-package com.ticketrush.domain.user.controller;
+package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.user.service.UserService;
-import com.ticketrush.interfaces.dto.UserRequest;
-import com.ticketrush.interfaces.dto.UserResponse;
+import com.ticketrush.api.dto.UserRequest;
+import com.ticketrush.api.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

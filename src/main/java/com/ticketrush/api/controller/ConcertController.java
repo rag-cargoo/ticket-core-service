@@ -1,10 +1,10 @@
-package com.ticketrush.domain.concert.controller;
+package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.concert.service.ConcertService;
-import com.ticketrush.interfaces.dto.ConcertResponse;
-import com.ticketrush.interfaces.dto.ConcertOptionResponse;
-import com.ticketrush.interfaces.dto.SeatResponse;
-import com.ticketrush.interfaces.dto.ConcertSetupRequest;
+import com.ticketrush.api.dto.ConcertResponse;
+import com.ticketrush.api.dto.ConcertOptionResponse;
+import com.ticketrush.api.dto.SeatResponse;
+import com.ticketrush.api.dto.ConcertSetupRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

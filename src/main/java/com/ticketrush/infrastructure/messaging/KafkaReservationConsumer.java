@@ -3,7 +3,7 @@ package com.ticketrush.infrastructure.messaging;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.ReservationService;
-import com.ticketrush.interfaces.dto.ReservationRequest;
+import com.ticketrush.api.dto.ReservationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

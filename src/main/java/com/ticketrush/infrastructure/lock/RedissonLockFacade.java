@@ -1,8 +1,8 @@
 package com.ticketrush.infrastructure.lock;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
-import com.ticketrush.interfaces.dto.ReservationRequest;
-import com.ticketrush.interfaces.dto.ReservationResponse;
+import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.api.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;

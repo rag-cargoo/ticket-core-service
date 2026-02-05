@@ -1,4 +1,4 @@
-package com.ticketrush.interfaces.dto;
+package com.ticketrush.api.dto;
 
 import com.ticketrush.domain.user.User;
 import lombok.AllArgsConstructor;

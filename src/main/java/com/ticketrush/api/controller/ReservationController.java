@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.controller;
+package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
@@ -6,8 +6,8 @@ import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.infrastructure.lock.RedissonLockFacade;
 import com.ticketrush.infrastructure.messaging.KafkaReservationProducer;
 import com.ticketrush.infrastructure.sse.SseEmitterManager;
-import com.ticketrush.interfaces.dto.ReservationRequest;
-import com.ticketrush.interfaces.dto.ReservationResponse;
+import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.api.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
