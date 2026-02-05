@@ -16,6 +16,8 @@ public interface ConcertService {
     ConcertOption addOption(Long concertId, java.time.LocalDateTime date);
     void createSeats(Long optionId, int count);
 
+    void deleteConcert(Long concertId);
+
     // ReservationService에서 사용할 메서드
     Seat getSeat(Long seatId);
     Seat getSeatWithPessimisticLock(Long seatId);

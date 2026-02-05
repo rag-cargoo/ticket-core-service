@@ -32,6 +32,16 @@ public class ConcertController {
     }
 
     /**
+     * [Admin/Test] 테스트 데이터 삭제 (Cleanup)
+     */
+    @DeleteMapping("/cleanup/{concertId}")
+    public ResponseEntity<String> cleanupConcert(@PathVariable Long concertId) {
+        // 실제 운영 환경에서는 사용 금지, 테스트용 로직
+        concertService.deleteConcert(concertId);
+        return ResponseEntity.ok("Cleanup completed for ConcertID: " + concertId);
+    }
+
+    /**
      * 전체 공연 목록 조회
      */
     @GetMapping

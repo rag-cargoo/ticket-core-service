@@ -78,6 +78,12 @@ public class ConcertServiceImpl implements ConcertService {
     }
 
     @Override
+    @Transactional
+    public void deleteConcert(Long concertId) {
+        concertRepository.deleteById(concertId);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Seat getSeat(Long seatId) {
         return seatRepository.findById(seatId)

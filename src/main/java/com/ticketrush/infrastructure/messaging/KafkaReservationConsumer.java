@@ -44,9 +44,14 @@ public class KafkaReservationConsumer {
                     event.getUserId(), event.getSeatId(), e.getMessage());
             
             String status = "FAIL";
-            if (e.getMessage().contains("Optimistic")) {
+            if (e instanceof IllegalStateException) {
+                status = "FAIL_ALREADY_RESERVED";
+            } else if (e.getMessage().contains("Optimistic")) {
                 status = "FAIL_OPTIMISTIC_CONFLICT";
+            } else if (e.getMessage().contains("not found")) {
+                status = "FAIL_DATA_NOT_FOUND";
             }
+            
             queueService.setStatus(event.getUserId(), event.getSeatId(), status);
             sseManager.send(event.getUserId(), event.getSeatId(), status);
         }
