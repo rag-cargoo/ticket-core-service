@@ -1,85 +1,34 @@
 package com.ticketrush;
 
-import com.ticketrush.domain.agency.Agency;
-import com.ticketrush.domain.agency.AgencyRepository;
-import com.ticketrush.domain.artist.Artist;
-import com.ticketrush.domain.artist.ArtistRepository;
-import com.ticketrush.domain.concert.entity.*;
-import com.ticketrush.domain.concert.repository.*;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * [System] 초기 시스템 기동 확인용 데이터 이니셜라이저
+ * 상세한 테스트 데이터는 /api/concerts/setup API를 통해 동적으로 생성하십시오.
+ */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final ConcertRepository concertRepository;
-    private final ConcertOptionRepository concertOptionRepository;
-    private final SeatRepository seatRepository;
-    private final AgencyRepository agencyRepository;
-    private final ArtistRepository artistRepository;
     private final UserRepository userRepository;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        if (concertRepository.count() > 0) {
-            return;
+        // 1. 시스템 관리자 유저가 없는 경우에만 생성 (기동 확인용)
+        if (userRepository.count() == 0) {
+            userRepository.save(new User("admin"));
+            log.info(">>>> Initial data created: Admin user registered.");
         }
 
-        // 0. Create Test Users
-        List<User> users = new ArrayList<>();
-        for (int i = 1; i <= 100; i++) {
-            users.add(new User("user" + i));
-        }
-        userRepository.saveAll(users);
-
-        // 0. Create Agencies
-        Agency edam = agencyRepository.save(new Agency("EDAM Entertainment"));
-        Agency ador = agencyRepository.save(new Agency("ADOR"));
-        Agency bighit = agencyRepository.save(new Agency("BIGHIT MUSIC"));
-
-        // 0. Create Artists
-        Artist iu = artistRepository.save(new Artist("IU", edam));
-        Artist newjeans = artistRepository.save(new Artist("NewJeans", ador));
-        Artist bts = artistRepository.save(new Artist("BTS", bighit));
-
-        // 1. IU Concert
-        createConcertWithDetails("The Golden Hour", iu,
-                List.of(LocalDateTime.now().plusDays(10), LocalDateTime.now().plusDays(11)));
-
-        // 2. NewJeans Concert
-        createConcertWithDetails("Bunnies Camp", newjeans,
-                List.of(LocalDateTime.now().plusDays(20)));
-
-        // 3. BTS Concert
-        createConcertWithDetails("Yet To Come", bts,
-                List.of(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusDays(31),
-                        LocalDateTime.now().plusDays(32)));
-    }
-
-    private void createConcertWithDetails(String title, Artist artist, List<LocalDateTime> dates) {
-        Concert concert = new Concert(title, artist);
-        concertRepository.save(concert);
-
-        for (LocalDateTime date : dates) {
-            ConcertOption option = new ConcertOption(concert, date);
-            concertOptionRepository.save(option);
-
-            // Create Seats (A-1 to A-5) - Reduced for faster startup
-            List<Seat> seats = new ArrayList<>();
-            for (int i = 1; i <= 5; i++) {
-                seats.add(new Seat(option, "A-" + i));
-            }
-            seatRepository.saveAll(seats);
-        }
+        // 2. 추가적인 초기 데이터가 필요한 경우 아래에 구현하십시오.
+        log.info(">>>> System is ready. Use APIs for further data setup.");
     }
 }
