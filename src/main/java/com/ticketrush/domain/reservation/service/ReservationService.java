@@ -9,12 +9,12 @@ import com.ticketrush.domain.user.service.UserService;
 import com.ticketrush.interfaces.dto.ReservationRequest;
 import com.ticketrush.interfaces.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +23,10 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final ConcertService concertService;
     private final UserService userService;
-    private final RedissonClient redissonClient;
 
+    /**
+     * [v1] 낙관적 락(Optimistic Lock)을 사용한 예약 생성
+     */
     @Transactional
     public ReservationResponse createReservation(ReservationRequest request) {
         // 1. 유저 조회 (UserService 위임)
@@ -43,9 +45,12 @@ public class ReservationService {
         return ReservationResponse.from(reservation);
     }
 
+    /**
+     * [v2] 비관적 락(Pessimistic Lock)을 사용한 예약 생성
+     */
     @Transactional
     public ReservationResponse createReservationWithPessimisticLock(ReservationRequest request) {
-        // 1. 유저 조회 (UserService 위임)
+        // 1. 유저 조회
         User user = userService.getUser(request.userId());
 
         // 2. 좌석 조회 (비관적 락 적용)
@@ -59,5 +64,29 @@ public class ReservationService {
         reservationRepository.save(reservation);
 
         return ReservationResponse.from(reservation);
+    }
+
+    /**
+     * [Read] 유저별 예약 내역 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getReservationsByUserId(Long userId) {
+        return reservationRepository.findByUserId(userId).stream()
+                .map(ReservationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * [Delete] 예약 취소 (삭제)
+     */
+    @Transactional
+    public void cancelReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found: " + reservationId));
+        
+        // 좌석 상태 원복 (AVAILABLE)
+        reservation.getSeat().cancel();
+        
+        reservationRepository.delete(reservation);
     }
 }

@@ -6,10 +6,9 @@ import com.ticketrush.interfaces.dto.ReservationRequest;
 import com.ticketrush.interfaces.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -19,27 +18,20 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final RedissonLockFacade redissonLockFacade;
 
-    @PostMapping
-    public ResponseEntity<ReservationResponse> createReservation(@RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservation(request);
-        return ResponseEntity.ok(response);
-    }
-
     /**
-     * [v1] 낙관적 락(Optimistic Lock) 버전
+     * [v1] 낙관적 락 버전
      */
     @PostMapping("/v1/optimistic")
     public ResponseEntity<ReservationResponse> createOptimisticReservation(@RequestBody ReservationRequest request) {
-        return createReservation(request);
+        return ResponseEntity.ok(reservationService.createReservation(request));
     }
 
     /**
-     * [v2] 비관적 락(Pessimistic Lock) 버전
+     * [v2] 비관적 락 버전
      */
     @PostMapping("/v2/pessimistic")
     public ResponseEntity<ReservationResponse> createPessimisticReservation(@RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservationWithPessimisticLock(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(reservationService.createReservationWithPessimisticLock(request));
     }
 
     /**
@@ -47,7 +39,23 @@ public class ReservationController {
      */
     @PostMapping("/v3/distributed-lock")
     public ResponseEntity<ReservationResponse> createDistributedLockReservation(@RequestBody ReservationRequest request) {
-        ReservationResponse response = redissonLockFacade.createReservation(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(redissonLockFacade.createReservation(request));
+    }
+
+    /**
+     * [Read] 유저별 예약 목록 조회
+     */
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<List<ReservationResponse>> getMyReservations(@PathVariable Long userId) {
+        return ResponseEntity.ok(reservationService.getReservationsByUserId(userId));
+    }
+
+    /**
+     * [Delete] 예약 취소
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
+        reservationService.cancelReservation(id);
+        return ResponseEntity.noContent().build();
     }
 }
