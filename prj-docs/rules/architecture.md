@@ -25,15 +25,19 @@
 * ✅ **ID Reference**: `Ticket` 엔티티는 `User` 객체 대신 `userId (Long)`만 가짐. (느슨한 결합)
 * ✅ **Event Driven**: `MemberJoinedEvent` 발생 시 `CouponService`가 수신 (비동기 처리 권장)
 
-### 3. 패키지 구조 (Package Boundaries)
+### 3. 레이어 및 패키지 구조 (Layered Package Boundaries)
 
-각 폴더는 독립적인 '미니 서버'입니다.
+프로젝트는 명확한 역할 분담을 위해 아래의 3단 레이어 구조를 엄격히 준수한다.
 
-* `com.ticketrush.domain.user` 🏠 (User Server)
-* `com.ticketrush.domain.concert` 🎤 (Concert Server)
-* `com.ticketrush.domain.reservation` 🎟️ (Order Server)
-* `com.ticketrush.global` 🌐 (Common Lib)
+*   **`com.ticketrush.api`** 🌐 (Interface Layer)
+    *   `controller`: 외부 요청 진입점.
+    *   `dto`: 모든 Request/Response 객체 집결. (**Java Class + Lombok 스타일 적용**)
+*   **`com.ticketrush.domain`** 🏛️ (Core Domain Layer)
+    *   핵심 비즈니스 로직, 엔티티(Entity), 리포지토리(Repository) 집결.
+    *   도메인 간 참조는 반드시 Service를 통해서만 수행한다.
+*   **`com.ticketrush.global`** 🛠️ (Technical Infrastructure Layer)
+    *   Kafka, Redis, SSE, Lock 등 공통 기술 지원 컴포넌트 집결.
 
 ---
 
-**미래의 AI(또는 개발자)여, 이 규칙을 어기는 순간 MSA 전환의 꿈은 물거품이 된다. 명심하라.**
+**미래의 AI(또는 개발자)여, 이 규칙을 어기는 순간 MSA 전환의 꿈은 물거품이 된다. 특히 DTO는 반드시 api.dto 패키지에 위치시켜야 함을 명심하라.**

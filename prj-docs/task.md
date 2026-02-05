@@ -47,7 +47,10 @@
 - **Infrastructure**: JPA 설정 및 H2/PostgreSQL 연동 확인.
 - **Data Init**: K-POP 콘서트 더미 데이터(IU, NewJeans, BTS) 초기화 로직 구현.
 
-### 4. 프로젝트 인프라 및 문서화
-- **프로젝트 리팩토링**: `default-service` -> `ticket-core-service` 명칭 변경 및 폴더링.
-- **문서화 시스템**: Docsify + GitHub Pages 기반의 기술 문서 사이트 구축 및 계층화.
-- **거버넌스 수립**: `management/` 폴더 내 프로젝트 구조, 워크플로우, 안전 수칙 정의.
+### 4. 프로젝트 아키텍처 정교화 및 인프라 안정화 (Architecture Refinement) ✅
+- **레이어 분리**: `interfaces`, `infrastructure`를 폐기하고 `api`, `global`로 개편하여 명확한 3단 계층 구조 확립.
+- **DTO 정규화**: 모든 Java `record`를 `class` + Lombok 스타일로 전환하여 유연성 확보 및 일관된 패키지(`api.dto`) 관리.
+- **인프라 안정화**: `docker-compose.yml`에 건강 체크(Healthcheck) 및 명시적 의존성(depends_on)을 적용하여 기동 불안정성 원천 차단.
+- **거버넌스 수립**: API 명세 표준 템플릿(6단계)을 수립하고 전체 문서 현행화 완료.
+
+### 5. 프로젝트 인프라 및 문서화 (Legacy) ✅
