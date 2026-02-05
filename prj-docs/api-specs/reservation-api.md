@@ -11,6 +11,7 @@
 - **Description**: 예약 요청을 대기열(Kafka)에 등록하고 즉시 응답을 받습니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `version-strategy` | String | Yes | `v4-opt`, `v4-pes`, `v5-opt` 중 선택 |
@@ -18,6 +19,7 @@
 | Body | `seatId` | Long | Yes | 예매 대상 좌석 ID |
 
 **Request Example**
+
 ```json
 {
   "userId": 1,
@@ -26,12 +28,14 @@
 ```
 
 **Response Summary (202 Accepted)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `message` | String | 요청 접수 메시지 |
 | `strategy` | String | 적용된 동시성 제어 전략 (OPTIMISTIC / PESSIMISTIC) |
 
 **Response Example**
+
 ```json
 {
   "message": "Reservation request enqueued",
@@ -46,17 +50,20 @@
 - **Description**: 대기열에 등록된 예약 요청의 현재 처리 상태를 확인합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Query | `userId` | Long | Yes | 요청 유저 ID |
 | Query | `seatId` | Long | Yes | 요청 좌석 ID |
 
 **Response Summary (200 OK)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `status` | String | 처리 상태 (`PENDING`, `PROCESSING`, `SUCCESS`, `FAIL_*`) |
 
 **Response Example**
+
 ```json
 {
   "status": "SUCCESS"
@@ -70,12 +77,14 @@
 - **Description**: 서버로부터 비동기 처리 결과를 실시간으로 푸시 받기 위한 연결을 수립합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Query | `userId` | Long | Yes | 요청 유저 ID |
 | Query | `seatId` | Long | Yes | 요청 좌석 ID |
 
 **Response Summary (200 OK / Event Stream)**
+
 - **Header**: `Content-Type: text/event-stream`
 - **Event: `INIT`**: 연결 성공 시 전송 (`data: Connected...`)
 - **Event: `RESERVATION_STATUS`**: 최종 처리 결과 전송 (`data: SUCCESS` or `FAIL_*`)
@@ -87,6 +96,7 @@
 - **Description**: 대기열 없이 즉시 DB 반영을 시도하는 블로킹 방식입니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `version` | String | Yes | `v1/optimistic`, `v2/pessimistic`, `v3/distributed-lock` 중 선택 |
@@ -94,6 +104,7 @@
 | Body | `seatId` | Long | Yes | 좌석 ID |
 
 **Response Summary (200 OK)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | Long | 생성된 예약 고유 ID |
@@ -102,6 +113,7 @@
 | `reservationTime` | DateTime | 예약 확정 일시 |
 
 **Response Example**
+
 ```json
 {
   "id": 7,
@@ -118,11 +130,13 @@
 - **Description**: 특정 유저가 성공한 모든 예약 내역을 조회합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `userId` | Long | Yes | 조회를 원하는 유저 ID |
 
 **Response Example**
+
 ```json
 [
   {
@@ -141,11 +155,13 @@
 - **Description**: 확정된 예약을 취소하고 좌석을 다시 예매 가능 상태로 되돌립니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `id` | Long | Yes | 취소할 예약 레코드 ID |
 
 **Response Summary (204 No Content)**
+
 - 성공 시 응답 바디 없음.
 
 ---

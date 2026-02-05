@@ -11,6 +11,7 @@
 - **Description**: 현재 시스템에 등록된 모든 공연 리스트를 조회합니다.
 
 **Response Summary (200 OK)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | Long | 공연 고유 ID |
@@ -18,6 +19,7 @@
 | `artistName` | String | 출연 아티스트 이름 |
 
 **Response Example**
+
 ```json
 [
   {
@@ -35,17 +37,20 @@
 - **Description**: 특정 공연의 예매 가능한 날짜와 시간 목록을 조회합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `id` | Long | Yes | 공연 고유 ID |
 
 **Response Summary (200 OK)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | Long | 날짜 옵션 고유 ID |
 | `concertDate` | DateTime | 공연 시작 일시 |
 
 **Response Example**
+
 ```json
 [
   {
@@ -62,11 +67,13 @@
 - **Description**: 선택한 공연 일정의 모든 좌석 상태를 실시간 조회합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `optionId` | Long | Yes | 날짜 옵션 고유 ID |
 
 **Response Summary (200 OK)**
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | Long | 좌석 고유 ID |
@@ -74,6 +81,7 @@
 | `status` | String | 현 상태 (`AVAILABLE` / `RESERVED`) |
 
 **Response Example**
+
 ```json
 [
   {
@@ -91,6 +99,7 @@
 - **Description**: 공연, 아티스트, 기획사, 좌석을 한 번에 생성하여 테스트 환경을 구축합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Body | `title` | String | Yes | 공연 제목 |
@@ -100,6 +109,7 @@
 | Body | `seatCount` | Integer | Yes | 생성할 좌석 수 |
 
 **Request Example**
+
 ```json
 {
   "title": "NewJeans Special",
@@ -111,6 +121,7 @@
 ```
 
 **Response Example**
+
 `Setup completed: ConcertID=4, OptionID=7`
 
 ---
@@ -120,9 +131,11 @@
 - **Description**: 특정 공연과 연관된 모든 데이터(옵션, 좌석)를 영구 삭제합니다.
 
 **Parameters**
+
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Path | `concertId` | Long | Yes | 삭제할 공연 ID |
 
 **Response Summary (200 OK)**
+
 `Cleanup completed for ConcertID: 4`
