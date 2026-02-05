@@ -24,9 +24,9 @@ public class ConcertController {
      */
     @PostMapping("/setup")
     public ResponseEntity<String> setupConcert(@RequestBody ConcertSetupRequest request) {
-        var concert = concertService.createConcert(request.title(), request.artistName(), request.agencyName());
-        var option = concertService.addOption(concert.getId(), request.concertDate());
-        concertService.createSeats(option.getId(), request.seatCount());
+        var concert = concertService.createConcert(request.getTitle(), request.getArtistName(), request.getAgencyName());
+        var option = concertService.addOption(concert.getId(), request.getConcertDate());
+        concertService.createSeats(option.getId(), request.getSeatCount());
         
         return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
     }

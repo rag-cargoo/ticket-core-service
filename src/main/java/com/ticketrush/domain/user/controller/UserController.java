@@ -19,7 +19,7 @@ public class UserController {
      */
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest request) {
-        return ResponseEntity.ok(UserResponse.from(userService.createUser(request.username())));
+        return ResponseEntity.ok(UserResponse.from(userService.createUser(request.getUsername())));
     }
 
     /**

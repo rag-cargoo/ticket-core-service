@@ -98,8 +98,8 @@ public class ReservationController {
     }
 
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
-        queueService.setStatus(request.userId(), request.seatId(), "PENDING");
-        kafkaProducer.send(ReservationEvent.of(request.userId(), request.seatId(), lockType));
+        queueService.setStatus(request.getUserId(), request.getSeatId(), "PENDING");
+        kafkaProducer.send(ReservationEvent.of(request.getUserId(), request.getSeatId(), lockType));
         return ResponseEntity.accepted().body(Map.of(
             "message", "Reservation request enqueued",
             "strategy", lockType.name()

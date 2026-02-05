@@ -1,6 +1,13 @@
 package com.ticketrush.interfaces.dto;
 
-public record ReservationRequest(
-        Long userId,
-        Long seatId) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReservationRequest {
+    private Long userId;
+    private Long seatId;
 }

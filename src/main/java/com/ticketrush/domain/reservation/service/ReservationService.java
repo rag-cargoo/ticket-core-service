@@ -30,10 +30,10 @@ public class ReservationService {
     @Transactional
     public ReservationResponse createReservation(ReservationRequest request) {
         // 1. 유저 조회 (UserService 위임)
-        User user = userService.getUser(request.userId());
+        User user = userService.getUser(request.getUserId());
 
         // 2. 좌석 조회 (ConcertService 위임)
-        Seat seat = concertService.getSeat(request.seatId());
+        Seat seat = concertService.getSeat(request.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();
@@ -51,10 +51,10 @@ public class ReservationService {
     @Transactional
     public ReservationResponse createReservationWithPessimisticLock(ReservationRequest request) {
         // 1. 유저 조회
-        User user = userService.getUser(request.userId());
+        User user = userService.getUser(request.getUserId());
 
         // 2. 좌석 조회 (비관적 락 적용)
-        Seat seat = concertService.getSeatWithPessimisticLock(request.seatId());
+        Seat seat = concertService.getSeatWithPessimisticLock(request.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();

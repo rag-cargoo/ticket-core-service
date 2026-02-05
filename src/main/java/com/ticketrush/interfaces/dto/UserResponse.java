@@ -1,8 +1,17 @@
 package com.ticketrush.interfaces.dto;
 
 import com.ticketrush.domain.user.User;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-public record UserResponse(Long id, String username) {
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserResponse {
+    private Long id;
+    private String username;
+
     public static UserResponse from(User user) {
         return new UserResponse(user.getId(), user.getUsername());
     }

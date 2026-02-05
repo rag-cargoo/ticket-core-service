@@ -23,7 +23,7 @@ public class RedissonLockFacade {
     private static final long WAIT_TIME = 10L;
 
     public ReservationResponse createReservation(ReservationRequest request) {
-        String lockKey = "lock:seat:" + request.seatId();
+        String lockKey = "lock:seat:" + request.getSeatId();
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
@@ -33,7 +33,7 @@ public class RedissonLockFacade {
             boolean available = lock.tryLock(WAIT_TIME, -1, TimeUnit.SECONDS);
 
             if (!available) {
-                log.warn("락 획득 실패 - SeatId: {}, UserId: {}", request.seatId(), request.userId());
+                log.warn("락 획득 실패 - SeatId: {}, UserId: {}", request.getSeatId(), request.getUserId());
                 throw new RuntimeException("현재 예약 요청이 많습니다. 잠시 후 다시 시도해주세요.");
             }
 
