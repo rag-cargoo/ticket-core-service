@@ -1,62 +1,133 @@
 # 🎫 Reservation API Specification & Integration Guide
 
-이 문서는 **선착순 티켓 예매 시스템**의 예약 프로세스와 API 연동을 설명합니다.
+이 문서는 **선착순 티켓 예매 시스템**의 예약 프로세스와 API 상세 연동 규격을 정의합니다.
 
 ---
 
-## 🎯 1. 기능 개요 (Functional Overview)
+## 🎯 1. 기능 개요 및 전략 가이드
 
-본 시스템은 대규모 트래픽 상황에서도 **중복 예약을 원천 차단**하고 서버의 안정성을 유지하는 것을 목표로 합니다. 
-개발 환경에서는 기술적 진화 단계에 따라 5가지 버전의 API를 제공하며, **실제 서비스 환경에서는 v4 또는 v5 사용을 강력 권장**합니다.
+### 1.1. 예매 전략 선택 (Usage Policy)
+- **실제 서비스 (v4, v5)**: 대규모 접속자가 몰리는 공연에 사용. 요청을 즉시 처리하지 않고 대기열(`Kafka`)에 담아 안정적으로 처리합니다.
+- **테스트/소규모 (v1~v3)**: 정합성 테스트용 혹은 트래픽이 적은 환경에서 사용합니다.
 
-### 버전별 선택 가이드 (Strategy Selection)
-- **v1 (Optimistic)**: 충돌이 적은 일반적인 상황에 적합. (충돌 시 사용자 재시도 필요)
-- **v2 (Pessimistic)**: 데이터 정합성이 최우선인 엄격한 상황. (서버 부하 높음)
-- **v3 (Distributed)**: 분산 환경에서 안정적으로 락을 관리할 때 사용.
-- **v4/v5 (Queue-based)**: **수만 명이 동시 접속하는 핫딜 상황.** 요청을 즉시 처리하지 않고 대기열에 쌓아 서버 폭주를 방지함.
+### 1.2. 비동기 예약 워크플로우 (v4, v5 Sequence)
+1. **[Client]** 예약 요청 (`POST /api/reservations/v4-opt/queue-polling`)
+2. **[Server]** `202 Accepted` 반환 및 Kafka 이벤트 발행
+3. **[Client]** 상태 확인 (Polling 호출 혹은 SSE 구독)
+4. **[Server]** 처리 완료 시 최종 상태(`SUCCESS/FAIL`) 전달
 
 ---
 
 ## 🛠️ 2. API 상세 명세 (Endpoint Details)
 
-### 2.1. 비동기 예약 요청 (대기열 진입)
-사용자를 대기열에 넣고 "접수 번호"를 부여하는 단계입니다.
+### 2.1. 비동기 예약 요청 (Entry)
+사용자를 대기열에 등록합니다.
 
-- **Endpoints**:
-    - `POST /api/reservations/v4-opt/queue-polling`: 낙관적 락 기반 처리 대기
-    - `POST /api/reservations/v4-pes/queue-polling`: 비관적 락 기반 처리 대기 (순차 처리 강화)
-    - `POST /api/reservations/v5-opt/queue-sse`: 실시간 푸시 알림(SSE)을 원하는 경우 사용
+- **URL**: 
+    - `POST /api/reservations/v4-opt/queue-polling` (낙관적 락 전략)
+    - `POST /api/reservations/v4-pes/queue-polling` (비관적 락 전략)
+    - `POST /api/reservations/v5-opt/queue-sse` (SSE 알림 전용)
+- **Method**: `POST`
 
-**비즈니스 규칙 (Business Rules)**
-- 한 명의 유저는 하나의 좌석만 점유 시도할 수 있습니다.
-- 응답으로 `202 Accepted`를 받았다면, 시스템은 해당 요청을 안전하게 저장했으며 **순례대로 처리할 것임을 보장**합니다.
+**Request Body**
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `userId` | Long | Yes | 예매 시도 유저 ID |
+| `seatId` | Long | Yes | 대상 좌석 고유 ID |
+
+```json
+{
+  "userId": 1,
+  "seatId": 10
+}
+```
+
+**Response (202 Accepted)**
+```json
+{
+  "message": "Reservation request enqueued",
+  "strategy": "OPTIMISTIC"
+}
+```
 
 ---
 
-### 2.2. 예약 상태 조회 및 실시간 알림
-비동기로 진행되는 예약의 최종 결과를 확인하는 방법입니다.
-
-#### [방법 1] Polling (조회 방식)
-프론트엔드에서 주기적으로 서버에 물어보는 방식입니다.
+### 2.2. 예약 상태 조회 (Polling)
 - **URL**: `GET /api/reservations/v4/status`
-- **기능**: 현재 내 요청이 큐의 어디쯤 있는지, 처리가 끝났는지 확인합니다.
+- **Query Parameters**: `userId` (Long), `seatId` (Long)
 
-#### [방법 2] SSE (푸시 방식) - 권장 ⭐
-서버가 결과가 나오는 즉시 브라우저로 쏴주는 방식입니다.
+**Response (200 OK)**
+```json
+{
+  "status": "PENDING"
+}
+```
+| status 값 | 의미 | 설명 |
+| :--- | :--- | :--- |
+| `PENDING` | 대기 중 | 큐에서 처리를 기다림 |
+| `PROCESSING` | 처리 중 | DB 작업 진행 중 |
+| `SUCCESS` | 성공 | **예약 확정 완료** |
+| `FAIL_ALREADY_RESERVED` | 실패 | 이미 다른 사용자가 선점한 좌석 |
+| `FAIL_OPTIMISTIC_CONFLICT` | 실패 | 동시 충돌로 인한 처리 실패 (재시도 권장) |
+
+---
+
+### 2.3. 실시간 알림 구독 (SSE)
 - **URL**: `GET /api/reservations/v5/subscribe`
-- **기능**: 사용자가 화면을 뚫어지게 쳐다보지 않아도 결과가 나오면 즉시 알림을 보냅니다.
+- **Query Parameters**: `userId`, `seatId`
+
+**Events**
+- `INIT`: 연결 시 데이터 `"Connected for Seat: {id}"`
+- `RESERVATION_STATUS`: 최종 결과 데이터 `"SUCCESS"`, `"FAIL_ALREADY_RESERVED"` 등
 
 ---
 
-## 🔒 3. 동기식 예약 (즉시 처리)
-트래픽이 적을 때 사용하는 전통적인 블로킹 방식입니다. 호출 즉시 DB에 반영되고 결과가 리턴됩니다.
+## 🔒 3. 동기식 예약 (Sync - v1, v2, v3)
+즉시 DB에 반영하고 결과를 리턴받는 방식입니다.
+
+- **URL**: `POST /api/reservations/v3/distributed-lock` (분산 락 버전)
+
+**Response (200 OK)**
+```json
+{
+  "id": 7,
+  "userId": 1,
+  "seatId": 10,
+  "reservationTime": "2026-02-05T21:04:19"
+}
+```
 
 ---
 
-## 📖 4. 내 예약 관리
+## 📖 4. 내 예약 관리 및 삭제
 
-### 4.1. 예약 내역 조회
-- **기능**: 내가 예매 성공한 모든 티켓 목록을 시간순으로 조회합니다.
+### 4.1. 유저별 예약 내역 조회
+- **URL**: `GET /api/reservations/users/{userId}`
+
+**Response (200 OK)**
+```json
+[
+  {
+    "id": 7,
+    "userId": 1,
+    "seatId": 10,
+    "reservationTime": "2026-02-05T21:04:19"
+  }
+]
+```
 
 ### 4.2. 예약 취소
-- **기능**: 확정된 예약을 취소합니다. 취소 즉시 해당 좌석은 **다른 사용자가 예매 가능한 `AVAILABLE` 상태**로 자동 전환됩니다.
+- **URL**: `DELETE /api/reservations/{id}`
+- **Response**: `240 No Content` (성공 시 Body 없음)
+
+---
+
+## 🚨 5. 공통 에러 응답
+```json
+{
+  "timestamp": "2026-02-05T21:30:00.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "path": "/api/reservations/v4/status"
+}
+```
