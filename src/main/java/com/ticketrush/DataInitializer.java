@@ -74,9 +74,9 @@ public class DataInitializer implements CommandLineRunner {
             ConcertOption option = new ConcertOption(concert, date);
             concertOptionRepository.save(option);
 
-            // Create Seats (A-1 to A-50)
+            // Create Seats (A-1 to A-5) - Reduced for faster startup
             List<Seat> seats = new ArrayList<>();
-            for (int i = 1; i <= 50; i++) {
+            for (int i = 1; i <= 5; i++) {
                 seats.add(new Seat(option, "A-" + i));
             }
             seatRepository.saveAll(seats);

@@ -17,8 +17,8 @@
 
 - [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 - [x] Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
-- [ ] Step 3: Redis 분산 락(Redisson) 구현 및 검증 👈 **Next Work**
-- [ ] Step 4: 대기열 시스템(Waiting Queue) 설계 및 구현
+- [x] Step 3: Redis 분산 락(Redisson) 구현 및 검증
+- [ ] Step 4: Kafka 기반 비동기 대기열(Waiting Queue) 설계 및 구현 👈 **Next Work**
 
 ---
 

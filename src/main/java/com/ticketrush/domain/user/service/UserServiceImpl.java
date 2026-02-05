@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(read_only = true)
+    @Transactional(readOnly = true)
     public User getUser(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));

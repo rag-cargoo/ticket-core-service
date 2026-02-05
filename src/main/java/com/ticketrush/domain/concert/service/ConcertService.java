@@ -11,6 +11,11 @@ public interface ConcertService {
     List<ConcertOption> getConcertOptions(Long concertId);
     List<Seat> getAvailableSeats(Long concertOptionId);
     
+    // Admin & Test Setup
+    Concert createConcert(String title, String artistName, String agencyName);
+    ConcertOption addOption(Long concertId, java.time.LocalDateTime date);
+    void createSeats(Long optionId, int count);
+
     // ReservationService에서 사용할 메서드
     Seat getSeat(Long seatId);
     Seat getSeatWithPessimisticLock(Long seatId);

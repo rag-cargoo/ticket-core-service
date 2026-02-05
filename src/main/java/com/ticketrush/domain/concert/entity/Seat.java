@@ -48,6 +48,10 @@ public class Seat {
         this.status = SeatStatus.RESERVED;
     }
 
+    public void cancel() {
+        this.status = SeatStatus.AVAILABLE;
+    }
+
     public enum SeatStatus {
         AVAILABLE, RESERVED, TEMP_RESERVED
     }

@@ -49,3 +49,23 @@
   }
 ]
 ```
+
+---
+
+## 4. [Admin/Test] 공연 및 좌석 일괄 셋업
+- **Endpoint**: `POST /api/concerts/setup`
+- **Description**: 테스트를 위해 공연, 아티스트, 기획사, 옵션, 좌석을 한 번에 생성합니다.
+
+### Request Body
+```json
+{
+  "title": "NewJeans Bunnies Camp",
+  "artistName": "NewJeans",
+  "agencyName": "ADOR",
+  "concertDate": "2026-03-01T18:00:00",
+  "seatCount": 50
+}
+```
+
+### Response (200 OK)
+- Body: `Setup completed: ConcertID=4, OptionID=7`

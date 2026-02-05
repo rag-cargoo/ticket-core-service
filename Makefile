@@ -18,6 +18,7 @@ help:
 setup:
 	chmod +x scripts/api/*.sh
 	chmod +x scripts/bench/*.sh
+	@echo "All scripts are now executable."
 
 # 개별 테스트 실행
 test-v1:

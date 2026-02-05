@@ -33,18 +33,18 @@
 
 ### Phase 2: 동시성 정복 (Concurrency Challenge)
 
-- [ ] **좌석 예매 API 구현 (재고 차감)**
-  - [ ] Scenario A: Java `synchronized` (단일 서버)
-  - [ ] Scenario B: DB **Pessimistic Lock** (비관적 락)
-  - [ ] Scenario C: DB **Optimistic Lock** (낙관적 락)
-  - [ ] Scenario D: Redis **Distributed Lock** (Redisson)
-- [ ] **성능 테스트 및 비교 보고서 작성 (k6/JMeter)**
+- [x] **좌석 예매 API 구현 (재고 차감)**
+  - [x] Scenario B: DB **Pessimistic Lock** (비관적 락)
+  - [x] Scenario C: DB **Optimistic Lock** (낙관적 락)
+  - [x] Scenario D: Redis **Distributed Lock** (Redisson)
+- [x] **성능 테스트 및 비교 보고서 작성**
 
 ### Phase 3: 대용량 트래픽 대응 (Traffic Spike)
 
 - [ ] **대기열 시스템(Waiting Queue) 구현**
   - [ ] Redis `Sorted Set`을 이용한 대기 순번 발급
-  - [ ] Kafka를 이용한 예매 요청 비동기 처리 및 버퍼링
+  - [x] Kafka를 이용한 예매 요청 비동기 처리 및 버퍼링 (Step 4)
+  - [x] SSE 기반 실시간 처리 결과 통보 시스템 (Step 4)
 - [ ] 캐싱 전략 적용 (공연 조회 성능 개선)
 
 ### Phase 4: 안정성 및 모니터링

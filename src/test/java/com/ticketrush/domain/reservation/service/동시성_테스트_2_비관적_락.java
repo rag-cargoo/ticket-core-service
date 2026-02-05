@@ -92,12 +92,12 @@ class 동시성_테스트_2_비관적_락 {
 
         latch.await();
 
-        long actualReservationCount = reservationRepository.count();
+        long actualReservationCount = reservationRepository.findBySeatId(targetSeatId).size();
         
         System.out.println("================ 실험 결과 (비관적 락) ================");
         System.out.println("성공 횟수: " + successCount.get());
         System.out.println("실패 횟수: " + failCount.get());
-        System.out.println("DB 예약 건수: " + actualReservationCount);
+        System.out.println("해당 좌석 예약 건수: " + actualReservationCount);
         System.out.println("====================================================");
 
         assertThat(actualReservationCount).isEqualTo(1);

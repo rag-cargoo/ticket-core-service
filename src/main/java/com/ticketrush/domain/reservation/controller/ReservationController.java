@@ -1,12 +1,18 @@
 package com.ticketrush.domain.reservation.controller;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.domain.reservation.service.ReservationQueueService;
+import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.infrastructure.lock.RedissonLockFacade;
+import com.ticketrush.infrastructure.messaging.KafkaReservationProducer;
+import com.ticketrush.infrastructure.sse.SseEmitterManager;
 import com.ticketrush.interfaces.dto.ReservationRequest;
 import com.ticketrush.interfaces.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -17,6 +23,9 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final RedissonLockFacade redissonLockFacade;
+    private final KafkaReservationProducer kafkaProducer;
+    private final ReservationQueueService queueService;
+    private final SseEmitterManager sseManager;
 
     /**
      * [v1] 낙관적 락 버전
@@ -40,6 +49,57 @@ public class ReservationController {
     @PostMapping("/v3/distributed-lock")
     public ResponseEntity<ReservationResponse> createDistributedLockReservation(@RequestBody ReservationRequest request) {
         return ResponseEntity.ok(redissonLockFacade.createReservation(request));
+    }
+
+    /**
+     * [v4-opt] 비동기 대기열 + 낙관적 락
+     */
+    @PostMapping("/v4-opt/queue-polling")
+    public ResponseEntity<String> createPollingOptimisticReservation(@RequestBody ReservationRequest request) {
+        return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
+    }
+
+    /**
+     * [v4-pes] 비동기 대기열 + 비관적 락
+     */
+    @PostMapping("/v4-pes/queue-polling")
+    public ResponseEntity<String> createPollingPessimisticReservation(@RequestBody ReservationRequest request) {
+        return enqueue(request, ReservationEvent.LockType.PESSIMISTIC);
+    }
+
+    /**
+     * [v4/status] 비동기 예약 상태 조회 (Polling용)
+     */
+    @GetMapping("/v4/status")
+    public ResponseEntity<String> getReservationStatus(
+            @RequestParam Long userId, 
+            @RequestParam Long seatId) {
+        String status = queueService.getStatus(userId, seatId);
+        return ResponseEntity.ok(status != null ? status : "NOT_FOUND");
+    }
+
+    /**
+     * [v5] SSE 실시간 구독
+     */
+    @GetMapping(value = "/v5/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribe(
+            @RequestParam Long userId,
+            @RequestParam Long seatId) {
+        return sseManager.subscribe(userId, seatId);
+    }
+
+    /**
+     * [v5-opt] 비동기 대기열 + SSE + 낙관적 락
+     */
+    @PostMapping("/v5-opt/queue-sse")
+    public ResponseEntity<String> createSseOptimisticReservation(@RequestBody ReservationRequest request) {
+        return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
+    }
+
+    private ResponseEntity<String> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
+        queueService.setStatus(request.userId(), request.seatId(), "PENDING");
+        kafkaProducer.send(ReservationEvent.of(request.userId(), request.seatId(), lockType));
+        return ResponseEntity.accepted().body("Reservation request enqueued. Strategy: " + lockType);
     }
 
     /**
