@@ -1,0 +1,32 @@
+### 1. 예약 생성 (v1 - 낙관적 락)
+POST http://localhost:8080/api/reservations/v1/optimistic
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 1
+}
+
+### 2. 예약 생성 (v2 - 비관적 락)
+POST http://localhost:8080/api/reservations/v2/pessimistic
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 2
+}
+
+### 3. 예약 생성 (v3 - Redis 분산 락)
+POST http://localhost:8080/api/reservations/v3/distributed-lock
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 3
+}
+
+### 4. 내 예약 목록 조회 (User ID: 1)
+GET http://localhost:8080/api/reservations/users/1
+
+### 5. 예약 취소 (Reservation ID: 1)
+DELETE http://localhost:8080/api/reservations/1
