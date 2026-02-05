@@ -1,23 +1,23 @@
 # 🎸 Concert API Specification
 
-공연 정보 및 실시간 예약 가능한 좌석 현황을 제공하는 API입니다.
+공연 정보, 예약 가능 일정 및 좌석 현황을 제공하는 API입니다.
 
 ---
 
-## 🎯 1. 데이터 모델 이해 (Conceptual Hierarchy)
-본 서비스의 데이터는 다음 계층을 따릅니다.
-- **Concert (공연)**: 제목, 아티스트 정보를 포함하는 최상위 객체.
-- **ConcertOption (일정)**: 특정 공연의 상세 날짜/시간. (좌석의 부모)
-- **Seat (좌석)**: 실제 예매 대상. 번호와 상태를 가집니다.
+## 🛠️ 1. API 상세 명세 (Endpoint Details)
 
----
+### 1.1. 전체 공연 목록 조회
+- **Endpoint**: `GET /api/concerts`
+- **Description**: 현재 시스템에 등록된 모든 공연 리스트를 조회합니다.
 
-## 🛠️ 2. API 상세 명세
+**Response Summary (200 OK)**
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | Long | 공연 고유 ID |
+| `title` | String | 공연 제목 |
+| `artistName` | String | 출연 아티스트 이름 |
 
-### 2.1. 공연 목록 조회
-- **URL**: `GET /api/concerts`
-
-**Response (200 OK)**
+**Response Example**
 ```json
 [
   {
@@ -30,10 +30,22 @@
 
 ---
 
-### 2.2. 공연 일정(날짜) 조회
-- **URL**: `GET /api/concerts/{id}/options`
+### 1.2. 공연 날짜(옵션) 조회
+- **Endpoint**: `GET /api/concerts/{id}/options`
+- **Description**: 특정 공연의 예매 가능한 날짜와 시간 목록을 조회합니다.
 
-**Response (200 OK)**
+**Parameters**
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `id` | Long | Yes | 공연 고유 ID |
+
+**Response Summary (200 OK)**
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | Long | 날짜 옵션 고유 ID |
+| `concertDate` | DateTime | 공연 시작 일시 |
+
+**Response Example**
 ```json
 [
   {
@@ -45,16 +57,23 @@
 
 ---
 
-### 2.3. 예약 가능 좌석 현황 조회
-- **URL**: `GET /api/concerts/options/{optionId}/seats`
+### 1.3. 실시간 좌석 현황 조회
+- **Endpoint**: `GET /api/concerts/options/{optionId}/seats`
+- **Description**: 선택한 공연 일정의 모든 좌석 상태를 실시간 조회합니다.
 
-**Response (200 OK)**
+**Parameters**
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `optionId` | Long | Yes | 날짜 옵션 고유 ID |
+
+**Response Summary (200 OK)**
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | Long | 좌석 고유 ID |
-| `seatNumber` | String | 좌석 식별 번호 (예: A-1) |
-| `status` | String | 현 상태 (AVAILABLE, RESERVED) |
+| `seatNumber` | String | 좌석 식별 번호 |
+| `status` | String | 현 상태 (`AVAILABLE` / `RESERVED`) |
 
+**Response Example**
 ```json
 [
   {
@@ -67,11 +86,20 @@
 
 ---
 
-### 2.4. [Admin] 테스트 데이터 자동 셋업
-- **URL**: `POST /api/concerts/setup`
-- **Description**: 테스트를 위한 풀 세트 데이터를 즉시 생성합니다.
+### 1.4. [Admin] 테스트 데이터 일괄 셋업
+- **Endpoint**: `POST /api/concerts/setup`
+- **Description**: 공연, 아티스트, 기획사, 좌석을 한 번에 생성하여 테스트 환경을 구축합니다.
 
-**Request Body**
+**Parameters**
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Body | `title` | String | Yes | 공연 제목 |
+| Body | `artistName` | String | Yes | 아티스트 이름 |
+| Body | `agencyName` | String | Yes | 기획사 이름 |
+| Body | `concertDate` | DateTime | Yes | 공연 시작 일시 |
+| Body | `seatCount` | Integer | Yes | 생성할 좌석 수 |
+
+**Request Example**
 ```json
 {
   "title": "NewJeans Special",
@@ -82,5 +110,19 @@
 }
 ```
 
-**Response (200 OK)**
-`"Setup completed: ConcertID=4, OptionID=7"`
+**Response Example**
+`Setup completed: ConcertID=4, OptionID=7`
+
+---
+
+### 1.5. [Admin] 테스트 데이터 삭제 (Cleanup)
+- **Endpoint**: `DELETE /api/concerts/cleanup/{concertId}`
+- **Description**: 특정 공연과 연관된 모든 데이터(옵션, 좌석)를 영구 삭제합니다.
+
+**Parameters**
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `concertId` | Long | Yes | 삭제할 공연 ID |
+
+**Response Summary (200 OK)**
+`Cleanup completed for ConcertID: 4`
