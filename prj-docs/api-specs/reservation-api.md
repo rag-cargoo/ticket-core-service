@@ -1,78 +1,105 @@
-# Reservation API Specification
+# 🎫 Reservation API Specification & Integration Guide
 
-티켓 예매 및 내역 조회, 취소를 담당하는 API입니다. 동시성 제어 전략에 따라 3가지 버전의 생성 API를 제공합니다.
+이 문서는 프론트엔드 및 클라이언트 작업자를 위한 **티켓 예매 API 연동 가이드**입니다. 
+동기식 처리와 비동기(대기열) 처리의 흐름을 명확히 구분하여 기술합니다.
 
-## 1. 티켓 예매 (Create)
-- **Endpoints (Synchronous - Blocking)**:
-    - `POST /api/reservations/v1/optimistic`: 낙관적 락 기반 즉시 예약
-    - `POST /api/reservations/v2/pessimistic`: 비관적 락 기반 순차 예약
-    - `POST /api/reservations/v3/distributed-lock`: Redis 분산 락 기반 고성능 예약
+---
 
-- **Endpoints (Asynchronous - Non-blocking)**:
-    - `POST /api/reservations/v4-opt/queue-polling`: 대기열 진입 (낙관적 락 전략)
-    - `POST /api/reservations/v4-pes/queue-polling`: 대기열 진입 (비관적 락 전략)
-    - `POST /api/reservations/v5-opt/queue-sse`: 대기열 진입 + SSE 실시간 결과 알림
+## 🔄 1. 전체 예약 프로세스 (Integration Workflow)
 
-### Request Body
+### [Scenario A] 비동기 대기열 방식 (v4, v5) - 추천 ⭐
+대규모 트래픽 발생 시 사용자가 대기열에 진입하고 실시간으로 결과를 받는 방식입니다.
+
+1. **Step 1 (요청)**: `POST /api/reservations/v4-opt/queue-polling` 호출
+2. **Step 2 (대기)**: 서버로부터 `202 Accepted` 응답 수신
+3. **Step 3 (확인)**: 다음 두 가지 방법 중 선택하여 결과 확인
+   - **방법 A (Polling)**: `GET /api/reservations/v4/status`를 1~2초 간격으로 반복 호출
+   - **방법 B (SSE)**: `GET /api/reservations/v5/subscribe`를 통해 실시간 알림 구독
+4. **Step 4 (완료)**: 상태가 `SUCCESS`로 변경되면 예약 완료 화면 노출
+
+---
+
+## 🛠️ 2. API 상세 명세 (Endpoint Details)
+
+### 2.1. 비동기 예약 요청 (Entry)
+- **URL**: `POST /api/reservations/v4-opt/queue-polling` (낙관적 락 전략)
+- **URL**: `POST /api/reservations/v4-pes/queue-polling` (비관적 락 전략)
+- **URL**: `POST /api/reservations/v5-opt/queue-sse` (SSE 알림용)
+- **Headers**: `Content-Type: application/json`
+
+**Request Body**
 ```json
 {
   "userId": 1,
-  "seatId": 1
+  "seatId": 10
 }
 ```
 
-### Response (202 Accepted)
-비동기 처리가 시작되었음을 의미합니다.
-```text
-Reservation request enqueued. Strategy: OPTIMISTIC
-```
-
----
-
-## 2. 비동기 예약 상태 확인
-
-### [Polling] 예약 상태 조회
-사용자가 명시적으로 결과를 확인할 때 사용합니다.
-- **Endpoint**: `GET /api/reservations/v4/status?userId={userId}&seatId={seatId}`
-
-| Status Code | 의미 | 설명 |
-| :--- | :--- | :--- |
-| **PENDING** | 대기 중 | Kafka 큐에 적재되어 처리를 기다리는 상태 |
-| **PROCESSING** | 처리 중 | 컨슈머가 메시지를 읽어 DB 작업을 수행 중인 상태 |
-| **SUCCESS** | 성공 | 예약이 완료되어 DB에 반영된 상태 |
-| **FAIL** | 실패 | 좌석 이미 선점 등 비즈니스 로직에 의한 실패 |
-| **FAIL_OPTIMISTIC_CONFLICT** | 충돌 | 낙관적 락 충돌로 인해 처리에 실패한 상태 |
-
-### [SSE] 실시간 구독
-서버가 처리가 끝나는 즉시 클라이언트로 결과를 푸시합니다.
-- **Endpoint**: `GET /api/reservations/v5/subscribe?userId={userId}&seatId={seatId}`
-- **Events**:
-    - `INIT`: 연결 성공 시 전송
-    - `RESERVATION_STATUS`: 최종 결과 전송 (`SUCCESS` or `FAIL`)
-
----
-
-## 3. 내 예약 내역 조회
-- **Endpoint**: `GET /api/reservations/users/{userId}`
-- **Description**: 특정 유저의 모든 예약 내역을 조회합니다.
-
-### Response Body (200 OK)
+**Response (202 Accepted)**
 ```json
-[
-  {
-    "id": 1,
-    "userId": 1,
-    "seatId": 1,
-    "reservationTime": "2026-02-05T16:51:54"
-  }
-]
+{
+  "message": "Reservation request enqueued",
+  "strategy": "OPTIMISTIC"
+}
 ```
 
 ---
 
-## 3. 예약 취소
-- **Endpoint**: `DELETE /api/reservations/{id}`
-- **Description**: 예약을 취소하고 좌석을 AVAILABLE 상태로 되돌립니다.
+### 2.2. [Polling] 예약 상태 조회
+- **URL**: `GET /api/reservations/v4/status?userId={userId}&seatId={seatId}`
+- **Method**: `GET`
 
-### Response (204 No Content)
-- No Body
+**Response (200 OK)**
+```json
+{
+  "status": "PENDING" 
+}
+```
+
+| status 값 | 의미 | 프론트엔드 처리 가이드 |
+| :--- | :--- | :--- |
+| `PENDING` | 대기 중 | "대기열에서 차례를 기다리고 있습니다" 메시지 노출 |
+| `PROCESSING` | 처리 중 | "예약을 확정하는 중입니다..." (로딩 바) |
+| `SUCCESS` | 성공 | 예약 완료 페이지로 이동 |
+| `FAIL` | 실패 | "좌석 선점에 실패했습니다." 안내 및 뒤로가기 |
+| `NOT_FOUND` | 정보 없음 | 잘못된 요청이거나 만료된 요청 |
+
+---
+
+### 2.3. [SSE] 실시간 알림 구독
+- **URL**: `GET /api/reservations/v5/subscribe?userId={userId}&seatId={seatId}`
+- **Headers**: `Accept: text/event-stream`
+
+**Event Types**
+1. **`INIT`**: 연결 성공 시 즉시 발생.
+   - Data: `"Connected for Seat: {id}"`
+2. **`RESERVATION_STATUS`**: 비동기 처리가 끝나는 순간 단 한 번 발생.
+   - Data: `"SUCCESS"` or `"FAIL"`
+
+**연동 팁 (JavaScript)**
+```javascript
+const eventSource = new EventSource('/api/reservations/v5/subscribe?userId=1&seatId=10');
+
+eventSource.addEventListener('RESERVATION_STATUS', (event) => {
+    if (event.data === 'SUCCESS') {
+        alert('예약 성공!');
+    }
+    eventSource.close(); // 결과 수신 후 반드시 연결 종료
+});
+```
+
+---
+
+## 🔒 3. 동기식 예약 (Legacy/Direct)
+즉시 결과를 반환받는 방식입니다. (대규모 트래픽 시 타임아웃 발생 위험 높음)
+
+- **URL**: `POST /api/reservations/v3/distributed-lock` (분산 락)
+- **Response (200 OK)**
+```json
+{
+  "id": 1,
+  "userId": 1,
+  "seatId": 10,
+  "reservationTime": "2026-02-05T14:30:00"
+}
+```

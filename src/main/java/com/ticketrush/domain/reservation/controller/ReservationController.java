@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -55,7 +56,7 @@ public class ReservationController {
      * [v4-opt] 비동기 대기열 + 낙관적 락
      */
     @PostMapping("/v4-opt/queue-polling")
-    public ResponseEntity<String> createPollingOptimisticReservation(@RequestBody ReservationRequest request) {
+    public ResponseEntity<Map<String, String>> createPollingOptimisticReservation(@RequestBody ReservationRequest request) {
         return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
     }
 
@@ -63,7 +64,7 @@ public class ReservationController {
      * [v4-pes] 비동기 대기열 + 비관적 락
      */
     @PostMapping("/v4-pes/queue-polling")
-    public ResponseEntity<String> createPollingPessimisticReservation(@RequestBody ReservationRequest request) {
+    public ResponseEntity<Map<String, String>> createPollingPessimisticReservation(@RequestBody ReservationRequest request) {
         return enqueue(request, ReservationEvent.LockType.PESSIMISTIC);
     }
 
@@ -71,11 +72,11 @@ public class ReservationController {
      * [v4/status] 비동기 예약 상태 조회 (Polling용)
      */
     @GetMapping("/v4/status")
-    public ResponseEntity<String> getReservationStatus(
+    public ResponseEntity<Map<String, String>> getReservationStatus(
             @RequestParam Long userId, 
             @RequestParam Long seatId) {
         String status = queueService.getStatus(userId, seatId);
-        return ResponseEntity.ok(status != null ? status : "NOT_FOUND");
+        return ResponseEntity.ok(Map.of("status", status != null ? status : "NOT_FOUND"));
     }
 
     /**
@@ -92,14 +93,17 @@ public class ReservationController {
      * [v5-opt] 비동기 대기열 + SSE + 낙관적 락
      */
     @PostMapping("/v5-opt/queue-sse")
-    public ResponseEntity<String> createSseOptimisticReservation(@RequestBody ReservationRequest request) {
+    public ResponseEntity<Map<String, String>> createSseOptimisticReservation(@RequestBody ReservationRequest request) {
         return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
     }
 
-    private ResponseEntity<String> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
+    private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
         queueService.setStatus(request.userId(), request.seatId(), "PENDING");
         kafkaProducer.send(ReservationEvent.of(request.userId(), request.seatId(), lockType));
-        return ResponseEntity.accepted().body("Reservation request enqueued. Strategy: " + lockType);
+        return ResponseEntity.accepted().body(Map.of(
+            "message", "Reservation request enqueued",
+            "strategy", lockType.name()
+        ));
     }
 
     /**
