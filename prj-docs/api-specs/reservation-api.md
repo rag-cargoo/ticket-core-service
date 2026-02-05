@@ -1,33 +1,37 @@
 # 🎫 Reservation API Specification & Integration Guide
 
 이 문서는 프론트엔드 및 클라이언트 작업자를 위한 **티켓 예매 API 연동 가이드**입니다. 
-동기식 처리와 비동기(대기열) 처리의 흐름을 명확히 구분하여 기술합니다.
 
 ---
 
-## 🔄 1. 전체 예약 프로세스 (Integration Workflow)
+## 🛠️ 1. 공통 사항 (Common)
 
-### [Scenario A] 비동기 대기열 방식 (v4, v5) - 추천 ⭐
-대규모 트래픽 발생 시 사용자가 대기열에 진입하고 실시간으로 결과를 받는 방식입니다.
-
-1. **Step 1 (요청)**: `POST /api/reservations/v4-opt/queue-polling` 호출
-2. **Step 2 (대기)**: 서버로부터 `202 Accepted` 응답 수신
-3. **Step 3 (확인)**: 다음 두 가지 방법 중 선택하여 결과 확인
-   - **방법 A (Polling)**: `GET /api/reservations/v4/status`를 1~2초 간격으로 반복 호출
-   - **방법 B (SSE)**: `GET /api/reservations/v5/subscribe`를 통해 실시간 알림 구독
-4. **Step 4 (완료)**: 상태가 `SUCCESS`로 변경되면 예약 완료 화면 노출
+### 공통 에러 응답 포맷 (Error Response)
+에러 발생 시(4xx, 5xx) 서버는 아래와 같은 표준 JSON 객체를 반환합니다.
+```json
+{
+  "timestamp": "2026-02-05T21:30:00.000+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "path": "/api/reservations/v4/status"
+}
+```
 
 ---
 
 ## 🛠️ 2. API 상세 명세 (Endpoint Details)
 
 ### 2.1. 비동기 예약 요청 (Entry)
-- **URL**: `POST /api/reservations/v4-opt/queue-polling` (낙관적 락 전략)
-- **URL**: `POST /api/reservations/v4-pes/queue-polling` (비관적 락 전략)
-- **URL**: `POST /api/reservations/v5-opt/queue-sse` (SSE 알림용)
-- **Headers**: `Content-Type: application/json`
+- **URL**: `POST /api/reservations/v4-opt/queue-polling`
+- **Method**: `POST`
+- **Description**: 예매 요청을 대기열에 등록합니다. (낙관적 락 전략 사용)
 
 **Request Body**
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `userId` | Long | Yes | 예매를 시도하는 유저의 고유 ID |
+| `seatId` | Long | Yes | 예매 대상 좌석의 고유 ID |
+
 ```json
 {
   "userId": 1,
@@ -46,8 +50,15 @@
 ---
 
 ### 2.2. [Polling] 예약 상태 조회
-- **URL**: `GET /api/reservations/v4/status?userId={userId}&seatId={seatId}`
+- **URL**: `/api/reservations/v4/status`
 - **Method**: `GET`
+- **Description**: 대기열에 등록된 요청의 현재 처리 상태를 조회합니다.
+
+**Query Parameters**
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `userId` | Long | Yes | 요청 시 사용한 유저 ID |
+| `seatId` | Long | Yes | 요청 시 사용한 좌석 ID |
 
 **Response (200 OK)**
 ```json
@@ -56,50 +67,45 @@
 }
 ```
 
-| status 값 | 의미 | 프론트엔드 처리 가이드 |
-| :--- | :--- | :--- |
-| `PENDING` | 대기 중 | "대기열에서 차례를 기다리고 있습니다" 메시지 노출 |
-| `PROCESSING` | 처리 중 | "예약을 확정하는 중입니다..." (로딩 바) |
-| `SUCCESS` | 성공 | 예약 완료 페이지로 이동 |
-| `FAIL` | 실패 | "좌석 선점에 실패했습니다." 안내 및 뒤로가기 |
-| `NOT_FOUND` | 정보 없음 | 잘못된 요청이거나 만료된 요청 |
+**Status 값 가이드**
+- `PENDING`: 대기열 진입 완료.
+- `PROCESSING`: DB 작업 수행 중.
+- `SUCCESS`: **예약 확정.** (완료 화면으로 이동)
+- `FAIL`: **예약 실패.** (이미 선택된 좌석 등)
+- `NOT_FOUND`: 요청 정보가 유효하지 않음.
 
 ---
 
 ### 2.3. [SSE] 실시간 알림 구독
-- **URL**: `GET /api/reservations/v5/subscribe?userId={userId}&seatId={seatId}`
-- **Headers**: `Accept: text/event-stream`
+- **URL**: `/api/reservations/v5/subscribe`
+- **Method**: `GET`
+- **Description**: 비동기 처리 결과를 실시간으로 푸시 받기 위해 연결을 유지합니다.
 
-**Event Types**
-1. **`INIT`**: 연결 성공 시 즉시 발생.
-   - Data: `"Connected for Seat: {id}"`
-2. **`RESERVATION_STATUS`**: 비동기 처리가 끝나는 순간 단 한 번 발생.
-   - Data: `"SUCCESS"` or `"FAIL"`
+**Query Parameters**
+- `userId` (Long), `seatId` (Long) 필수.
 
-**연동 팁 (JavaScript)**
-```javascript
-const eventSource = new EventSource('/api/reservations/v5/subscribe?userId=1&seatId=10');
-
-eventSource.addEventListener('RESERVATION_STATUS', (event) => {
-    if (event.data === 'SUCCESS') {
-        alert('예약 성공!');
-    }
-    eventSource.close(); // 결과 수신 후 반드시 연결 종료
-});
-```
+**Events**
+- `INIT`: 연결 직후 `"Connected for Seat: {id}"` 데이터 전송.
+- `RESERVATION_STATUS`: 최종 결과 전송. (Data: `"SUCCESS"` or `"FAIL"`)
 
 ---
 
 ## 🔒 3. 동기식 예약 (Legacy/Direct)
-즉시 결과를 반환받는 방식입니다. (대규모 트래픽 시 타임아웃 발생 위험 높음)
+즉시 결과를 반환받는 방식입니다. 
 
-- **URL**: `POST /api/reservations/v3/distributed-lock` (분산 락)
+- **URL**: `POST /api/reservations/v3/distributed-lock`
 - **Response (200 OK)**
 ```json
 {
-  "id": 1,
+  "id": 7,
   "userId": 1,
   "seatId": 10,
-  "reservationTime": "2026-02-05T14:30:00"
+  "reservationTime": "2026-02-05T21:04:19"
 }
 ```
+
+**응답 필드 설명**
+- `id`: 생성된 예약 레코드의 고유 ID.
+- `userId`: 예매 유저 ID.
+- `seatId`: 예매 좌석 ID.
+- `reservationTime`: 예약이 확정된 시간 (ISO 8601).
