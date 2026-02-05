@@ -1,6 +1,7 @@
 package com.ticketrush.domain.reservation.controller;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.infrastructure.lock.RedissonLockFacade;
 import com.ticketrush.interfaces.dto.ReservationRequest;
 import com.ticketrush.interfaces.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final RedissonLockFacade redissonLockFacade;
 
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(@RequestBody ReservationRequest request) {
@@ -45,7 +47,7 @@ public class ReservationController {
      */
     @PostMapping("/v3/distributed-lock")
     public ResponseEntity<ReservationResponse> createDistributedLockReservation(@RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservationWithDistributedLock(request);
+        ReservationResponse response = redissonLockFacade.createReservation(request);
         return ResponseEntity.ok(response);
     }
 }

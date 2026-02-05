@@ -60,29 +60,4 @@ public class ReservationService {
 
         return ReservationResponse.from(reservation);
     }
-
-    public ReservationResponse createReservationWithDistributedLock(ReservationRequest request) {
-        String lockKey = "lock:seat:" + request.seatId();
-        RLock lock = redissonClient.getLock(lockKey);
-
-        try {
-            // 1. 락 획득 시도 (최대 10초 대기, 락 획득 후 2초간 점유)
-            boolean available = lock.tryLock(10, 2, TimeUnit.SECONDS);
-
-            if (!available) {
-                throw new RuntimeException("락 획득 실패: 잠시 후 다시 시도해주세요.");
-            }
-
-            // 2. 비즈니스 로직 실행
-            return createReservation(request);
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            // 3. 락 해제
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
-            }
-        }
-    }
 }
