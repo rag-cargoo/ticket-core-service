@@ -21,18 +21,34 @@
 }
 ```
 
+### Response (202 Accepted)
+비동기 처리가 시작되었음을 의미합니다.
+```text
+Reservation request enqueued. Strategy: OPTIMISTIC
+```
+
 ---
 
 ## 2. 비동기 예약 상태 확인
 
 ### [Polling] 예약 상태 조회
+사용자가 명시적으로 결과를 확인할 때 사용합니다.
 - **Endpoint**: `GET /api/reservations/v4/status?userId={userId}&seatId={seatId}`
-- **Responses**: `PENDING`, `PROCESSING`, `SUCCESS`, `FAIL`, `FAIL_OPTIMISTIC_CONFLICT`
+
+| Status Code | 의미 | 설명 |
+| :--- | :--- | :--- |
+| **PENDING** | 대기 중 | Kafka 큐에 적재되어 처리를 기다리는 상태 |
+| **PROCESSING** | 처리 중 | 컨슈머가 메시지를 읽어 DB 작업을 수행 중인 상태 |
+| **SUCCESS** | 성공 | 예약이 완료되어 DB에 반영된 상태 |
+| **FAIL** | 실패 | 좌석 이미 선점 등 비즈니스 로직에 의한 실패 |
+| **FAIL_OPTIMISTIC_CONFLICT** | 충돌 | 낙관적 락 충돌로 인해 처리에 실패한 상태 |
 
 ### [SSE] 실시간 구독
+서버가 처리가 끝나는 즉시 클라이언트로 결과를 푸시합니다.
 - **Endpoint**: `GET /api/reservations/v5/subscribe?userId={userId}&seatId={seatId}`
-- **Event Name**: `RESERVATION_STATUS`
-- **Data**: `SUCCESS` or `FAIL`
+- **Events**:
+    - `INIT`: 연결 성공 시 전송
+    - `RESERVATION_STATUS`: 최종 결과 전송 (`SUCCESS` or `FAIL`)
 
 ---
 
