@@ -19,27 +19,30 @@ public class RedissonLockFacade {
     private final RedissonClient redissonClient;
     private final ReservationService reservationService;
 
+    // 비즈니스 정책: 사용자는 최대 10초까지 대기할 수 있음 (상수로 관리하거나 설정에서 주입)
+    private static final long WAIT_TIME = 10L;
+
     public ReservationResponse createReservation(ReservationRequest request) {
         String lockKey = "lock:seat:" + request.seatId();
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
-            // 1. 락 획득 시도 (최대 10초 대기, 락 획득 후 2초간 점유)
-            boolean available = lock.tryLock(10, 2, TimeUnit.SECONDS);
+            // [자율적 설계 적용]
+            // waitTime: 정책에 따른 대기 (10초)
+            // leaseTime: -1 (Redisson Watchdog 활성화. 로직 실행 시간에 맞춰 스스로 연장)
+            boolean available = lock.tryLock(WAIT_TIME, -1, TimeUnit.SECONDS);
 
             if (!available) {
-                throw new RuntimeException("락 획득 실패: 잠시 후 다시 시도해주세요.");
+                log.warn("락 획득 실패 - SeatId: {}, UserId: {}", request.seatId(), request.userId());
+                throw new RuntimeException("현재 예약 요청이 많습니다. 잠시 후 다시 시도해주세요.");
             }
 
-            // 2. 비즈니스 로직 실행 (외부 Service 호출을 통해 트랜잭션 완벽 보장)
-            // Service의 트랜잭션이 커밋된 후에 이 메서드가 리턴됨.
             return reservationService.createReservation(request);
 
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("시스템 오류가 발생했습니다.", e);
         } finally {
-            // 3. 락 해제
-            // 트랜잭션이 완전히 끝난 후(Service 리턴 후)에 락이 풀림
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
