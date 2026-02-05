@@ -1,4 +1,4 @@
-package com.ticketrush.infrastructure.lock;
+package com.ticketrush.global.lock;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.api.dto.ReservationRequest;

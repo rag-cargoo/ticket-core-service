@@ -1,4 +1,4 @@
-package com.ticketrush.infrastructure.messaging;
+package com.ticketrush.global.messaging;
 
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import lombok.RequiredArgsConstructor;

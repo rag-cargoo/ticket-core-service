@@ -1,4 +1,4 @@
-package com.ticketrush.infrastructure.messaging;
+package com.ticketrush.global.messaging;
 
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
@@ -16,7 +16,7 @@ public class KafkaReservationConsumer {
 
     private final ReservationService reservationService;
     private final ReservationQueueService queueService;
-    private final com.ticketrush.infrastructure.sse.SseEmitterManager sseManager;
+    private final com.ticketrush.global.sse.SseEmitterManager sseManager;
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
     public void consume(ReservationEvent event) {

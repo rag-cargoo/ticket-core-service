@@ -1,4 +1,4 @@
-package com.ticketrush.infrastructure.config;
+package com.ticketrush.global.config;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
