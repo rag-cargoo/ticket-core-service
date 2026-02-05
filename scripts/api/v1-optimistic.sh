@@ -1,21 +1,39 @@
 #!/bin/bash
 
 # ==============================================================================
-# [v1] 낙관적 락(Optimistic Lock) 예약 테스트 스크립트
+# [v1] 낙관적 락(Optimistic Lock) 라이프사이클 테스트
+# 순서: 임시 유저 생성 -> 예약 시도 -> 유저 삭제(Cleanup)
 # ==============================================================================
 
 source "$(dirname "$0")/../common/env.sh"
 
+TMP_USERNAME="test_$(date +%s)"
+
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}[v1] Optimistic Lock Reservation Test${NC}"
-echo -e "${GREEN}[Current Config]${NC}"
-echo -e " - Target URL: ${BASE_URL}/v1/optimistic"
-echo -e " - Test User:  ID=${DEFAULT_USER_ID}"
-echo -e " - Test Seat:  ID=${DEFAULT_SEAT_ID}"
+echo -e "${BLUE}[v1] Optimistic Lock Life-cycle Test${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
-# CURL_OPTS를 추가하여 무한 대기를 방지
+# 1. 테스트 유저 생성
+echo -e "${YELLOW}[Step 1] Creating temporary user: ${TMP_USERNAME}${NC}"
+USER_ID=$(curl -s -X POST "http://localhost:8080/api/users" \
+     -H "${CONTENT_TYPE}" \
+     -d "{\"username\": \"${TMP_USERNAME}\"}" | grep -oP '"id":\s*\K\d+')
+
+if [ -z "$USER_ID" ]; then
+    echo -e "${RED}Failed to create user. Exiting.${NC}"
+    exit 1
+fi
+echo -e " - User Created! ID: ${USER_ID}"
+
+# 2. 예약 테스트 실행
+echo -e "\n${YELLOW}[Step 2] Testing Optimistic Lock Reservation...${NC}"
 curl ${CURL_OPTS} -X POST "${BASE_URL}/v1/optimistic" \
      -H "${CONTENT_TYPE}" \
-     -d "{\"userId\": ${DEFAULT_USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" \
-     -w "\n\n${GREEN}Result Status: %{http_code}${NC}\n"
+     -d "{\"userId\": ${USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" \
+     -w "\n - Status Code: %{http_code}\n"
+
+# 3. 데이터 삭제 (Cleanup)
+echo -e "\n${YELLOW}[Step 3] Cleaning up temporary user (ID: ${USER_ID})${NC}"
+curl -s -X DELETE "http://localhost:8080/api/users/${USER_ID}"
+echo -e " - Done."
+echo -e "${BLUE}====================================================${NC}"

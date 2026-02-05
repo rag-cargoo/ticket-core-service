@@ -1,24 +1,20 @@
 #!/bin/bash
-
-# ==============================================================================
-# [v2] 비관적 락(Pessimistic Lock) 예약 테스트 스크립트
-#
-# 목적: DB SELECT FOR UPDATE 기능을 이용한 순차 처리 API를 호출합니다.
-# 설정 안내:
-# - 서버 주소 및 기본 데이터(User/Seat ID)는 'scripts/common/env.sh'에서 수정하세요.
-# ==============================================================================
-
 source "$(dirname "$0")/../common/env.sh"
+TMP_USERNAME="test_v2_$(date +%s)"
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}[v2] Pessimistic Lock Reservation Test${NC}"
-echo -e "${GREEN}[Current Config]${NC}"
-echo -e " - Target URL: ${BASE_URL}/v2/pessimistic"
-echo -e " - Test User:  ID=${DEFAULT_USER_ID}"
-echo -e " - Test Seat:  ID=${DEFAULT_SEAT_ID}"
+echo -e "${BLUE}[v2] Pessimistic Lock Life-cycle Test${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
-curl -s -X POST "${BASE_URL}/v2/pessimistic" \
-     -H "${CONTENT_TYPE}" \
-     -d "{\"userId\": ${DEFAULT_USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" \
-     -w "\n\n${GREEN}Result Status: %{http_code}${NC}\n"
+# 1. 유저 생성
+USER_ID=$(curl -s -X POST "http://localhost:8080/api/users" -H "${CONTENT_TYPE}" -d "{\"username\": \"${TMP_USERNAME}\"}" | grep -oP '"id":\s*\K\d+')
+echo -e "${YELLOW}[Step 1] User Created: ID ${USER_ID}${NC}"
+
+# 2. 예약 테스트
+echo -e "${YELLOW}[Step 2] Testing Pessimistic Lock...${NC}"
+curl ${CURL_OPTS} -X POST "${BASE_URL}/v2/pessimistic" -H "${CONTENT_TYPE}" -d "{\"userId\": ${USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" -w "\n - Status: %{http_code}\n"
+
+# 3. 삭제
+echo -e "${YELLOW}[Step 3] Cleaning up...${NC}"
+curl -s -X DELETE "http://localhost:8080/api/users/${USER_ID}"
+echo -e "${BLUE}====================================================${NC}"
