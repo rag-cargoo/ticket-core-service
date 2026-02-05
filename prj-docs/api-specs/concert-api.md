@@ -1,65 +1,49 @@
-# Concert API Specification
+# 🎸 Concert API Specification
 
-공연 목록 및 날짜, 좌석 정보를 조회하는 API입니다.
+공연, 공연 옵션(날짜), 그리고 좌석 정보를 조회하고 관리하는 API입니다.
+
+---
 
 ## 1. 공연 목록 조회
 - **Endpoint**: `GET /api/concerts`
-- **Description**: 현재 등록된 모든 공연 목록을 조회합니다.
+- **Response (200 OK)**: `ConcertResponse[]`
 
-### Response Body (200 OK)
-```json
-[
-  {
-    "id": 1,
-    "title": "The Golden Hour",
-    "artistName": "IU"
-  }
-]
-```
+**Object Detail**
+- `id` (Long): 공연 고유 ID.
+- `title` (String): 공연 제목.
+- `artistName` (String): 출연 아티스트 이름.
 
 ---
 
 ## 2. 공연 일정(옵션) 조회
 - **Endpoint**: `GET /api/concerts/{id}/options`
-- **Description**: 특정 공연의 날짜별 예매 옵션을 조회합니다.
+- **Response (200 OK)**: `ConcertOptionResponse[]`
 
-### Response Body (200 OK)
-```json
-[
-  {
-    "id": 1,
-    "concertDate": "2026-02-15T15:31:40"
-  }
-]
-```
+**Object Detail**
+- `id` (Long): 옵션 고유 ID.
+- `concertDate` (DateTime): 공연 시작 일시.
 
 ---
 
 ## 3. 예약 가능 좌석 조회
 - **Endpoint**: `GET /api/concerts/options/{optionId}/seats`
-- **Description**: 특정 공연 일정의 예약 가능한 좌석 현황을 조회합니다.
+- **Response (200 OK)**: `SeatResponse[]`
 
-### Response Body (200 OK)
-```json
-[
-  {
-    "id": 1,
-    "seatNumber": "A-1",
-    "status": "AVAILABLE"
-  }
-]
-```
+**Object Detail**
+- `id` (Long): 좌석 고유 ID.
+- `seatNumber` (String): 좌석 번호 (예: "A-1").
+- `status` (String): 상태 (`AVAILABLE`, `RESERVED`).
 
 ---
 
-## 4. [Admin/Test] 공연 및 좌석 일괄 셋업
+## 4. [Admin] 테스트 데이터 일괄 셋업
 - **Endpoint**: `POST /api/concerts/setup`
-- **Description**: 테스트를 위해 공연, 아티스트, 기획사, 옵션, 좌석을 한 번에 생성합니다.
+- **Method**: `POST`
 
-### Request Body
+**Request Body**
 ```json
 {
-  "title": "NewJeans Bunnies Camp",
+  "title": "NewJeans Special",
   "artistName": "NewJeans",
   "agencyName": "ADOR",
   "concertDate": "2026-03-01T18:00:00",
@@ -67,5 +51,5 @@
 }
 ```
 
-### Response (200 OK)
-- Body: `Setup completed: ConcertID=4, OptionID=7`
+**Response (200 OK)**
+- `"Setup completed: ConcertID=4, OptionID=7"`
