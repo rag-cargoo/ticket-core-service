@@ -6,6 +6,8 @@ import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.*;
 import com.ticketrush.domain.concert.repository.*;
+import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SeatRepository seatRepository;
     private final AgencyRepository agencyRepository;
     private final ArtistRepository artistRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -31,6 +34,13 @@ public class DataInitializer implements CommandLineRunner {
         if (concertRepository.count() > 0) {
             return;
         }
+
+        // 0. Create Test Users
+        List<User> users = new ArrayList<>();
+        for (int i = 1; i <= 100; i++) {
+            users.add(new User("user" + i));
+        }
+        userRepository.saveAll(users);
 
         // 0. Create Agencies
         Agency edam = agencyRepository.save(new Agency("EDAM Entertainment"));
