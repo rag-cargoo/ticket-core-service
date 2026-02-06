@@ -1,0 +1,100 @@
+# 동시성 제어 전략 (Concurrency Control Strategy)
+
+> **Purpose**: 선착순 좌석 예약 시스템에서 발생하는 데이터 정합성 문제 해결 및 성능 최적화 전략 기록
+> **Date**: 2026-02-05
+
+## 0. 이론 배경: 낙관적 락 vs 비관적 락 (Theory)
+
+| 특징 | 낙관적 락 (Optimistic Lock) | 비관적 락 (Pessimistic Lock) |
+| :--- | :--- | :--- |
+| **기본 사상** | "충돌은 드물 거야. 충돌 나면 그때 해결하자." | "충돌은 빈번할 거야. 아예 못 건드리게 막자." |
+| **구현 방식** | **애플리케이션 로직**: 버전 컬럼(`@Version`) 비교. | **DB 쿼리**: `SELECT ... FOR UPDATE`로 물리적 락. |
+| **성능 (DB)** | **높음** (락 대기 없음) | **낮음** (대기 발생, 데드락 위험) |
+| **충돌 처리** | 예외 발생 (`Exception`) -> 롤백 -> 재시도 필요 | 대기 (`Wait`) -> 순차 처리 -> 성공 |
+| **대표 예시** | 게시판 수정, 프로필 업데이트 | 선착순 예매, 재고 차감, 계좌 이체 |
+
+---
+
+## 📋 실험 기록 순서 (Progress)
+1. [Step 0: 문제 상황 (락 미적용)](#step-0-문제-상황-락-미적용) - **Completed**
+2. [Step 1: 낙관적 락 (Optimistic Lock)](#step-1-낙관적-락-optimistic-lock) - **Completed**
+3. [Step 2: 비관적 락 (Pessimistic Lock)](#step-2-비관적-락-pessimistic-lock) - **Completed**
+4. [Step 3: Redis 분산 락 (Distributed Lock)](#step-3-redis-분산-락-distributed-lock) - **Completed**
+5. [Step 4: Kafka 기반 비동기 대기열 (Async Queue)](#step-4-kafka-기반-비동기-대기열-async-queue) - **Completed**
+
+---
+
+## Step 0: 문제 상황 (락 미적용)
+
+### 1. 실험 시나리오 (Experimental Scenario)
+- **테스트 코드**: `동시성_테스트_1_낙관적_락.java` (JPA @Version 주석 처리 후 실행)
+- **대상**: 1개 좌석 (Seat ID: 1)
+- **부하**: 30명의 스레드가 동시에 예약 API 호출
+
+### 2. 잘못된 구현 방식 (The Wrong Way)
+아무런 보호 장치 없이 일반적인 조회와 수정을 반복하는 방식입니다.
+
+```java
+// [Service]
+@Transactional
+public void reserve(Long seatId) {
+    Seat seat = seatRepository.findById(seatId).orElseThrow(); // 누구나 동시에 조회 가능
+    seat.reserve(); // 각자 메모리 상에서 상태 변경
+    // 커밋 시점에 마지막에 들어온 요청이 덮어쓰거나 중복 생성됨 (Race Condition)
+}
+```
+
+### 3. 실험 결과 (실패)
+데이터 정합성이 완전히 깨지는 현상이 발생함. (중복 예약 발생)
+
+#### [수치 결과]
+| 항목 | 결과값 | 비고 |
+| :--- | :--- | :--- |
+| **성공 횟수** | 10건 | **치명적 오류**: 1건이어야 함 |
+| **최종 예약 건수** | **10건** | **중복 예약 발생 (Race Condition)** |
+
+---
+
+## Step 1: 낙관적 락 (Optimistic Lock)
+
+### 1. 실험 시나리오 (Experimental Scenario)
+- **테스트 코드**: `동시성_테스트_1_낙관적_락.java`
+- **대상**: 1개 좌석 (Seat ID: 1)
+- **부하**: 30명의 스레드가 동시에 예약 API 호출
+
+### 2. 구현 방법 (How to Apply)
+엔티티에 `@Version` 컬럼을 추가하는 것만으로 애플리케이션 레벨의 체크 로직이 활성화됩니다.
+
+```java
+// [Entity]
+@Version // JPA가 제공하는 낙관적 락 메커니즘
+private Long version;
+```
+
+### 3. 동작 원리 및 SQL
+수정 쿼리 시점에 자동으로 버전 체크 조건이 붙습니다.
+```sql
+update seats 
+set status='RESERVED', version=1 
+where id=1 and version=0; -- 처음 읽은 버전이 0일 때만 성공
+```
+
+### 4. 실험 결과 및 분석
+*   **성공 횟수**: 1건
+*   **실패 횟수**: 29건 (ObjectOptimisticLockingFailureException 발생)
+*   **결론**: 데이터 정합성은 보장하나, 충돌 시 사용자에게 에러를 반환하므로 선착순 예매에는 한계가 있음.
+
+---
+
+## Step 2: 비관적 락 (Pessimistic Lock)
+
+### 1. 실험 시나리오 (Experimental Scenario)
+- **테스트 코드**: `동시성_테스트_2_비관적_락.java`
+- **대상**: 1개 좌석 (Seat ID: 1)
+- **부하**: 30명의 스레드가 동시에 예약 API 호출
+
+### 2. 구현 방법 (How to Apply)
+Spring Data JPA에서 비관적 락을 거는 방법은 크게 두 가지가 있습니다.
+
+#### 방법 A: @Lock 어노테이션 사용 (권장)
+JPA가 제공하는 `@Lock` 어노테이션을 사용하여 쿼리 생성 시점에 락 모드를 지정합니다. 이 방식을 쓰면 JPA가 SQL 끝에 자동으로 `FOR UPDATE`를 추가해 줍니다.

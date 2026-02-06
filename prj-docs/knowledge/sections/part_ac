@@ -1,0 +1,100 @@
+        String lockKey = "lock:seat:" + request.seatId();
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            // [중요 설계 변경] 짐작에 의한 숫자(Magic Number) 배제
+            // 1. Wait Time: 비즈니스 타임아웃 정책에 따라 설정 (ex: 10초)
+            // 2. Lease Time: -1로 설정하여 Redisson Watchdog(감시견)에게 관리를 위임
+            boolean available = lock.tryLock(10, -1, TimeUnit.SECONDS);
+
+            if (!available) {
+                throw new RuntimeException("락 획득 실패: 서버가 바쁩니다. 잠시 후 다시 시도해주세요.");
+            }
+
+            return reservationService.createReservation(request);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+}
+```
+
+---
+
+## 🌟 [Special] Magic Number를 배제한 자율적 시스템 설계 (중요)
+
+이 섹션은 단순히 코드를 짜는 것을 넘어, **"진정한 프로그램이란 무엇인가"**에 대한 엔지니어링 철학을 다룬다.
+
+### 1. 짐작하는 숫자의 위험성 (Anti-Programming)
+초기에 작성했던 `lock.tryLock(10, 2, TimeUnit.SECONDS)` 코드에서 `2초`라는 숫자는 개발자의 **'짐작'**에 불과하다. 
+
+#### ❌ 나쁜 예시 (Bad Practice: Guessing Numbers)
+```java
+// 로직이 2초 안에 끝날 것이라고 '짐작'하여 하드코딩
+// 만약 DB가 느려져 2.1초가 걸리면? -> 락이 풀리고 중복 데이터 발생! 정합성 파괴!
+boolean available = lock.tryLock(10, 2, TimeUnit.SECONDS); 
+```
+
+#### ✅ 좋은 예시 (Best Practice: Autonomous Management)
+```java
+// 1. 대기 시간은 정책(Policy)으로 관리
+private static final long MAX_WAIT_TIME = 10L; 
+
+// 2. 점유 시간은 -1로 설정하여 시스템(Watchdog)이 스스로 판단하게 함
+// 로직이 얼마나 걸리든 안전하게 정합성 유지
+boolean available = lock.tryLock(MAX_WAIT_TIME, -1, TimeUnit.SECONDS);
+```
+
+### 2. 설정 파일(`application.yml`)조차 하드코딩이다
+값을 설정 파일로 옮기는 행위는 관리의 편의성을 높일 뿐, 결국 사람이 정한 **'정적 수치'**라는 본질은 변하지 않는다. 진정한 해결책은 시스템이 상황에 맞춰 **'스스로 판단'**하게 만드는 것이다.
+
+### 3. 자율적 해결책: Redisson Watchdog (감시견) 🐕
+우리는 `leaseTime`을 `-1`로 설정함으로써 이 문제를 우아하게 해결했다.
+- **작동 원리**: 로직이 실행 중인 동안 Redisson이 주기적으로 락의 유효시간을 연장한다. 
+- **장점**: 로직이 0.1초 만에 끝나든, 10초가 걸리든 **상황에 맞춰 락 유지 시간을 스스로 조절**한다.
+- **안전성**: 만약 서버가 갑자기 죽어 연장 신호를 못 보내면, 그때서야 락을 해제하여 데드락(Deadlock)을 방지한다.
+
+### 💡 핵심 교훈: "상황을 단정 짓지 말고, 시스템이 흐르게 하라"
+> **"설정값은 최소화하고, 자율적인 메커니즘(Watchdog 등)을 우선시하는 설계가 대규모 분산 시스템에서 살아남는 프로그래밍 방식이다."**
+
+---
+
+#### 4. 실험 결과 (성공)
+- **성공 횟수**: 1건
+- **실패 횟수**: 29건
+- **최종 예약 건수**: 1건 (정합성 완벽 유지)
+
+#### 3. 핵심 동작 원리
+1. **락 획득**: Thread A가 Redis 락 점유.
+2. **트랜잭션 실행**: 서비스 계층의 트랜잭션 메서드 호출 및 **DB 커밋 완료**.
+3. **락 해제**: 트랜잭션이 완전히 종료된 후 Facade에서 락 해제.
+4. **후속 처리**: Thread B가 진입 시, 이미 커밋된 `RESERVED` 상태를 확인하여 중복 예약 방지.
+
+### 4. 최종 결론 (Conclusion)
+
+- **비관적 락**은 DB 자원을 많이 소모하지만 설정이 간편하다.
+
+- **Redis 분산 락**은 설정이 복잡(Facade 필요)하지만, DB 부하를 획득 시점 이전에 차단할 수 있어 **대규모 트래픽에 훨씬 유리**하다.
+
+
+
+---
+
+
+
+## 🚀 대장정의 다음 단계: 왜 대기열(Kafka)인가?
+
+
+
+지금까지 우리는 **'데이터 정합성'**을 지키는 법을 배웠다. 하지만 여전히 해결되지 않은 숙제가 남아있다.
+
+
+
+### ❓ 질문: "만 명 중 한 명만 성공한다면, 나머지 9,999명은 어떻게 되는가?"
+
