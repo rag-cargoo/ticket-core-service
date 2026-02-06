@@ -28,7 +28,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
                     .concertId(concertId)
                     .status("ACTIVE")
                     .rank(0L)
-                    .builder().build();
+                    .build();
         }
 
         // 2. 대기열에 추가 (점수는 현재 시간)
