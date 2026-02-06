@@ -18,23 +18,41 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 ### 1.1. 대기열 진입 (Waiting Queue Join)
 - **Endpoint**: `POST /api/v1/waiting-queue/join`
-- **Description**: 선착순 예매를 위해 대기열에 진입합니다.
+- **Description**: 선착순 예매를 위해 대기열에 진입하고 대기 번호를 발급받습니다.
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| Body | `userId` | Long | Yes | 유저 ID |
-| Body | `concertId` | Long | Yes | 콘서트 ID |
+| Body | `userId` | Long | Yes | 예매 시도 유저 고유 ID |
+| Body | `concertId` | Long | Yes | 예매 대상 콘서트 ID |
 
-**Response Example (200 OK)**
+**Request Example**
+
+```json
+{
+  "userId": 100,
+  "concertId": 1
+}
+```
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | Long | 요청 유저 ID |
+| `concertId` | Long | 대상 콘서트 ID |
+| `status` | String | 현재 상태 (`WAITING`, `ACTIVE`, `REJECTED`) |
+| `rank` | Long | 현재 대기 순번 (1부터 시작, ACTIVE 시 0, REJECTED 시 -1) |
+
+**Response Example**
 
 ```json
 {
   "userId": 100,
   "concertId": 1,
   "status": "WAITING",
-  "rank": 5
+  "rank": 42
 }
 ```
 
@@ -42,17 +60,34 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 ### 1.2. 비동기 예약 요청 (v4)
 - **Endpoint**: `POST /api/reservations/v4/queue`
-- **Description**: 예약 요청을 대기열(Kafka)에 등록합니다. **반드시 활성 토큰이 필요합니다.**
+- **Description**: 예약을 위해 Kafka 대기열에 등록합니다. **반드시 대기열을 통과하여 활성화된 유저여야 합니다.**
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| Header | `User-Id` | Long | **Yes** | 활성 유저 검증용 ID |
-| Body | `userId` | Long | Yes | 예매 시도 유저 ID |
-| Body | `seatId` | Long | Yes | 예매 대상 좌석 ID |
+| Header | `User-Id` | Long | **Yes** | 인터셉터 검증용 활성 유저 ID |
+| Body | `userId` | Long | Yes | 유저 ID (헤더와 일치해야 함) |
+| Body | `seatId` | Long | Yes | 좌석 ID |
 
-**Response Example (202 Accepted)**
+**Request Example**
+
+```json
+// Header: User-Id: 100
+{
+  "userId": 100,
+  "seatId": 1
+}
+```
+
+**Response Summary (202 Accepted)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `message` | String | 요청 접수 성공 메시지 |
+| `strategy` | String | 적용된 동시성 전략 (`OPTIMISTIC` 등) |
+
+**Response Example**
 
 ```json
 {
@@ -62,6 +97,7 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 ```
 
 **Error Case (403 Forbidden)**
+대기열을 거치지 않았거나 활성 토큰이 만료된 경우 발생합니다.
 
 ```json
 {
