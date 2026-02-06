@@ -12,10 +12,10 @@ import java.util.Set;
 public class WaitingQueueServiceImpl implements WaitingQueueService {
 
     private final StringRedisTemplate redisTemplate;
+    private final com.ticketrush.global.config.WaitingQueueProperties properties;
 
     private static final String QUEUE_KEY_PREFIX = "waiting-queue:";
     private static final String ACTIVE_KEY_PREFIX = "active-user:";
-    private static final long MAX_QUEUE_SIZE = 3; // 검증을 위해 3으로 낮춤
 
     @Override
     public WaitingQueueResponse join(Long userId, Long concertId) {
@@ -34,7 +34,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
         // 2. Throttling 체크 (입구 컷)
         Long currentQueueSize = redisTemplate.opsForZSet().size(queueKey);
-        if (currentQueueSize != null && currentQueueSize >= MAX_QUEUE_SIZE) {
+        if (currentQueueSize != null && currentQueueSize >= properties.getMaxQueueSize()) {
             return WaitingQueueResponse.builder()
                     .userId(userId)
                     .concertId(concertId)
@@ -84,8 +84,8 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
         if (users != null && !users.isEmpty()) {
             for (String userId : users) {
-                // 활성 상태로 전환 (5분간 유효)
-                redisTemplate.opsForValue().set(ACTIVE_KEY_PREFIX + userId, "true", java.time.Duration.ofMinutes(5));
+                // 활성 상태로 전환
+                redisTemplate.opsForValue().set(ACTIVE_KEY_PREFIX + userId, "true", java.time.Duration.ofMinutes(properties.getActiveTtlMinutes()));
                 // 대기열에서 제거
                 redisTemplate.opsForZSet().remove(queueKey, userId);
             }

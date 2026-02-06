@@ -20,7 +20,8 @@
 - [x] Step 3: Redis 분산 락(Redisson) 구현 및 검증
 - [x] Step 4: Kafka 기반 비동기 대기열(Waiting Queue) 구현 및 검증
 - [x] Step 5: Redis Sorted Set 기반 실시간 대기 순번 시스템 구현 ✅
-- [ ] Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현 👈 **Next Work**
+- [x] Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현 ✅
+- [ ] Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 (Step 5 고도화) 👈 **Next Work**
 
 ---
 

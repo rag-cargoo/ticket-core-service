@@ -12,12 +12,14 @@ import org.springframework.stereotype.Component;
 public class WaitingQueueScheduler {
 
     private final WaitingQueueService waitingQueueService;
+    private final com.ticketrush.global.config.WaitingQueueProperties properties;
 
-    // 10초마다 대기열 상위 10명을 활성화
-    @Scheduled(fixedDelay = 10000)
+    // 대기열 상위 유저를 주기적으로 활성화
+    @Scheduled(fixedDelayString = "10000") // 10초
     public void activateWaitingUsers() {
-        log.info(">>>> [Scheduler] 대기열 유저 활성화 시작...");
-        // 테스트용으로 Concert ID 1번에 대해서만 처리
-        waitingQueueService.activateUsers(1L, 10);
+        log.info(">>>> [Scheduler] 대기열 유저 활성화 시작 (Concert: {}, Count: {})", 
+                properties.getActivationConcertId(), properties.getActivationBatchSize());
+        
+        waitingQueueService.activateUsers(properties.getActivationConcertId(), properties.getActivationBatchSize());
     }
 }

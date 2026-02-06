@@ -54,3 +54,8 @@ app:
   kafka:
     topic:
       reservation: "ticket-reservation-events"
+  waiting-queue:
+    max-queue-size: 100
+    active-ttl-minutes: 5
+    activation-batch-size: 10
+    activation-concert-id: 1
