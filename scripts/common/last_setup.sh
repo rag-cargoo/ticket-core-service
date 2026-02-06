@@ -1,1 +1,0 @@
-export LATEST_SEAT_ID=1

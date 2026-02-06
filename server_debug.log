@@ -1,4 +1,12 @@
-01:57:25.465 [main] ERROR org.springframework.boot.SpringApplication -- Application run failed
+Path for java installation '/usr/lib/jvm/openjdk-11' (Common Linux Locations) does not contain a java executable
+Path for java installation '/usr/lib/jvm/openjdk-17' (Common Linux Locations) does not contain a java executable
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun FAILED
+01:55:08.788 [main] ERROR org.springframework.boot.SpringApplication -- Application run failed
 org.yaml.snakeyaml.constructor.DuplicateKeyException: while constructing a mapping
  in 'reader', line 1, column 1:
     spring:
@@ -53,10 +61,18 @@ found duplicate key spring
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1361)
 	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1350)
 	at com.ticketrush.BackendApiApplication.main(BackendApiApplication.java:12)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:102)
-	at org.springframework.boot.loader.launch.Launcher.launch(Launcher.java:64)
-	at org.springframework.boot.loader.launch.JarLauncher.main(JarLauncher.java:40)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command '/usr/lib/jvm/java-17-openjdk-amd64/bin/java'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+4 actionable tasks: 3 executed, 1 up-to-date

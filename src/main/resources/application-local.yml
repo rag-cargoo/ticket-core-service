@@ -11,8 +11,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-
-  # JPA & Hibernate
   jpa:
     hibernate:
       ddl-auto: create
@@ -22,32 +20,34 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
-
-# Logging Settings
-logging:
-  level:
-    org.hibernate.SQL: INFO
-    org.hibernate.orm.jdbc.bind: INFO
-
-  # Redis (Local)
   data:
     redis:
       host: localhost
       port: 6379
-
-  # Kafka (Local)
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      group-id: ticket-group
-      auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: ticket-group
+      auto-offset-reset: earliest
       properties:
         spring.json.trusted.packages: "*"
+
+# Logging Settings
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+    org.springframework.web: DEBUG
+    org.springframework.kafka: DEBUG
+    com.ticketrush: DEBUG
+
+debug: true
 
 # Custom App Properties
 app:

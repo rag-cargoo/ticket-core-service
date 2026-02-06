@@ -36,7 +36,7 @@ public class KafkaReservationConsumer {
             }
 
             queueService.setStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
-            sseManager.send(event.getUserId(), event.getSeatId(), "SUCCESS");
+            sseManager.sendReservationStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
             log.info("Reservation SUCCESS - UserId: {}, SeatId: {}", event.getUserId(), event.getSeatId());
 
         } catch (Exception e) {
@@ -53,7 +53,7 @@ public class KafkaReservationConsumer {
             }
             
             queueService.setStatus(event.getUserId(), event.getSeatId(), status);
-            sseManager.send(event.getUserId(), event.getSeatId(), status);
+            sseManager.sendReservationStatus(event.getUserId(), event.getSeatId(), status);
         }
     }
 }

@@ -86,7 +86,7 @@ public class ReservationController {
     public SseEmitter subscribe(
             @RequestParam Long userId,
             @RequestParam Long seatId) {
-        return sseManager.subscribe(userId, seatId);
+        return sseManager.subscribeReservation(userId, seatId);
     }
 
     /**

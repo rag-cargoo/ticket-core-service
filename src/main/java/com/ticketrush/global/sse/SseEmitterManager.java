@@ -14,9 +14,24 @@ public class SseEmitterManager {
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    public SseEmitter subscribe(Long userId, Long seatId) {
-        String key = generateKey(userId, seatId);
-        SseEmitter emitter = new SseEmitter(60 * 1000L); // 1분 타임아웃
+    /**
+     * 예약 결과 알림 구독
+     */
+    public SseEmitter subscribeReservation(Long userId, Long seatId) {
+        String key = "res:" + userId + ":" + seatId;
+        return createEmitter(key, "Connected for Seat: " + seatId);
+    }
+
+    /**
+     * 대기열 순번 알림 구독
+     */
+    public SseEmitter subscribeQueue(Long userId, Long concertId) {
+        String key = "queue:" + userId + ":" + concertId;
+        return createEmitter(key, "Connected for Queue: " + concertId);
+    }
+
+    private SseEmitter createEmitter(String key, String initMessage) {
+        SseEmitter emitter = new SseEmitter(5 * 60 * 1000L); // 대기열을 고려해 5분으로 연장
 
         emitter.onCompletion(() -> emitters.remove(key));
         emitter.onTimeout(() -> emitters.remove(key));
@@ -25,7 +40,7 @@ public class SseEmitterManager {
         emitters.put(key, emitter);
 
         try {
-            emitter.send(SseEmitter.event().name("INIT").data("Connected for Seat: " + seatId));
+            emitter.send(SseEmitter.event().name("INIT").data(initMessage));
         } catch (IOException e) {
             log.error("SSE Connection Error", e);
         }
@@ -33,22 +48,36 @@ public class SseEmitterManager {
         return emitter;
     }
 
-    public void send(Long userId, Long seatId, String status) {
-        String key = generateKey(userId, seatId);
-        SseEmitter emitter = emitters.get(key);
+    public void sendReservationStatus(Long userId, Long seatId, String status) {
+        String key = "res:" + userId + ":" + seatId;
+        sendAndComplete(key, "RESERVATION_STATUS", status);
+    }
 
+    public void sendQueueStatus(Long userId, Long concertId, Object data) {
+        String key = "queue:" + userId + ":" + concertId;
+        send(key, "RANK_UPDATE", data);
+    }
+
+    private void sendAndComplete(String key, String eventName, Object data) {
+        SseEmitter emitter = emitters.get(key);
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event().name("RESERVATION_STATUS").data(status));
+                emitter.send(SseEmitter.event().name(eventName).data(data));
                 emitter.complete();
             } catch (IOException e) {
-                log.error("SSE Send Error", e);
                 emitters.remove(key);
             }
         }
     }
 
-    private String generateKey(Long userId, Long seatId) {
-        return userId + ":" + seatId;
+    private void send(String key, String eventName, Object data) {
+        SseEmitter emitter = emitters.get(key);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event().name(eventName).data(data));
+            } catch (IOException e) {
+                emitters.remove(key);
+            }
+        }
     }
 }

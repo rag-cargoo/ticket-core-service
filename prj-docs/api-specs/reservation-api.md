@@ -40,10 +40,10 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `userId` | Long | 요청 유저 ID |
+| `userId` | Long | 요청 유저 고유 ID |
 | `concertId` | Long | 대상 콘서트 ID |
 | `status` | String | 현재 상태 (`WAITING`, `ACTIVE`, `REJECTED`) |
-| `rank` | Long | 현재 대기 순번 (1부터 시작, ACTIVE 시 0, REJECTED 시 -1) |
+| `rank` | Long | 현재 대기 순번 (1부터 시작, ACTIVE 유저는 0) |
 
 **Response Example**
 
@@ -110,49 +110,76 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 ---
 
-### 1.2. 비동기 예약 상태 조회 (Polling)
-- **Endpoint**: `GET /api/reservations/v4/status`
-- **Description**: 대기열에 등록된 예약 요청의 현재 처리 상태를 확인합니다.
+### 1.3. 대기열 상태 조회 (Waiting Queue Status)
+- **Endpoint**: `GET /api/v1/waiting-queue/status`
+- **Description**: 현재 유저의 대기 순번과 상태를 조회합니다.
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| Query | `userId` | Long | Yes | 요청 유저 ID |
-| Query | `seatId` | Long | Yes | 요청 좌석 ID |
+| Query | `userId` | Long | Yes | 유저 고유 ID |
+| Query | `concertId` | Long | Yes | 콘서트 고유 ID |
+
+**Request Example**
+
+```bash
+GET /api/v1/waiting-queue/status?userId=100&concertId=1
+```
 
 **Response Summary (200 OK)**
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `status` | String | 처리 상태 (`PENDING`, `PROCESSING`, `SUCCESS`, `FAIL_*`) |
+| `userId` | Long | 요청 유저 ID |
+| `concertId` | Long | 대상 콘서트 ID |
+| `status` | String | 현재 상태 (`WAITING`, `ACTIVE`, `REJECTED`, `NONE`) |
+| `rank` | Long | 1부터 시작하는 순번 (ACTIVE 유저는 0) |
 
 **Response Example**
 
 ```json
 {
-  "status": "SUCCESS"
+  "userId": 100,
+  "concertId": 1,
+  "status": "WAITING",
+  "rank": 5
 }
 ```
 
 ---
 
-### 1.3. 실시간 알림 구독 (SSE)
-- **Endpoint**: `GET /api/reservations/v5/subscribe`
-- **Description**: 서버로부터 비동기 처리 결과를 실시간으로 푸시 받기 위한 연결을 수립합니다.
+### 1.4. 실시간 알림 구독 (SSE)
+- **Endpoint**: `GET /api/v1/waiting-queue/subscribe`
+- **Description**: 서버로부터 비동기 처리 결과 및 대기 순번 변화를 실시간으로 푸시 받습니다.
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| Query | `userId` | Long | Yes | 요청 유저 ID |
-| Query | `seatId` | Long | Yes | 요청 좌석 ID |
+| Query | `userId` | Long | Yes | 유저 고유 ID |
+| Query | `concertId` | Long | Yes | 콘서트 고유 ID |
 
 **Response Summary (200 OK / Event Stream)**
 
-- **Header**: `Content-Type: text/event-stream`
-- **Event: `INIT`**: 연결 성공 시 전송 (`data: Connected...`)
-- **Event: `RESERVATION_STATUS`**: 최종 처리 결과 전송 (`data: SUCCESS` or `FAIL_*`)
+| Event Name | Data Format | Description |
+| :--- | :--- | :--- |
+| `INIT` | String | 연결 성공 메시지 (`Connected...`) |
+| `RANK_UPDATE` | JSON | 순번 변화 시 전송 (`{"rank": 5, "status": "WAITING"}`) |
+| `RESERVATION_STATUS` | String | 최종 예약 결과 (`SUCCESS` / `FAIL`) |
+
+**Response Example**
+
+```text
+event: INIT
+data: Connected for Queue: 1
+
+event: RANK_UPDATE
+data: {"rank": 5, "status": "WAITING"}
+
+event: RESERVATION_STATUS
+data: SUCCESS
+```
 
 ---
 

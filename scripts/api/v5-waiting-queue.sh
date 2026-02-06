@@ -1,36 +1,53 @@
 #!/bin/bash
-# ==============================================================================
-# [Step 5 Test] Redis Sorted Set 기반 대기열 기능 검증
-# ==============================================================================
-set -e # 오류 발생 시 즉시 종료
-set -u # 미정의 변수 사용 시 종료
 
+# --- [통합 설정] ---
 BASE_URL="http://localhost:8080/api/v1/waiting-queue"
 CONCERT_ID=1
+CURL_OPTS="-s -w \n%{http_code} --connect-timeout 5 --max-time 10"
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+# ------------------
 
-echo ">>>> 🎫 [Step 5] 실시간 대기열 진입 및 순번 테스트 시작..."
-echo "------------------------------------------------------------"
+echo -e "${BLUE}>>>> [v5 Test] 대기열 진입 및 순번 검증 시작...${NC}"
 
 # 1. 5명의 유저 순차 진입
 for i in {1..5}
 do
     USER_ID=$((100 + i))
-    echo "  [User $USER_ID] 대기열 진입 시도..."
+    echo -ne "  [User $USER_ID] 대기열 진입 시도... "
     
-    # 가독성을 위해 한 줄로 작성하여 구문 오류 방지
-    curl -s -X POST "$BASE_URL/join" -H "Content-Type: application/json" -d "{\"userId\": $USER_ID, \"concertId\": $CONCERT_ID}" | jq -c '.'
+    RESPONSE=$(curl $CURL_OPTS -X POST "${BASE_URL}/join" \
+         -H "Content-Type: application/json" \
+         -d "{\"userId\": ${USER_ID}, \"concertId\": ${CONCERT_ID}}")
+    
+    BODY=$(echo "$RESPONSE" | sed '$d')
+    CODE=$(echo "$RESPONSE" | tail -n1)
+
+    if [ "$CODE" == "200" ]; then
+        echo -e "${GREEN}성공! (Body: $BODY)${NC}"
+    else
+        echo -e "${RED}실패! (Status: $CODE, Body: $BODY)${NC}"
+    fi
 done
 
-echo "------------------------------------------------------------"
-echo ">>>> 🔍 현재 전체 대기 상태 확인 (Polling)"
-echo "------------------------------------------------------------"
-
+echo -e "\n>>>> [Step 2] 현재 대기 상태 확인 (Polling)"
 for i in {1..5}
 do
     USER_ID=$((100 + i))
-    echo -n "  [User $USER_ID] 상태 조회: "
-    curl -s "$BASE_URL/status?userId=$USER_ID&concertId=$CONCERT_ID" | jq -c '.'
+    echo -ne "  [User $USER_ID] 상태 조회 시도... "
+    
+    RESPONSE=$(curl $CURL_OPTS -X GET "${BASE_URL}/status?userId=${USER_ID}&concertId=${CONCERT_ID}")
+    BODY=$(echo "$RESPONSE" | sed '$d')
+    CODE=$(echo "$RESPONSE" | tail -n1)
+
+    if [ "$CODE" == "200" ]; then
+        echo -e "${GREEN}성공! (Body: $BODY)${NC}"
+    else
+        echo -e "${RED}실패! (Status: $CODE, Body: $BODY)${NC}"
+    fi
 done
 
-echo "------------------------------------------------------------"
-echo ">>>> [SUCCESS] 검증 완료!"
+echo -e "${BLUE}>>>> [v5 Test] 검증 종료.${NC}"

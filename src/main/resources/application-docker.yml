@@ -3,25 +3,41 @@ spring:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres-db}:${DB_PORT:5432}/${DB_NAME:mydb}
+    url: jdbc:postgresql://postgres-db:5432/mydb
+    username: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USER:postgres}
-    password: ${DB_PASS:password}
-
-  # Redis (Docker)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   data:
     redis:
       host: redis
       port: 6379
-
-  # Kafka (Docker)
   kafka:
     bootstrap-servers: kafka:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       group-id: ticket-group
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+# App Custom Properties
+app:
+  kafka:
+    topic:
+      reservation: "ticket-reservation-events"
+  waiting-queue:
+    max-queue-size: 100
+    active-ttl-minutes: 5
+    activation-batch-size: 10
+    activation-concert-id: 1

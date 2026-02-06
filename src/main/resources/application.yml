@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: local # 기본 프로필은 local로 설정
+    active: local
   jpa:
     hibernate:
       ddl-auto: update
@@ -8,3 +8,25 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: ticket-group
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "*"
+
+# App Custom Properties
+app:
+  kafka:
+    topic:
+      reservation: "ticket-reservation-events"
+  waiting-queue:
+    max-queue-size: 100
+    active-ttl-minutes: 5
+    activation-batch-size: 10
+    activation-concert-id: 1
