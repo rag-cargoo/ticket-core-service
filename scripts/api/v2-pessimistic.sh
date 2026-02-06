@@ -12,7 +12,11 @@ echo -e "${YELLOW}[Step 1] User Created: ID ${USER_ID}${NC}"
 
 # 2. 예약 테스트
 echo -e "${YELLOW}[Step 2] Testing Pessimistic Lock...${NC}"
-curl ${CURL_OPTS} -X POST "${BASE_URL}/v2/pessimistic" -H "${CONTENT_TYPE}" -d "{\"userId\": ${USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" -w "\n - Status: %{http_code}\n"
+curl ${CURL_OPTS} -X POST "${BASE_URL}/v2/pessimistic" \
+     -H "${CONTENT_TYPE}" \
+     -H "User-Id: ${USER_ID}" \
+     -d "{\"userId\": ${USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" \
+     -w "\n - Status: %{http_code}\n"
 
 # 3. 삭제
 echo -e "${YELLOW}[Step 3] Cleaning up...${NC}"

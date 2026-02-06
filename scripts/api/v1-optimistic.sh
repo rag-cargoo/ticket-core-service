@@ -29,6 +29,7 @@ echo -e " - User Created! ID: ${USER_ID}"
 echo -e "\n${YELLOW}[Step 2] Testing Optimistic Lock Reservation...${NC}"
 curl ${CURL_OPTS} -X POST "${BASE_URL}/v1/optimistic" \
      -H "${CONTENT_TYPE}" \
+     -H "User-Id: ${USER_ID}" \
      -d "{\"userId\": ${USER_ID}, \"seatId\": ${DEFAULT_SEAT_ID}}" \
      -w "\n - Status Code: %{http_code}\n"
 

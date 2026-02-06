@@ -30,6 +30,7 @@ echo -e " - User Created! ID: ${USER_ID}"
 echo -e "\n${YELLOW}[Step 2] Testing Distributed Lock Reservation (Seat: ${SEAT_ID})...${NC}"
 curl ${CURL_OPTS} -X POST "${BASE_URL}/v3/distributed-lock" \
      -H "${CONTENT_TYPE}" \
+     -H "User-Id: ${USER_ID}" \
      -d "{\"userId\": ${USER_ID}, \"seatId\": ${SEAT_ID}}" \
      -w "\n - Status Code: %{http_code}\n"
 

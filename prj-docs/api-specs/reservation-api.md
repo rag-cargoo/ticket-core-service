@@ -158,15 +158,26 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 ### 1.4. 동기식 즉시 예약 (v1, v2, v3)
 - **Endpoint**: `POST /api/reservations/{version}`
-- **Description**: 대기열 없이 즉시 DB 반영을 시도하는 블로킹 방식입니다.
+- **Description**: 대기열 없이 즉시 DB 반영을 시도하는 블로킹 방식입니다. **활성 토큰이 필수입니다.**
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
+| Header | `User-Id` | Long | **Yes** | 활성 유저 검증용 ID |
 | Path | `version` | String | Yes | `v1/optimistic`, `v2/pessimistic`, `v3/distributed-lock` 중 선택 |
 | Body | `userId` | Long | Yes | 유저 ID |
 | Body | `seatId` | Long | Yes | 좌석 ID |
+
+**Request Example**
+
+```json
+// Header: User-Id: 100
+{
+  "userId": 100,
+  "seatId": 1
+}
+```
 
 **Response Summary (200 OK)**
 
@@ -182,8 +193,8 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 ```json
 {
   "id": 7,
-  "userId": 1,
-  "seatId": 10,
+  "userId": 100,
+  "seatId": 1,
   "reservationTime": "2026-02-05T21:04:19"
 }
 ```
