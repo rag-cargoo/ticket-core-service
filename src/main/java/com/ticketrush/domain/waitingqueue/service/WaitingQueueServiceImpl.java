@@ -15,7 +15,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
     private static final String QUEUE_KEY_PREFIX = "waiting-queue:";
     private static final String ACTIVE_KEY_PREFIX = "active-user:";
-    private static final long MAX_QUEUE_SIZE = 50000; // 최대 대기 인원 제한
+    private static final long MAX_QUEUE_SIZE = 3; // 검증을 위해 3으로 낮춤
 
     @Override
     public WaitingQueueResponse join(Long userId, Long concertId) {
