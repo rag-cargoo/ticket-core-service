@@ -15,6 +15,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
     private static final String QUEUE_KEY_PREFIX = "waiting-queue:";
     private static final String ACTIVE_KEY_PREFIX = "active-user:";
+    private static final long MAX_QUEUE_SIZE = 50000; // 최대 대기 인원 제한
 
     @Override
     public WaitingQueueResponse join(Long userId, Long concertId) {
@@ -31,7 +32,18 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
                     .build();
         }
 
-        // 2. 대기열에 추가 (점수는 현재 시간)
+        // 2. Throttling 체크 (입구 컷)
+        Long currentQueueSize = redisTemplate.opsForZSet().size(queueKey);
+        if (currentQueueSize != null && currentQueueSize >= MAX_QUEUE_SIZE) {
+            return WaitingQueueResponse.builder()
+                    .userId(userId)
+                    .concertId(concertId)
+                    .status("REJECTED")
+                    .rank(-1L)
+                    .build();
+        }
+
+        // 3. 대기열에 추가
         redisTemplate.opsForZSet().add(queueKey, userIdStr, System.currentTimeMillis());
 
         return getStatus(userId, concertId);
