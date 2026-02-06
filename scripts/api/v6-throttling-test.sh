@@ -5,8 +5,12 @@
 set -e
 set -u
 
+source "$(dirname "$0")/../common/env.sh"
+[ -f "$(dirname "$0")/../common/last_setup.sh" ] && source "$(dirname "$0")/../common/last_setup.sh"
+
 BASE_URL="http://localhost:8080/api"
 CONCERT_ID=1
+SEAT_ID=${LATEST_SEAT_ID:-1} # setup-test-data.sh의 결과 사용
 USER_ID_VALID=100
 USER_ID_INVALID=999
 
