@@ -4,42 +4,71 @@
 
 ---
 
+## 🔒 0. 보안 및 진입 정책 (Security Policy)
+
+Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 호출 시 아래 정책이 강제됩니다.
+
+*   **필수 헤더**: `User-Id` (Long) - 대기열을 통과한 유저 식별자.
+*   **검증 메커니즘**: 서버 인터셉터에서 Redis 내 `active-user:{userId}` 토큰 존재 여부를 확인합니다.
+*   **미인증 처리**: 토큰이 없거나 만료된 경우 `403 Forbidden` 에러를 반환합니다.
+
+---
+
 ## 🛠️ 1. API 상세 명세 (Endpoint Details)
 
-### 1.1. 비동기 예약 요청 (v4, v5)
-- **Endpoint**: `POST /api/reservations/{version-strategy}`
-- **Description**: 예약 요청을 대기열(Kafka)에 등록하고 즉시 응답을 받습니다.
+### 1.1. 대기열 진입 (Waiting Queue Join)
+- **Endpoint**: `POST /api/v1/waiting-queue/join`
+- **Description**: 선착순 예매를 위해 대기열에 진입합니다.
 
 **Parameters**
 
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| Path | `version-strategy` | String | Yes | `v4-opt`, `v4-pes`, `v5-opt` 중 선택 |
-| Body | `userId` | Long | Yes | 예매를 시도하는 유저 ID |
-| Body | `seatId` | Long | Yes | 예매 대상 좌석 ID |
+| Body | `userId` | Long | Yes | 유저 ID |
+| Body | `concertId` | Long | Yes | 콘서트 ID |
 
-**Request Example**
+**Response Example (200 OK)**
 
 ```json
 {
-  "userId": 1,
-  "seatId": 10
+  "userId": 100,
+  "concertId": 1,
+  "status": "WAITING",
+  "rank": 5
 }
 ```
 
-**Response Summary (202 Accepted)**
+---
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `message` | String | 요청 접수 메시지 |
-| `strategy` | String | 적용된 동시성 제어 전략 (OPTIMISTIC / PESSIMISTIC) |
+### 1.2. 비동기 예약 요청 (v4)
+- **Endpoint**: `POST /api/reservations/v4/queue`
+- **Description**: 예약 요청을 대기열(Kafka)에 등록합니다. **반드시 활성 토큰이 필요합니다.**
 
-**Response Example**
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Header | `User-Id` | Long | **Yes** | 활성 유저 검증용 ID |
+| Body | `userId` | Long | Yes | 예매 시도 유저 ID |
+| Body | `seatId` | Long | Yes | 예매 대상 좌석 ID |
+
+**Response Example (202 Accepted)**
 
 ```json
 {
   "message": "Reservation request enqueued",
   "strategy": "OPTIMISTIC"
+}
+```
+
+**Error Case (403 Forbidden)**
+
+```json
+{
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Not an active user in waiting queue",
+  "path": "/api/reservations/v4/queue"
 }
 ```
 
