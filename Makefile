@@ -32,5 +32,12 @@ test-v3:
 
 test-v6:
         ./scripts/api/v6-throttling-test.sh
+
+# 실행 권한 부여
+setup:
+        chmod +x scripts/api/*.sh
+        chmod +x scripts/bench/*.sh
+        @echo "All scripts are now executable."
+
 # 전체 테스트 실행
-test-all: test-v1 test-v2 test-v3
+test-all: test-v1 test-v2 test-v3 test-v6
