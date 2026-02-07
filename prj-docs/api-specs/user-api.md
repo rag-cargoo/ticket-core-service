@@ -1,10 +1,10 @@
-# 👤 User API Specification
+#  User API Specification
 
 티켓 서비스 이용을 위한 사용자 프로필을 관리하는 API입니다. 모든 요청과 응답은 일관된 규격을 따릅니다.
 
 ---
 
-## 🛠️ 1. API 상세 명세 (Endpoint Details)
+##  1. API 상세 명세 (Endpoint Details)
 
 ### 1.1. 신규 유저 생성 (Sign-up)
 - **Endpoint**: `POST /api/users`
@@ -79,7 +79,7 @@
 
 ---
 
-## 🚨 2. 공통 에러 응답 (Common Error)
+##  2. 공통 에러 응답 (Common Error)
 
 ```json
 {

@@ -1,4 +1,4 @@
-# 🏯 MSA 데이터 분리 및 동기화 전략 (Data Sync Strategy)
+#  MSA 데이터 분리 및 동기화 전략 (Data Sync Strategy)
 
 ## 1. 핵심 원칙 (Core Principle)
 
@@ -41,7 +41,7 @@
 * **RDS Read Replica**: AWS 관리형 서비스를 사용하여 클릭 몇 번으로 복제본을 생성합니다.
 * **DMS (Database Migration Service)**: 서로 다른 DB 간의 실시간 복제가 필요할 때 사용합니다.
 
-### 🛡️ 결론
+###  결론
 
 * **No Code Sync**: 애플리케이션 코드 내에 동기화 로직을 작성하지 않습니다.
 * **Infrastructure as Code**: 데이터 복제는 인프라 설정(Terraform 등)으로 관리합니다.

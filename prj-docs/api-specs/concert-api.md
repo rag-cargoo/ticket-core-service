@@ -1,10 +1,10 @@
-# 🎸 Concert API Specification
+#  Concert API Specification
 
 공연 정보, 예약 가능 일정 및 좌석 현황을 제공하는 API입니다.
 
 ---
 
-## 🛠️ 1. API 상세 명세 (Endpoint Details)
+##  1. API 상세 명세 (Endpoint Details)
 
 ### 1.1. 전체 공연 목록 조회
 - **Endpoint**: `GET /api/concerts`

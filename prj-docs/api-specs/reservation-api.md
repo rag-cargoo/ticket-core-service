@@ -1,10 +1,10 @@
-# 🎫 Reservation API Specification & Integration Guide
+#  Reservation API Specification & Integration Guide
 
 이 문서는 선착순 티켓 예매 시스템의 예약 프로세스와 연동 규격을 정의합니다. 모든 API는 JSON 형식을 기본으로 합니다.
 
 ---
 
-## 🔒 0. 보안 및 진입 정책 (Security Policy)
+##  0. 보안 및 진입 정책 (Security Policy)
 
 Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 호출 시 아래 정책이 강제됩니다.
 
@@ -14,7 +14,7 @@ Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(`v1` ~ `v4`) 
 
 ---
 
-## 🛠️ 1. API 상세 명세 (Endpoint Details)
+##  1. API 상세 명세 (Endpoint Details)
 
 ### 1.1. 대기열 진입 (Waiting Queue Join)
 - **Endpoint**: `POST /api/v1/waiting-queue/join`
@@ -269,7 +269,7 @@ data: SUCCESS
 
 ---
 
-## 🚨 2. 공통 에러 응답 (Common Error)
+##  2. 공통 에러 응답 (Common Error)
 모든 에러 상황(4xx, 5xx)에서 반환되는 표준 객체입니다.
 
 ```json

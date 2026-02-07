@@ -4,7 +4,7 @@
 
 ---
 
-## <span style="color: #00D4FF;">🚦 현재 상태 (Status)</span>
+## <span style="color: #00D4FF;"> 현재 상태 (Status)</span>
 ---
 > [!NOTE]
 >   - **현재 단계**: 동시성 제어 전략 구현 및 검증 (Step 6 완료)
@@ -13,7 +13,7 @@
 
 ---
 
-## <span style="color: #08FFC8;">📐 개발 원칙 (Dev Principles)</span>
+## <span style="color: #08FFC8;"> 개발 원칙 (Dev Principles)</span>
 ---
 > [!TIP]
 >   - **기술 비교/검증**: API 버전을 분리하여 관리 (v1~v4).
@@ -23,7 +23,7 @@
 
 ---
 
-## <span style="color: #FFFFFF;">✅ 당면 과제 (Current Tasks)</span>
+## <span style="color: #FFFFFF;"> 당면 과제 (Current Tasks)</span>
 ---
 > [!NOTE]
 >   - [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
@@ -36,7 +36,7 @@
 
 ---
 
-## <span style="color: #00D4FF;">🏗️ 진행된 세부 작업 (Completed Details)</span>
+## <span style="color: #00D4FF;"> 진행된 세부 작업 (Completed Details)</span>
 ---
 > ### 1. 동시성 제어 실험 (Concurrency Challenge)
 > ---

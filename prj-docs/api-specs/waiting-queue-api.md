@@ -1,4 +1,4 @@
-# 🎫 Waiting Queue API Specification
+#  Waiting Queue API Specification
 
 > **Base URL**: `/api/v1/waiting-queue`
 > **Status**: Draft (Step 5 Implementation)
