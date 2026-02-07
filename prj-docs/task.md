@@ -4,7 +4,7 @@
 
 ---
 
-##  현재 상태 (Status)
+## 현재 상태 (Status)
 ---
 > [!NOTE]
 >   - **현재 단계**: Step 6 완료, Step 7 착수 준비
@@ -13,7 +13,7 @@
 
 ---
 
-##  개발 원칙 (Dev Principles)
+## 개발 원칙 (Dev Principles)
 ---
 > [!TIP]
 >   - **기술 비교/검증**: API 버전을 분리하여 관리 (v1~v4).
@@ -23,7 +23,7 @@
 
 ---
 
-##  당면 과제 (Current Tasks)
+## 당면 과제 (Current Tasks)
 ---
 > [!NOTE]
 >   - [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
@@ -36,7 +36,7 @@
 
 ---
 
-##  진행된 세부 작업 (Completed Details)
+## 진행된 세부 작업 (Completed Details)
 ---
 > ### 1. 동시성 제어 실험 (Concurrency Challenge)
 > ---
