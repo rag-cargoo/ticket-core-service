@@ -9,11 +9,11 @@
 > [!NOTE]
 > **Base URL**: `/api/v1/waiting-queue`
 > **Status**: Active (Step 5/6 완료, Step 7 확장 예정)
-
-| 기능 | Method | Path | Auth |
-| :--- | :--- | :--- | :--- |
-| 대기열 진입 | POST | `/join` | User |
-| 대기 상태 조회 | GET | `/status` | User |
+>
+> | 기능 | Method | Path | Auth |
+> | :--- | :--- | :--- | :--- |
+> | 대기열 진입 | POST | `/join` | User |
+> | 대기 상태 조회 | GET | `/status` | User |
 
 ---
 
