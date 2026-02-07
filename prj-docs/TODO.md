@@ -1,19 +1,23 @@
 # TODO List (Ticket Core Service)
 
-##  Next Milestone: Step 5 - Redis Sorted Set 기반 대기열 시스템
+##  Current Milestone: Step 7 - SSE 기반 실시간 순번 자동 푸시
 
-- [ ] Redis Sorted Set을 이용한 대기 순번(Rank) 발급 로직 구현
-- [ ] 사용자별 실시간 대기 순번 및 예상 시간 조회 API 추가
-- [ ] 대기열 진입 -> 순번 대기 -> 예약 가능 상태 전환 워크플로우 완성
+- [ ] 대기열 SSE 구독 엔드포인트 추가 (`/api/v1/waiting-queue` 계열)
+- [ ] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
+- [ ] 활성 전환 시점(`ACTIVE`) 알림 페이로드 표준화
+- [ ] 타임아웃/재연결 포함 SSE 연결 수명주기 안정화
+- [ ] Step 7 API 명세 및 테스트 스크립트 추가
 
 ##  Completed Tasks
-- [x] Step 1~2: 낙관적/비관적 락 구현 및 검증
-- [x] Step 3: Redis 분산 락(Redisson) Facade 구현 및 검증
-- [x] Step 4: Kafka 기반 비동기 처리 및 SSE 알림 시스템 구축
-- [x] Admin API 추가: 테스트 데이터 자동 셋업용 `/api/concerts/setup`
-- [x] DTO 레이어 정규화: `UserRequest`, `ConcertResponse` 등 파일 분리 및 중복 제거
+- [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
+- [x] Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
+- [x] Step 3: Redis 분산 락(Redisson) 구현 및 검증
+- [x] Step 4: Kafka 기반 비동기 예약 처리 + SSE 결과 알림 구현
+- [x] Step 5: Redis Sorted Set 기반 대기열 순번 조회 구현
+- [x] Step 6: Throttling + 인터셉터 기반 대기열 진입 제어 구현
 
-##  Future Milestones
-- [ ] 부하 테스트(k6)를 통한 시스템 임계치 측정 및 보고서 작성
-- [ ] 프론트엔드 연동 및 통합 테스트
-- [ ] 아티스트/기획사 엔티티 계층 구조 확장 (Phase 1.5)
+##  Backlog
+- [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성
+- [ ] 프론트엔드 연동 및 통합 시나리오 검증
+- [ ] 공연 조회 캐싱 전략 도입
+- [ ] 아티스트/기획사 엔티티 확장 (Phase 1.5)

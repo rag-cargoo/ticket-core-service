@@ -7,9 +7,9 @@
 ## <span style="color: #00D4FF;"> 현재 상태 (Status)</span>
 ---
 > [!NOTE]
->   - **현재 단계**: 동시성 제어 전략 구현 및 검증 (Step 6 완료)
+>   - **현재 단계**: Step 6 완료, Step 7 착수 준비
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
->   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis
+>   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 
 ---
 
@@ -32,7 +32,7 @@
 >   - [x] Step 4: Kafka 기반 비동기 대기열(Waiting Queue) 구현 및 검증
 >   - [x] Step 5: Redis Sorted Set 기반 실시간 대기 순번 시스템 구현
 >   - [x] Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현
->   - [ ] **Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 (In Progress)**
+>   - [ ] **Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 (Next Work)**
 
 ---
 

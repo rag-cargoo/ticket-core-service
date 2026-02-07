@@ -22,9 +22,9 @@
 > [!TIP]
 >
 >   - [x] 프로젝트 초기 설정 (Spring Boot, Docker)
->   - [ ] **Infrastructure Setup**: Redis, Kafka 컨테이너 추가 설정
->   - [ ] User Domain: 사용자 회원가입/로그인 (JWT)
->   - [ ] Concert/Seat Domain: 공연 및 좌석 정보 관리 (CRUD)
+>   - [x] **Infrastructure Setup**: Redis, Kafka 컨테이너 구성 및 연동
+>   - [x] User Domain: 기본 엔티티/리포지토리/조회 기반 구축
+>   - [x] Concert/Seat Domain: 조회 API 및 더미 데이터 기반 구축
 
 ---
 
@@ -51,10 +51,12 @@
 ---
 > [!WARNING]
 >
->   - [ ] **대기열 시스템(Waiting Queue) 구현**
->     - [ ] Redis `Sorted Set`을 이용한 대기 순번 발급
->     - [x] Kafka를 이용한 예매 요청 비동기 처리 및 버퍼링 (Step 4)
->     - [x] SSE 기반 실시간 처리 결과 통보 시스템 (Step 4)
+>   - [ ] **대기열 시스템(Waiting Queue) 고도화**
+>     - [x] Redis `Sorted Set` 기반 대기 순번 발급 (Step 5)
+>     - [x] 대기열 진입 제한(Throttling) 및 활성 토큰 제어 (Step 6)
+>     - [x] Kafka 기반 예매 요청 비동기 버퍼링 (Step 4)
+>     - [x] SSE 기반 예매 결과 실시간 통보 (Step 4)
+>     - [ ] SSE 기반 실시간 순번 자동 푸시 (Step 7, Current Focus)
 >   - [ ] 캐싱 전략 적용 (공연 조회 성능 개선)
 
 ---
