@@ -1,4 +1,4 @@
-# <span style="color: #FFFFFF;">Backend API - 개발 로드맵</span>
+# Backend API - 개발 로드맵
 
 > **목표**: 고성능 선착순 예매 시스템 (Ticket-Rush)
 >   - **핵심 학습 목표**: 대규모 트래픽(Traffic Spike) 대응 및 데이터 정합성 보장
@@ -6,7 +6,7 @@
 
 ---
 
-## <span style="color: #00D4FF;">Architecture Strategy</span>
+## Architecture Strategy
 ---
 > [!NOTE]
 >
@@ -17,7 +17,7 @@
 
 ---
 
-## <span style="color: #08FFC8;">Phase 1: 기반 시스템 구축 (Basic)</span>
+## Phase 1: 기반 시스템 구축 (Basic)
 ---
 > [!TIP]
 >
@@ -28,14 +28,14 @@
 
 ---
 
-## <span style="color: #00D4FF;">Phase 1.5: K-POP 엔터테인먼트 구조 확장 (Expansion)</span>
+## Phase 1.5: K-POP 엔터테인먼트 구조 확장 (Expansion)
 ---
 >   - [ ] **Agency & Artist Domain**: 기획사(YG, SM, HYBE...) 및 아티스트 계층 구조 적용
 >   - [ ] **Data Migration**: 단순 문자열 Artist -> Entity 관계 매핑으로 전환
 
 ---
 
-## <span style="color: #08FFC8;">Phase 2: 동시성 정복 (Concurrency Challenge)</span>
+## Phase 2: 동시성 정복 (Concurrency Challenge)
 ---
 > [!TIP]
 >
@@ -47,7 +47,7 @@
 
 ---
 
-## <span style="color: #FF2E63;">Phase 3: 대용량 트래픽 대응 (Traffic Spike)</span>
+## Phase 3: 대용량 트래픽 대응 (Traffic Spike)
 ---
 > [!WARNING]
 >
@@ -61,14 +61,14 @@
 
 ---
 
-## <span style="color: #00D4FF;">Phase 4: 안정성 및 모니터링</span>
+## Phase 4: 안정성 및 모니터링
 ---
 >   - [ ] Circuit Breaker (Resilience4j) 적용
 >   - [ ] Prometheus + Grafana 모니터링 (Optional)
 
 ---
 
-## <span style="color: #08FFC8;">Phase 5: K-POP 팬덤 플랫폼 확장 (Fan Interactive)</span>
+## Phase 5: K-POP 팬덤 플랫폼 확장 (Fan Interactive)
 ---
 >   - [ ] **실시간 팬덤 채팅 (Live Chat)**
 >     - [ ] WebSocket / STOMP 프로토콜 적용

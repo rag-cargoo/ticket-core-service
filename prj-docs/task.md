@@ -1,10 +1,10 @@
-# <span style="color: #FFFFFF;">Project Task Dashboard - Ticket Core Service</span>
+# Project Task Dashboard - Ticket Core Service
 
 > 시스템의 현재 상태와 단계별 목표, 세부 완료 내역을 추적하는 통합 보드입니다.
 
 ---
 
-## <span style="color: #00D4FF;"> 현재 상태 (Status)</span>
+##  현재 상태 (Status)
 ---
 > [!NOTE]
 >   - **현재 단계**: Step 6 완료, Step 7 착수 준비
@@ -13,7 +13,7 @@
 
 ---
 
-## <span style="color: #08FFC8;"> 개발 원칙 (Dev Principles)</span>
+##  개발 원칙 (Dev Principles)
 ---
 > [!TIP]
 >   - **기술 비교/검증**: API 버전을 분리하여 관리 (v1~v4).
@@ -23,7 +23,7 @@
 
 ---
 
-## <span style="color: #FFFFFF;"> 당면 과제 (Current Tasks)</span>
+##  당면 과제 (Current Tasks)
 ---
 > [!NOTE]
 >   - [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
@@ -36,7 +36,7 @@
 
 ---
 
-## <span style="color: #00D4FF;"> 진행된 세부 작업 (Completed Details)</span>
+##  진행된 세부 작업 (Completed Details)
 ---
 > ### 1. 동시성 제어 실험 (Concurrency Challenge)
 > ---
