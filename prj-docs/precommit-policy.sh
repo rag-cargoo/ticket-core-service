@@ -150,6 +150,41 @@ policy_validate() {
     done
   fi
 
+  local required_baseline_files=(
+    "${project_root}/README.md"
+    "${project_root}/prj-docs/PROJECT_AGENT.md"
+    "${project_root}/prj-docs/task.md"
+  )
+  local required_baseline_dirs=(
+    "${project_root}/prj-docs/rules"
+  )
+  local baseline_missing=()
+  local baseline_item
+  for baseline_item in "${required_baseline_files[@]}"; do
+    if [[ ! -f "$baseline_item" ]]; then
+      baseline_missing+=("$baseline_item")
+    fi
+  done
+  for baseline_item in "${required_baseline_dirs[@]}"; do
+    if [[ ! -d "$baseline_item" ]]; then
+      baseline_missing+=("${baseline_item}/")
+    fi
+  done
+
+  if [[ "${#baseline_missing[@]}" -gt 0 ]]; then
+    if [[ "$mode" == "strict" ]]; then
+      echo "[chain-check][${POLICY_ID}] strict validation failed: project baseline is incomplete"
+      for baseline_item in "${baseline_missing[@]}"; do
+        echo "  - missing: $baseline_item"
+      done
+      return 1
+    fi
+    echo "[chain-check][${POLICY_ID}] quick mode warning: project baseline is incomplete"
+    for baseline_item in "${baseline_missing[@]}"; do
+      echo "  - missing: $baseline_item"
+    done
+  fi
+
   local project_change_patterns=(
     "^${project_root}/src/main/java/.+\\.java$"
     "^${project_root}/src/main/resources/.+\\.ya?ml$"
@@ -206,9 +241,6 @@ policy_validate() {
     if ! grep -Fxq "${project_root}/prj-docs/task.md" <<< "$staged_files"; then
       quick_hints+=("${project_root}/prj-docs/task.md")
     fi
-    if ! grep -Fxq "${project_root}/prj-docs/TODO.md" <<< "$staged_files"; then
-      quick_hints+=("${project_root}/prj-docs/TODO.md")
-    fi
     if ! grep -Eq "^${project_root}/prj-docs/api-specs/.+\\.md$" <<< "$staged_files"; then
       quick_hints+=("${project_root}/prj-docs/api-specs/*.md")
     fi
@@ -241,9 +273,6 @@ policy_validate() {
   local missing=()
   if ! grep -Fxq "${project_root}/prj-docs/task.md" <<< "$staged_files"; then
     missing+=("${project_root}/prj-docs/task.md")
-  fi
-  if ! grep -Fxq "${project_root}/prj-docs/TODO.md" <<< "$staged_files"; then
-    missing+=("${project_root}/prj-docs/TODO.md")
   fi
   if ! grep -Eq "^${project_root}/prj-docs/api-specs/.+\\.md$" <<< "$staged_files"; then
     missing+=("${project_root}/prj-docs/api-specs/*.md (at least one)")

@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-09 01:16:49`
+> - **Updated At**: `2026-02-09 01:38:36`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -50,7 +50,7 @@ make test-suite
 ## 검증/운영 포인트
 
 - API 스크립트 가이드: [API Script Guide](/workspace/apps/backend/ticket-core-service/prj-docs/api-test/README.md)
-- 현재 작업 현황: [Project Task Dashboard](/workspace/apps/backend/ticket-core-service/prj-docs/task.md)
+- 현재 작업/백로그 통합 보드: [Project Task Dashboard](/workspace/apps/backend/ticket-core-service/prj-docs/task.md)
 
 ---
 
