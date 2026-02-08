@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-09 00:33:02`
+> - **Updated At**: `2026-02-09 01:11:55`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -57,7 +57,7 @@ make test-suite
 
 ## 대표 문서 링크
 
-- 프로젝트 규칙 범위: [Project Agent Scope](/workspace/apps/backend/ticket-core-service/prj-docs/PROJECT_AGENT.md)
+- 프로젝트 에이전트 규칙: [Project Agent (Rules)](/workspace/apps/backend/ticket-core-service/prj-docs/PROJECT_AGENT.md)
 - 아키텍처: [Architecture](/workspace/apps/backend/ticket-core-service/prj-docs/rules/architecture.md)
 - 동시성 전략 기록: [동시성 제어 전략](/workspace/apps/backend/ticket-core-service/prj-docs/knowledge/동시성-제어-전략.md)
 - 예약 API 명세: [Reservation API](/workspace/apps/backend/ticket-core-service/prj-docs/api-specs/reservation-api.md)
