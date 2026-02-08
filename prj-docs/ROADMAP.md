@@ -3,17 +3,20 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:11:27`
+> - **Updated At**: `2026-02-08 23:32:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
-## 단계 목차 (Step Index)
+## 문서 목차 (Quick Index)
 ---
 > [!TIP]
-> - Step 5)
-> - Step 6)
-> - Step 4)
-> - Step 7)
+> - Architecture Strategy
+> - Phase 1: 기반 시스템 구축 (Basic)
+> - Phase 1.5: K-POP 엔터테인먼트 구조 확장 (Expansion)
+> - Phase 2: 동시성 정복 (Concurrency Challenge)
+> - Phase 3: 대용량 트래픽 대응 (Traffic Spike)
+> - Phase 4: 안정성 및 모니터링
+> - Phase 5: K-POP 팬덤 플랫폼 확장 (Fan Interactive)
 <!-- DOC_TOC_END -->
 
 > **목표**: 고성능 선착순 예매 시스템 (Ticket-Rush)

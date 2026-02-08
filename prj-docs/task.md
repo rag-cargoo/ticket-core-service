@@ -3,14 +3,13 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:11:27`
+> - **Updated At**: `2026-02-08 23:32:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
 ## 단계 목차 (Step Index)
 ---
 > [!TIP]
-> - Step 7 구현 완료 (SSE 순번 자동 푸시 운영 반영)
 > - Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 > - Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
 > - Step 3: Redis 분산 락(Redisson) 구현 및 검증
@@ -18,9 +17,7 @@
 > - Step 5: Redis Sorted Set 기반 실시간 대기 순번 시스템 구현
 > - Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현
 > - Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 구현 및 회귀 검증
-> - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약).
-> - Step 1 (낙관적 락): JPA @Version을 통한 충돌 감지 및 정합성 보장 확인.
-> - Step 2 (비관적 락): SELECT ... FOR UPDATE를 통한 순차 처리 및 정합성 보장 확인.
+> - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
 <!-- DOC_TOC_END -->
 
 > 시스템의 현재 상태와 단계별 목표, 세부 완료 내역을 추적하는 통합 보드입니다.

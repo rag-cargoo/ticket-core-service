@@ -3,14 +3,18 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:11:27`
+> - **Updated At**: `2026-02-08 23:32:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
-## 단계 목차 (Step Index)
+## 문서 목차 (Quick Index)
 ---
 > [!TIP]
-> - Step 7 완료, 운영 안정화 단계)
+> - 1. 개요 (Overview)
+> - 2. API 상세 명세 (Endpoint Details)
+> - 3. 에러 코드 (Error Codes)
+> - 4. 테스트 케이스 (Test Cases)
+> - 5. 비고 (Notes)
 <!-- DOC_TOC_END -->
 
 대기열 진입, 순번 조회, 상태 전환을 위한 API 규격입니다.
