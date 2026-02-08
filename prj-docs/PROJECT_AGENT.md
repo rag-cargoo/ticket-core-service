@@ -14,7 +14,7 @@
 1. 문서 변경 시 기존 상세 내용을 삭제/요약하지 않고 구조화 중심으로 수정한다.
 2. 프로젝트 코드/설정 변경 시 `task.md`, `TODO.md`, `api-specs/*.md`, `knowledge/*.md`를 함께 현행화한다.
 3. API/대기열/SSE 동작 변경 시 `scripts/http/*.http`와 `scripts/api/*.sh`를 함께 현행화한다.
-4. 위 2~3번 규칙은 커밋 시 `skills/bin/validate-ticket-core-chain.sh`로 자동 검증된다. 기본 모드는 `quick`, 마일스톤 커밋은 `strict`를 사용한다.
+4. 위 2~3번 규칙은 커밋 시 `skills/bin/validate-precommit-chain.sh` 정책 엔진으로 자동 검증된다. 기본 모드는 `quick`, 마일스톤 커밋은 `strict`를 사용한다.
 5. 문서 신규 생성/이동 시 `sidebar-manifest.md` 링크를 즉시 동기화한다.
 6. 동시성/대기열/MSA 관련 결정은 `prj-docs/knowledge/`에 근거와 함께 기록한다.
 7. `strict` 모드에서 `scripts/api/*.sh`가 stage된 커밋은 `skills/bin/run-ticket-core-api-script-tests.sh`를 통해 실제 실행 검증을 수행한다.
