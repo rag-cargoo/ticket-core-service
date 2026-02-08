@@ -11,10 +11,11 @@ cd workspace/apps/backend/ticket-core-service
 make test-suite
 ```
 
-- 내부적으로 `skills/bin/run-ticket-core-api-script-tests.sh`를 호출합니다.
+- 내부적으로 `scripts/api/run-api-script-tests.sh`를 호출합니다.
 - 기본 실행 세트는 `v1`~`v7` 스크립트입니다.
 - 기본 헬스체크 URL은 `http://127.0.0.1:8080/api/concerts` 입니다.
-- 필요하면 `TICKETRUSH_HEALTH_URL` 환경변수로 변경할 수 있습니다.
+- 필요하면 `API_SCRIPT_HEALTH_URL` 환경변수로 변경할 수 있습니다.
+- 기존 환경과의 호환을 위해 `TICKETRUSH_HEALTH_URL`도 별칭으로 지원합니다.
 
 ---
 

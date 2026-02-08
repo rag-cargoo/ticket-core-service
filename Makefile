@@ -45,7 +45,7 @@ test-v7:
 	/bin/bash ./scripts/api/v7-sse-rank-push.sh
 
 test-suite:
-	bash ../../../../skills/bin/run-ticket-core-api-script-tests.sh
+	bash ./scripts/api/run-api-script-tests.sh
 
 # 실행 권한 부여
 setup:

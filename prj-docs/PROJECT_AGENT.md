@@ -17,7 +17,7 @@
 4. 위 2~3번 규칙은 커밋 시 `skills/bin/validate-precommit-chain.sh` 정책 엔진으로 자동 검증된다. 기본 모드는 `quick`, 마일스톤 커밋은 `strict`를 사용한다.
 5. 문서 신규 생성/이동 시 `sidebar-manifest.md` 링크를 즉시 동기화한다.
 6. 동시성/대기열/MSA 관련 결정은 `prj-docs/knowledge/`에 근거와 함께 기록한다.
-7. `strict` 모드에서 `scripts/api/*.sh`가 stage된 커밋은 `skills/bin/run-ticket-core-api-script-tests.sh`를 통해 실제 실행 검증을 수행한다.
+7. `strict` 모드에서 `scripts/api/*.sh`가 stage된 커밋은 프로젝트 로컬 스크립트(`scripts/api/run-api-script-tests.sh`)로 실제 실행 검증을 수행한다.
 8. `strict` 모드에서는 실행 검증 결과를 `prj-docs/api-test/latest.md`에 기록하고 함께 stage해야 커밋 가능하다.
 9. 중요 커밋의 `strict` 전환은 사용자 승인 후 수행하고, 완료 후 기본 모드를 `quick`으로 복귀한다.
 10. 에이전트 최종 보고에는 항상 현재 `pre-commit` 모드와 전환 명령(`precommit_mode.sh status|quick|strict`)을 포함한다.
