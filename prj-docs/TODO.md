@@ -13,7 +13,7 @@
 > - [x] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
 > - [x] 활성 전환 시점(`ACTIVE`) 알림 페이로드 표준화
 > - [x] 타임아웃/재연결 포함 SSE 연결 수명주기 안정화
-> - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit) 구성
+> - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit quick/strict) 구성
 > - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
 > - [ ] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
 
