@@ -8,7 +8,7 @@
 ---
 > [!NOTE]
 > **Base URL**: `/api/v1/waiting-queue`
-> **Status**: Active (Step 5/6 완료, Step 7 확장 예정)
+> **Status**: Active (Step 7 완료, 운영 안정화 단계)
 >
 > | 기능 | Method | Path | Auth |
 > | :--- | :--- | :--- | :--- |

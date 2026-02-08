@@ -1,13 +1,13 @@
 # TODO List (Ticket Core Service)
 
-> Step 6까지 완료된 상태에서, Step 7 구현 항목과 후속 백로그를 관리합니다.
+> Step 7까지 완료된 상태에서, 운영 안정화와 후속 고도화 백로그를 관리합니다.
 
 ---
 
-## Current Milestone: Step 7 - SSE 기반 실시간 순번 자동 푸시
+## Current Milestone: Post Step 7 - 운영 안정화 및 고도화
 ---
 > [!NOTE]
-> 대기열 API/스케줄러/SSE 발행 흐름을 연결하는 구간입니다.
+> Step 7 완료 이후, 문서-스크립트-검증 체인을 유지하며 운영 안정화를 진행합니다.
 >
 > - [x] 대기열 SSE 구독 엔드포인트 추가 (`/api/v1/waiting-queue/subscribe`)
 > - [x] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
@@ -15,7 +15,8 @@
 > - [x] 타임아웃/재연결 포함 SSE 연결 수명주기 안정화
 > - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit quick/strict) 구성
 > - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
-> - [ ] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
+> - [x] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
+> - [ ] Step 7 운영 회귀 테스트 정기 실행/자동화
 
 ---
 

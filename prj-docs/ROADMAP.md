@@ -56,8 +56,8 @@
 >     - [x] 대기열 진입 제한(Throttling) 및 활성 토큰 제어 (Step 6)
 >     - [x] Kafka 기반 예매 요청 비동기 버퍼링 (Step 4)
 >     - [x] SSE 기반 예매 결과 실시간 통보 (Step 4)
->     - [ ] SSE 기반 실시간 순번 자동 푸시 (Step 7, Current Focus)
->   - [ ] 캐싱 전략 적용 (공연 조회 성능 개선)
+>     - [x] SSE 기반 실시간 순번 자동 푸시 (Step 7)
+>   - [ ] 캐싱 전략 적용 (공연 조회 성능 개선, Current Focus)
 
 ---
 
