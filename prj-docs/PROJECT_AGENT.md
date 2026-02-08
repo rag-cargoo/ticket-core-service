@@ -21,6 +21,7 @@
 8. `strict` 모드에서는 실행 검증 결과를 `prj-docs/api-test/latest.md`에 기록하고 함께 stage해야 커밋 가능하다.
 9. 중요 커밋의 `strict` 전환은 사용자 승인 후 수행하고, 완료 후 기본 모드를 `quick`으로 복귀한다.
 10. 에이전트 최종 보고에는 항상 현재 `pre-commit` 모드와 전환 명령(`precommit_mode.sh status|quick|strict`)을 포함한다.
+11. `strict`에서 `knowledge/*.md`는 Failure-First/Before&After/Execution Log 품질 규칙을, `api-specs/*.md`는 6-Step 표준 토큰을 만족해야 커밋 가능하다.
 
 ## Done Criteria
 1. 코드, 테스트, 문서(`task.md`, 필요 시 API 명세)가 서로 모순 없이 정합성을 가진다.
