@@ -1,5 +1,18 @@
 # Waiting Queue API Specification
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:11:27`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 단계 목차 (Step Index)
+---
+> [!TIP]
+> - Step 7 완료, 운영 안정화 단계)
+<!-- DOC_TOC_END -->
+
 대기열 진입, 순번 조회, 상태 전환을 위한 API 규격입니다.
 
 ---

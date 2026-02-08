@@ -1,5 +1,20 @@
 # 모듈 경계 규칙 (Modular Architecture Rules)
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:11:27`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 문서 목차 (Quick Index)
+---
+> [!TIP]
+> - [CRITICAL] 모듈 간 참조 제한 (Dependency Constraints)
+> - 2. 허용되는 통신 패턴 (Allowed Patterns)
+> - 3. 레이어 및 패키지 구조 (Layered Package Boundaries)
+<!-- DOC_TOC_END -->
+
 > **Purpose**: MSA 분리 가능성을 유지하기 위해 모듈 간 의존 경계를 강제합니다.
 
 ---

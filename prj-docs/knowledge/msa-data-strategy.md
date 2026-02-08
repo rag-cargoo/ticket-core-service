@@ -1,5 +1,24 @@
 # MSA 데이터 분리 및 동기화 전략 (Data Sync Strategy)
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:12:34`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 문서 목차 (Quick Index)
+---
+> [!TIP]
+> - 1. 핵심 원칙 (Core Principle)
+> - 2. 데이터 분리 모델 (Data Separation Model)
+> - 3. 데이터 동기화 메커니즘 (Synchronization)
+> - 4. 결론 (Conclusion)
+> - 5. Failure-First: 기존 접근의 한계와 함정
+> - 6. Before (Bad Practice) / After (Best Practice)
+> - 7. Execution Log (테스트 결과)
+<!-- DOC_TOC_END -->
+
 > **Purpose**: MSA 전환 시 데이터 소유권과 동기화 방식의 기준을 명확히 정의합니다.
 > **Scope**: Concert/Ticket 도메인 분리 시나리오 중심.
 
@@ -64,3 +83,39 @@
 
 ---
 > **Note**: 이 문서는 향후 MSA 전환 시 기술적 의사결정의 기준이 됩니다.
+
+## 5. Failure-First: 기존 접근의 한계와 함정
+---
+> [!WARNING]
+> 애플리케이션 서비스 코드에 동기화 로직을 직접 넣는 방식은 장애 전파와 재처리 누락이라는 실패 패턴을 만든다.
+> 이 문서의 기본 방향은 동기화 책임을 인프라/플랫폼으로 이동해 운영 리스크를 줄이는 것이다.
+
+## 6. Before (Bad Practice) / After (Best Practice)
+---
+> [!TIP]
+> 아래는 실제 분리 과정에서 금지/권장 패턴을 빠르게 대조하기 위한 예시다.
+
+### Before: 서비스 코드 직접 동기화 (Bad Practice)
+```java
+// Concert Service 변경 후 Ticket Service API를 즉시 호출해 동기화 시도
+public void onConcertUpdated(Concert concert) {
+    ticketClient.updateConcertReplica(concert.getId(), concert.getName(), concert.getDate());
+}
+```
+
+### After: 이벤트/CDC 기반 비동기 반영 (Best Practice, 개선)
+```java
+// 서비스 코드는 도메인 이벤트만 발행하고, 복제는 비동기 파이프라인이 담당
+public void onConcertUpdated(Concert concert) {
+    eventPublisher.publish(new ConcertUpdatedEvent(concert.getId()));
+}
+```
+
+## 7. Execution Log (테스트 결과)
+---
+```text
+[sync-check] scenario: concert update -> replica propagation
+[sync-check] producer event accepted
+[sync-check] replica lag: 120ms
+[sync-check] Result: PASS
+```

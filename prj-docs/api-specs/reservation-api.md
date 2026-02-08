@@ -1,5 +1,18 @@
 # Reservation API Specification & Integration Guide
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:11:27`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 단계 목차 (Step Index)
+---
+> [!TIP]
+> - Step 6 유입량 제어 전략에 따라, 모든 예약 관련 API(v1 ~ v4) 호출 시 아래 정책이 강제됩니다.
+<!-- DOC_TOC_END -->
+
 이 문서는 선착순 티켓 예매 시스템의 예약 프로세스와 연동 규격을 정의합니다. 모든 API는 JSON 형식을 기본으로 합니다.
 
 ---

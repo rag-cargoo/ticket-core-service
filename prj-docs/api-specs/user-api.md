@@ -1,5 +1,19 @@
 # User API Specification
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:11:27`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 문서 목차 (Quick Index)
+---
+> [!TIP]
+> - 1. API 상세 명세 (Endpoint Details)
+> - 2. 공통 에러 응답 (Common Error)
+<!-- DOC_TOC_END -->
+
 티켓 서비스 이용을 위한 사용자 프로필을 관리하는 API입니다. 모든 요청과 응답은 일관된 규격을 따릅니다.
 
 ---

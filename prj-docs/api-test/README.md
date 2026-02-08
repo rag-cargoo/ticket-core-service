@@ -1,5 +1,20 @@
 # API Script Test Guide
 
+<!-- DOC_META_START -->
+> [!NOTE]
+> - **Created At**: `2026-02-08 23:07:03`
+> - **Updated At**: `2026-02-08 23:11:27`
+<!-- DOC_META_END -->
+
+<!-- DOC_TOC_START -->
+## 문서 목차 (Quick Index)
+---
+> [!TIP]
+> - 1. 실행 방법
+> - 2. 산출물
+> - 3. 트러블슈팅 기준
+<!-- DOC_TOC_END -->
+
 `scripts/api/*.sh` 실행 검증과 결과 기록 규칙입니다.
 
 ---
