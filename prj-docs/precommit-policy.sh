@@ -154,6 +154,7 @@ policy_validate() {
     "${project_root}/README.md"
     "${project_root}/prj-docs/PROJECT_AGENT.md"
     "${project_root}/prj-docs/task.md"
+    "${project_root}/prj-docs/meeting-notes/README.md"
   )
   local required_baseline_dirs=(
     "${project_root}/prj-docs/rules"

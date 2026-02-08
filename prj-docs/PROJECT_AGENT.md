@@ -23,10 +23,11 @@
 ## Mandatory Load Order
 1. `workspace/apps/backend/ticket-core-service/README.md`
 2. `workspace/apps/backend/ticket-core-service/prj-docs/task.md`
-3. `workspace/apps/backend/ticket-core-service/prj-docs/rules/`
+3. `workspace/apps/backend/ticket-core-service/prj-docs/meeting-notes/README.md`
+4. `workspace/apps/backend/ticket-core-service/prj-docs/rules/`
 
 ## Project Rules
-1. 프로젝트 기준선 문서/디렉토리(`README.md`, `prj-docs/PROJECT_AGENT.md`, `prj-docs/task.md`, `prj-docs/rules/`)는 항상 존재해야 한다.
+1. 프로젝트 기준선 문서/디렉토리(`README.md`, `prj-docs/PROJECT_AGENT.md`, `prj-docs/task.md`, `prj-docs/meeting-notes/README.md`, `prj-docs/rules/`)는 항상 존재해야 한다.
 2. 문서 변경 시 기존 상세 내용을 삭제/요약하지 않고 구조화 중심으로 수정한다.
 3. 프로젝트 코드/설정 변경 시 `task.md`, `api-specs/*.md`, `knowledge/*.md`를 함께 현행화한다.
 4. API/대기열/SSE 동작 변경 시 `scripts/http/*.http`와 `scripts/api/*.sh`를 함께 현행화한다.
