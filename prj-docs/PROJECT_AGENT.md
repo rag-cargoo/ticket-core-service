@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-09 01:11:55`
+> - **Updated At**: `2026-02-09 01:16:49`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -23,8 +23,7 @@
 ## Mandatory Load Order
 1. `workspace/apps/backend/ticket-core-service/prj-docs/task.md`
 2. `workspace/apps/backend/ticket-core-service/prj-docs/TODO.md`
-3. `workspace/apps/backend/ticket-core-service/prj-docs/ROADMAP.md`
-4. `workspace/apps/backend/ticket-core-service/prj-docs/rules/architecture.md`
+3. `workspace/apps/backend/ticket-core-service/prj-docs/rules/architecture.md`
 
 ## Project Rules
 1. 문서 변경 시 기존 상세 내용을 삭제/요약하지 않고 구조화 중심으로 수정한다.
