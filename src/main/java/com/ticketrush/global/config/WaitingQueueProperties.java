@@ -14,4 +14,9 @@ public class WaitingQueueProperties {
     private long activeTtlMinutes;
     private long activationBatchSize;
     private long activationConcertId;
+    private long activationDelayMillis;
+    private long sseTimeoutMillis;
+    private long sseHeartbeatDelayMillis;
+    private String queueKeyPrefix;
+    private String activeKeyPrefix;
 }

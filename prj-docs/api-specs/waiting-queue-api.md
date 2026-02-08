@@ -14,6 +14,7 @@
 > | :--- | :--- | :--- | :--- |
 > | 대기열 진입 | POST | `/join` | User |
 > | 대기 상태 조회 | GET | `/status` | User |
+> | 실시간 순번 구독 | GET | `/subscribe` | User |
 
 ---
 
@@ -93,6 +94,54 @@ GET /api/v1/waiting-queue/status?userId=100&concertId=1
 {
   "status": "ACTIVE",
   "rank": 0
+}
+```
+
+---
+
+### 2.3. 실시간 순번 구독 (SSE Subscribe)
+- **Endpoint**: `GET /api/v1/waiting-queue/subscribe`
+- **Description**: 대기열 상태를 실시간으로 구독합니다. 최초 연결 직후 현재 상태 스냅샷을 전송하며, 스케줄러 활성화 시 순번 업데이트를 푸시합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Query | `userId` | Long | Yes | 구독 유저 ID |
+| Query | `concertId` | Long | Yes | 구독 콘서트 ID |
+
+**Response Summary (200 OK / Event Stream)**
+
+| Event Name | Data Format | Description |
+| :--- | :--- | :--- |
+| `INIT` | String | 연결 확인 메시지 |
+| `RANK_UPDATE` | JSON | `WAITING`/`NONE` 상태 갱신 |
+| `ACTIVE` | JSON | 활성 전환 이벤트 (`activeTtlSeconds` 포함) |
+| `KEEPALIVE` | JSON | 연결 유지를 위한 heartbeat |
+
+**Payload Example (`RANK_UPDATE`)**
+
+```json
+{
+  "userId": 100,
+  "concertId": 1,
+  "status": "WAITING",
+  "rank": 12,
+  "activeTtlSeconds": 0,
+  "timestamp": "2026-02-08T08:20:10.224Z"
+}
+```
+
+**Payload Example (`ACTIVE`)**
+
+```json
+{
+  "userId": 100,
+  "concertId": 1,
+  "status": "ACTIVE",
+  "rank": 0,
+  "activeTtlSeconds": 297,
+  "timestamp": "2026-02-08T08:20:20.120Z"
 }
 ```
 

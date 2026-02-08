@@ -26,7 +26,12 @@ app:
     topic:
       reservation: "ticket-reservation-events"
   waiting-queue:
+    queue-key-prefix: "waiting-queue:"
+    active-key-prefix: "active-user:"
     max-queue-size: 100
     active-ttl-minutes: 5
     activation-batch-size: 10
     activation-concert-id: 1
+    activation-delay-millis: 10000
+    sse-timeout-millis: 300000
+    sse-heartbeat-delay-millis: 15000

@@ -15,7 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(waitingQueueInterceptor)
-                .addPathPatterns("/api/v1/**", "/api/v2/**", "/api/v3/**", "/api/v4/**")
-                .excludePathPatterns("/api/v1/waiting-queue/**"); // 오타 수정: v1 추가
+                .addPathPatterns("/api/reservations/**", "/api/v1/**", "/api/v2/**", "/api/v3/**", "/api/v4/**")
+                .excludePathPatterns("/api/v1/waiting-queue/**");
     }
 }

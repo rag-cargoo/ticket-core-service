@@ -1,11 +1,15 @@
 package com.ticketrush.domain.waitingqueue.service;
 
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
+import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -14,20 +18,17 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
     private final StringRedisTemplate redisTemplate;
     private final com.ticketrush.global.config.WaitingQueueProperties properties;
 
-    private static final String QUEUE_KEY_PREFIX = "waiting-queue:";
-    private static final String ACTIVE_KEY_PREFIX = "active-user:";
-
     @Override
     public WaitingQueueResponse join(Long userId, Long concertId) {
-        String queueKey = QUEUE_KEY_PREFIX + concertId;
+        String queueKey = properties.getQueueKeyPrefix() + concertId;
         String userIdStr = String.valueOf(userId);
 
         // 1. 이미 활성 상태인지 확인
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(ACTIVE_KEY_PREFIX + userIdStr))) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(properties.getActiveKeyPrefix() + userIdStr))) {
             return WaitingQueueResponse.builder()
                     .userId(userId)
                     .concertId(concertId)
-                    .status("ACTIVE")
+                    .status(WaitingQueueStatus.ACTIVE.name())
                     .rank(0L)
                     .build();
         }
@@ -38,7 +39,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
             return WaitingQueueResponse.builder()
                     .userId(userId)
                     .concertId(concertId)
-                    .status("REJECTED")
+                    .status(WaitingQueueStatus.REJECTED.name())
                     .rank(-1L)
                     .build();
         }
@@ -54,30 +55,31 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
         String userIdStr = String.valueOf(userId);
 
         // 1. 활성 상태 확인
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(ACTIVE_KEY_PREFIX + userIdStr))) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(properties.getActiveKeyPrefix() + userIdStr))) {
             return WaitingQueueResponse.builder()
                     .userId(userId)
                     .concertId(concertId)
-                    .status("ACTIVE")
+                    .status(WaitingQueueStatus.ACTIVE.name())
                     .rank(0L)
                     .build();
         }
 
         // 2. 대기 순번 조회
-        String queueKey = QUEUE_KEY_PREFIX + concertId;
+        String queueKey = properties.getQueueKeyPrefix() + concertId;
         Long rank = redisTemplate.opsForZSet().rank(queueKey, userIdStr);
 
         return WaitingQueueResponse.builder()
                 .userId(userId)
                 .concertId(concertId)
-                .status(rank != null ? "WAITING" : "NONE")
+                .status(rank != null ? WaitingQueueStatus.WAITING.name() : WaitingQueueStatus.NONE.name())
                 .rank(rank != null ? rank + 1 : -1L) // 0-based rank이므로 +1
                 .build();
     }
 
     @Override
-    public void activateUsers(Long concertId, long count) {
-        String queueKey = QUEUE_KEY_PREFIX + concertId;
+    public List<Long> activateUsers(Long concertId, long count) {
+        String queueKey = properties.getQueueKeyPrefix() + concertId;
+        List<Long> activatedUsers = new ArrayList<>();
 
         // 상위 N명 추출
         Set<String> users = redisTemplate.opsForZSet().range(queueKey, 0, count - 1);
@@ -85,10 +87,24 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
         if (users != null && !users.isEmpty()) {
             for (String userId : users) {
                 // 활성 상태로 전환
-                redisTemplate.opsForValue().set(ACTIVE_KEY_PREFIX + userId, "true", java.time.Duration.ofMinutes(properties.getActiveTtlMinutes()));
+                redisTemplate.opsForValue().set(
+                        properties.getActiveKeyPrefix() + userId,
+                        "true",
+                        java.time.Duration.ofMinutes(properties.getActiveTtlMinutes())
+                );
                 // 대기열에서 제거
                 redisTemplate.opsForZSet().remove(queueKey, userId);
+                activatedUsers.add(Long.valueOf(userId));
             }
         }
+
+        return activatedUsers;
+    }
+
+    @Override
+    public Long getActiveTtlSeconds(Long userId) {
+        String activeKey = properties.getActiveKeyPrefix() + userId;
+        Long ttl = redisTemplate.getExpire(activeKey, TimeUnit.SECONDS);
+        return (ttl != null && ttl > 0) ? ttl : 0L;
     }
 }

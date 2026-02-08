@@ -165,7 +165,9 @@ GET /api/v1/waiting-queue/status?userId=100&concertId=1
 | Event Name | Data Format | Description |
 | :--- | :--- | :--- |
 | `INIT` | String | 연결 성공 메시지 (`Connected...`) |
-| `RANK_UPDATE` | JSON | 순번 변화 시 전송 (`{"rank": 5, "status": "WAITING"}`) |
+| `RANK_UPDATE` | JSON | 순번 변화 시 전송 (`WAITING`/`NONE`) |
+| `ACTIVE` | JSON | 활성 전환 시 전송 (`rank=0`, `activeTtlSeconds` 포함) |
+| `KEEPALIVE` | JSON | 연결 유지를 위한 heartbeat |
 | `RESERVATION_STATUS` | String | 최종 예약 결과 (`SUCCESS` / `FAIL`) |
 
 **Response Example**
@@ -175,7 +177,13 @@ event: INIT
 data: Connected for Queue: 1
 
 event: RANK_UPDATE
-data: {"rank": 5, "status": "WAITING"}
+data: {"userId":100,"concertId":1,"status":"WAITING","rank":5,"activeTtlSeconds":0,"timestamp":"2026-02-08T08:20:10.224Z"}
+
+event: ACTIVE
+data: {"userId":100,"concertId":1,"status":"ACTIVE","rank":0,"activeTtlSeconds":297,"timestamp":"2026-02-08T08:20:20.120Z"}
+
+event: KEEPALIVE
+data: {"timestamp":"2026-02-08T08:20:25.000Z"}
 
 event: RESERVATION_STATUS
 data: SUCCESS

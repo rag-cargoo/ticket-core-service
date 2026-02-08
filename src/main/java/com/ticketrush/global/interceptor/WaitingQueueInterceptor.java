@@ -1,5 +1,6 @@
 package com.ticketrush.global.interceptor;
 
+import com.ticketrush.global.config.WaitingQueueProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,7 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class WaitingQueueInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate redisTemplate;
-    private static final String ACTIVE_KEY_PREFIX = "active-user:";
+    private final WaitingQueueProperties waitingQueueProperties;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -27,7 +28,7 @@ public class WaitingQueueInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String activeKey = ACTIVE_KEY_PREFIX + userId;
+        String activeKey = waitingQueueProperties.getActiveKeyPrefix() + userId;
         Boolean isActive = redisTemplate.hasKey(activeKey);
 
         if (Boolean.FALSE.equals(isActive)) {

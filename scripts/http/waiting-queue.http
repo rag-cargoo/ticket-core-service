@@ -1,0 +1,15 @@
+### 1. 대기열 진입
+POST http://localhost:8080/api/v1/waiting-queue/join
+Content-Type: application/json
+
+{
+  "userId": 700001,
+  "concertId": 1
+}
+
+### 2. 대기 상태 조회
+GET http://localhost:8080/api/v1/waiting-queue/status?userId=700001&concertId=1
+
+### 3. SSE 순번 구독 (Step 7)
+GET http://localhost:8080/api/v1/waiting-queue/subscribe?userId=700001&concertId=1
+Accept: text/event-stream

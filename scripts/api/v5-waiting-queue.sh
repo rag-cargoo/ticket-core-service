@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 # --- [통합 설정] ---
-BASE_URL="http://localhost:8080/api/v1/waiting-queue"
-CONCERT_ID=1
+API_HOST="${API_HOST:-http://127.0.0.1:8080}"
+BASE_URL="${BASE_URL:-${API_HOST}/api/v1/waiting-queue}"
+CONCERT_ID="${CONCERT_ID:-1}"
 CURL_OPTS="-s -w \n%{http_code} --connect-timeout 5 --max-time 10"
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
@@ -12,6 +14,7 @@ NC='\033[0m'
 # ------------------
 
 echo -e "${BLUE}>>>> [v5 Test] 대기열 진입 및 순번 검증 시작...${NC}"
+FAILED=0
 
 # 1. 5명의 유저 순차 진입
 for i in {1..5}
@@ -30,6 +33,7 @@ do
         echo -e "${GREEN}성공! (Body: $BODY)${NC}"
     else
         echo -e "${RED}실패! (Status: $CODE, Body: $BODY)${NC}"
+        FAILED=1
     fi
 done
 
@@ -47,7 +51,12 @@ do
         echo -e "${GREEN}성공! (Body: $BODY)${NC}"
     else
         echo -e "${RED}실패! (Status: $CODE, Body: $BODY)${NC}"
+        FAILED=1
     fi
 done
 
 echo -e "${BLUE}>>>> [v5 Test] 검증 종료.${NC}"
+
+if [[ "$FAILED" -ne 0 ]]; then
+    exit 1
+fi
