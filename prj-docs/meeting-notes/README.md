@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 05:03:46`
-> - **Updated At**: `2026-02-09 05:04:23`
+> - **Updated At**: `2026-02-09 05:17:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -30,6 +30,9 @@
 # Meeting Notes: <title>
 
 ## 안건 1: <주제>
+- Created At: YYYY-MM-DD HH:MM:SS
+- Updated At: YYYY-MM-DD HH:MM:SS
+- Status: TODO | DOING | DONE
 - 결정사항:
 - 후속작업:
   - 담당:
@@ -37,6 +40,9 @@
   - 상태: TODO | DOING | DONE
 
 ## 안건 2: <주제>
+- Created At: YYYY-MM-DD HH:MM:SS
+- Updated At: YYYY-MM-DD HH:MM:SS
+- Status: TODO | DOING | DONE
 - 결정사항:
 - 후속작업:
   - 담당:
