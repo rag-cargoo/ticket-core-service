@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-11 05:17:10`
-> - **Updated At**: `2026-02-11 05:20:30`
+> - **Updated At**: `2026-02-11 07:15:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -16,8 +16,8 @@
 
 ## 안건 1: develop-main 릴리즈 PR 진행
 - Created At: 2026-02-11 05:17:10
-- Updated At: 2026-02-11 05:20:30
-- Status: DOING
+- Updated At: 2026-02-11 07:15:00
+- Status: DONE
 - 결정사항:
   - 릴리즈 경로는 `develop -> main` PR로 진행한다.
   - 기존 릴리즈 이슈 `#28`을 primary issue로 사용한다.
@@ -25,8 +25,8 @@
 - 후속작업:
   - 담당: Codex
   - 기한: 2026-02-11
-  - 상태: DOING
-  - 메모: PR `#46`(https://github.com/rag-cargoo/2602/pull/46) 생성 완료, 이슈 `#28`에 PR 링크/검증 로그를 코멘트로 누적한다.
+  - 상태: DONE
+  - 메모: PR `#46`(https://github.com/rag-cargoo/2602/pull/46) 머지 완료, `pages-build-deployment` 성공 확인, 이슈 `#28` 종료 처리.
 
 ## 안건 2: 추적 문서 동기화(task/회의록/사이드바)
 - Created At: 2026-02-11 05:17:10
