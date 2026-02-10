@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-09 01:38:36`
+> - **Updated At**: `2026-02-10 21:11:49`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -44,6 +44,14 @@ docker-compose up -d
 ```bash
 make test-suite
 ```
+
+### 4. k6 부하 테스트 실행
+```bash
+make test-k6
+```
+
+- 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행됩니다.
+- 웹 대시보드 포함 실행: `make test-k6-dashboard` (기본 URL: `http://127.0.0.1:5665`)
 
 ---
 

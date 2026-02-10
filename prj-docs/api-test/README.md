@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:32:34`
+> - **Updated At**: `2026-02-10 21:11:49`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -13,9 +13,11 @@
 > - 1. 실행 방법
 > - 2. 산출물
 > - 3. 트러블슈팅 기준
+> - 4. Step 7 회귀 실행 스크립트
+> - 5. k6 부하 테스트 실행
 <!-- DOC_TOC_END -->
 
-`scripts/api/*.sh` 실행 검증과 결과 기록 규칙입니다.
+`scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
 
 ---
 
@@ -47,3 +49,47 @@ make test-suite
 2. 스크립트 실패 시 `latest.md`의 실패 로그 요약을 확인한다.
 3. 수정 후 테스트 재실행하여 리포트를 최신화한다.
 4. 로컬 Kafka 접속 실패 시 `./gradlew bootRun --args='--spring.profiles.active=local --spring.kafka.bootstrap-servers=localhost:9092'`로 재기동한다.
+
+---
+
+## 4. Step 7 회귀 실행 스크립트
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+bash scripts/api/run-step7-regression.sh
+```
+
+- 실행 내용:
+  - 인프라/앱 기동 후 `v7-sse-rank-push.sh` 회귀 검증
+  - 결과 리포트(`prj-docs/api-test/latest.md`)와 런타임 로그(`step7-regression.log`) 생성
+- CI(Jenkins/GitHub Actions) 도입 시에는 위 스크립트를 그대로 호출해 동일 절차를 재사용한다.
+
+---
+
+## 5. k6 부하 테스트 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+make test-k6
+```
+
+- 내부적으로 `scripts/perf/run-k6-waiting-queue.sh`를 호출합니다.
+- 기본 시나리오는 `scripts/perf/k6-waiting-queue-join.js`이며, `POST /api/v1/waiting-queue/join` 부하를 측정합니다.
+- 기본 파라미터:
+  - `K6_VUS=60`
+  - `K6_DURATION=60s`
+- 결과 산출물:
+  - `prj-docs/api-test/k6-latest.md`
+  - `prj-docs/api-test/k6-latest.log`
+  - `prj-docs/api-test/k6-summary.json`
+  - `prj-docs/api-test/k6-web-dashboard.html` (대시보드 활성 시)
+- 실행 환경에 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행합니다.
+- Docker fallback 기본 네트워크는 `host`이며, 필요 시 `K6_DOCKER_NETWORK`로 변경합니다.
+- 웹 대시보드를 함께 보고 싶으면 아래처럼 실행합니다.
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+make test-k6-dashboard
+```
+
+- 실행 중 대시보드 URL: `http://127.0.0.1:5665`

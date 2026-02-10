@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-09 01:38:36`
+> - **Updated At**: `2026-02-10 18:59:16`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -69,7 +69,7 @@
 > - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit quick/strict) 구성
 > - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
 > - [x] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
-> - [ ] Step 7 운영 회귀 테스트 정기 실행/자동화
+> - [x] Step 7 운영 회귀 테스트 실행 스크립트 정비 (`scripts/api/run-step7-regression.sh`)
 
 ---
 
@@ -78,7 +78,7 @@
 > [!WARNING]
 > 트래픽/운영 안정성 향상과 연동 검증을 위한 후순위 작업입니다.
 >
-> - [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성
+> - [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장 (Phase 1.5)
