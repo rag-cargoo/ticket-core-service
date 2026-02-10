@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 05:17:10`
+> - **Updated At**: `2026-02-11 05:20:30`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -78,7 +78,7 @@
 > [!WARNING]
 > 트래픽/운영 안정성 향상과 연동 검증을 위한 후순위 작업입니다.
 >
-> - [ ] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`)
+> - [ ] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
 > - [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
