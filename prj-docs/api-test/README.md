@@ -15,6 +15,7 @@
 > - 3. 트러블슈팅 기준
 > - 4. Step 7 회귀 실행 스크립트
 > - 5. k6 부하 테스트 실행
+> - 6. Playwright MCP로 k6 HTML 열기
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -93,3 +94,47 @@ make test-k6-dashboard
 ```
 
 - 실행 중 대시보드 URL: `http://127.0.0.1:5665`
+
+---
+
+## 6. Playwright MCP로 k6 HTML 열기
+
+`k6-web-dashboard.html`은 로컬 파일이므로 Playwright MCP에서 `file://` 직접 열기가 실패할 수 있습니다.
+표준 절차는 "로컬 HTTP 서빙 + MCP `navigate`" 입니다.
+
+1. k6 산출물 생성
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+make test-k6
+```
+
+2. Chrome를 CDP 포트로 실행
+
+```bash
+setsid google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp-profile --no-first-run --no-default-browser-check about:blank >/tmp/playwright_chrome.log 2>&1 < /dev/null &
+curl -sS http://127.0.0.1:9222/json/version
+```
+
+3. k6 산출물 디렉토리를 로컬 HTTP로 서빙
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+nohup python3 -m http.server 18080 --bind 127.0.0.1 --directory prj-docs/api-test >/tmp/k6-http.log 2>&1 &
+curl -sS -I http://127.0.0.1:18080/k6-web-dashboard.html | head -n 1
+```
+
+4. Playwright MCP에서 아래 URL로 이동
+
+```text
+http://127.0.0.1:18080/k6-web-dashboard.html
+```
+
+5. 작업 후 정리(선택)
+
+```bash
+pkill -f "http.server 18080"
+pkill -f "google-chrome.*remote-debugging-port=9222"
+```
+
+실패 시 `skills/aki-mcp-playwright/references/troubleshooting.md`의 "`Local HTML Cannot Be Opened Directly by MCP`" 항목을 확인합니다.
