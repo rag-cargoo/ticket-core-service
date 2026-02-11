@@ -7,6 +7,7 @@ import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
+import com.ticketrush.domain.user.UserTier;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ public class SocialAuthService {
         String username = generateUsername(profile.getProvider(), profile.getSocialId());
         User created = User.socialUser(
                 username,
+                UserTier.BASIC,
                 profile.getProvider(),
                 profile.getSocialId(),
                 profile.getEmail(),
