@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 11:05:00`
+> - **Updated At**: `2026-02-11 21:12:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -15,7 +15,8 @@
 > - 3. 트러블슈팅 기준
 > - 4. Step 7 회귀 실행 스크립트
 > - 5. k6 부하 테스트 실행
-> - 6. Playwright MCP로 k6 HTML 열기
+> - 6. Step 9 상태머신 검증 실행
+> - 7. Playwright MCP로 k6 HTML 열기
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -30,7 +31,7 @@ make test-suite
 ```
 
 - 내부적으로 `scripts/api/run-api-script-tests.sh`를 호출합니다.
-- 기본 실행 세트는 `v1`~`v7` 스크립트입니다.
+- 기본 실행 세트는 `v1`~`v8` 스크립트입니다.
 - 기본 헬스체크 URL은 `http://127.0.0.1:8080/api/concerts` 입니다.
 - 필요하면 `API_SCRIPT_HEALTH_URL` 환경변수로 변경할 수 있습니다.
 - 기존 환경과의 호환을 위해 `TICKETRUSH_HEALTH_URL`도 별칭으로 지원합니다.
@@ -110,7 +111,24 @@ make test-k6-dashboard
 
 ---
 
-## 6. Playwright MCP로 k6 HTML 열기
+## 6. Step 9 상태머신 검증 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+bash scripts/api/v8-reservation-lifecycle.sh
+```
+
+- 검증 흐름:
+  - `HOLD` 생성
+  - `PAYING` 전이
+  - `CONFIRMED` 전이
+  - 최종 상태 조회
+- Step 9 실행 리포트:
+  - `prj-docs/api-test/step9-lifecycle-latest.md`
+
+---
+
+## 7. Playwright MCP로 k6 HTML 열기
 
 `k6-web-dashboard.html`은 로컬 파일이므로 Playwright MCP에서 `file://` 직접 열기가 실패할 수 있습니다.
 표준 절차는 "로컬 HTTP 서빙 + MCP `navigate`" 입니다.

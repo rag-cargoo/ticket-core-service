@@ -115,6 +115,7 @@
 >     - 예약 API(v6): `src/main/java/com/ticketrush/api/controller/ReservationController.java`
 >     - 예약 만료 스케줄러: `src/main/java/com/ticketrush/global/scheduler/ReservationLifecycleScheduler.java`
 >     - API 명세/HTTP/스크립트: `prj-docs/api-specs/reservation-api.md`, `scripts/http/reservation.http`, `scripts/api/v8-reservation-lifecycle.sh`
+>     - 실행 리포트: `prj-docs/api-test/step9-lifecycle-latest.md`
 >     - 테스트: `ReservationStateMachineTest`, `ReservationLifecycleServiceIntegrationTest`, `ReservationLifecycleSchedulerTest`
 >   - 검증 메모(2026-02-11): `./gradlew test --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS.
 >
