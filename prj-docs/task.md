@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 07:15:00`
+> - **Updated At**: `2026-02-11 09:34:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -32,7 +32,7 @@
 ## 현재 상태 (Status)
 ---
 > [!NOTE]
->   - **현재 단계**: Step 7 완료, Step 8 착수 준비
+>   - **현재 단계**: Step 7 재검증 완료, Step 8 기준선 측정 완료(코드 최적화 진행중)
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
 >   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 >   - **검증 체인**: pre-commit `quick`(기본) / `strict`(중요 커밋) 모드 운영, strict에서 문서/HTTP/API스크립트 동기화 + 실행 리포트 강제 검증
@@ -75,6 +75,7 @@
 > - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
 > - [x] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
 > - [x] Step 7 운영 회귀 테스트 실행 스크립트 정비 (`scripts/api/run-step7-regression.sh`)
+> - [x] Step 7 회귀 스크립트 빌드/재생성 안정화 (`STEP7_COMPOSE_BUILD=true`, `STEP7_FORCE_RECREATE=true`)
 
 ---
 
@@ -85,6 +86,7 @@
 >
 > - [x] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
 > - [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
+>   - 진행 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 기준선 PASS 수집 완료(56600+ req, p95 7ms대). 코드 최적화 후 before/after 갱신 예정.
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장
