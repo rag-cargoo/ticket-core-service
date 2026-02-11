@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:37:25`
+> - **Updated At**: `2026-02-12 07:48:47`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -79,6 +79,7 @@
 ---
 > [!NOTE]
 > 이 섹션은 기존 `prj-docs/TODO.md` 내용을 `task.md`로 통합한 항목입니다.
+> Step 7 안정화 과정에서 완료된 운영 항목(히스토리)이며, 현재는 유지/회귀 검증 대상으로 관리합니다.
 >
 > - [x] 대기열 SSE 구독 엔드포인트 추가 (`/api/v1/waiting-queue/subscribe`)
 > - [x] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
@@ -95,7 +96,7 @@
 ## 후속 백로그 (Merged TODO)
 ---
 > [!WARNING]
-> Step 7 이후 잔여 작업과 차기 단계 선행 준비 항목입니다.
+> Step 12 + Auth Track A1 완료 이후 잔여 작업과 차기 단계 선행 준비 항목입니다.
 >
 > - [x] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
 > - [x] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
@@ -106,7 +107,7 @@
 > - [ ] 아티스트/기획사 엔티티 확장
 > - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - [ ] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
-> - [ ] 소셜 로그인 연동 (`Kakao OAuth2`)
+> - [ ] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [ ] 검색 기능 고도화 (공연 검색/필터/정렬, 페이징)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
@@ -242,3 +243,18 @@
 >   - **레이어 분리**: api, domain, global 계층 구조 확립.
 >   - **DTO 정규화**: 모든 Java record를 class + Lombok 스타일로 전환하여 유연성 확보.
 >   - **인프라 안정화**: docker-compose.yml 헬스체크 및 의존성 최적화.
+>
+> ### 5. 동시성 고도화 기능 완결 (Step 3~12)
+> ---
+>   - **Step 3**: Redis 분산 락(Redisson)으로 다중 인스턴스 환경 동시성 제어 확장.
+>   - **Step 4~6**: Kafka 비동기 대기열 + Redis Sorted Set 순번 + 진입 제한(Throttling)으로 유입 제어 체인 구축.
+>   - **Step 7**: SSE 실시간 순번 푸시 및 회귀 스크립트(`scripts/api/run-step7-regression.sh`) 정비.
+>   - **Step 8**: k6 기준선 확정 및 핫패스 병목 개선(`join` Lua 원자 처리, 로그 레벨 조정).
+>   - **Step 9~10**: 예약 상태머신(HOLD/PAYING/CONFIRMED/EXPIRED) + 취소/환불/재판매 연계 완성.
+>   - **Step 11~12**: 판매 정책 엔진(선예매/등급/1인 제한) + 부정사용 방지/감사 추적 기능 반영.
+>
+> ### 6. 인증 트랙 선반영 (Auth Track A1)
+> ---
+>   - **OAuth2 Code 교환 백엔드**: 카카오/네이버 authorize-url + exchange API 계약 반영.
+>   - **도메인 확장**: 사용자 social 식별자(`socialProvider`, `socialId`) 기반 매핑 규칙 고정.
+>   - **검증/문서 동기화**: `SocialAuthServiceTest`, API 스크립트, 지식 문서/리포트 동기화 완료.
