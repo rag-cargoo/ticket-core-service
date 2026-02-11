@@ -54,6 +54,9 @@ app:
   kafka:
     topic:
       reservation: "ticket-reservation-events"
+  reservation:
+    hold-ttl-seconds: 300
+    expire-check-delay-millis: 5000
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"

@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 10:40:00`
+> - **Updated At**: `2026-02-11 20:36:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -32,7 +32,7 @@
 ## 현재 상태 (Status)
 ---
 > [!NOTE]
->   - **현재 단계**: Step 8 완료 (k6 기준선 확정 + 병목 제거 1차 반영)
+>   - **현재 단계**: Step 9 완료 (결제/좌석 점유 상태머신 1차 반영)
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
 >   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 >   - **검증 체인**: pre-commit `quick`(기본) / `strict`(중요 커밋) 모드 운영, strict에서 문서/HTTP/API스크립트 동기화 + 실행 리포트 강제 검증
@@ -42,7 +42,7 @@
 ## 개발 원칙 (Dev Principles)
 ---
 > [!TIP]
->   - **기술 비교/검증**: API 버전을 분리하여 관리 (v1~v4).
+>   - **기술 비교/검증**: API 버전을 분리하여 관리 (v1~v6).
 >   - **성능 측정**: 각 단계별 부하 테스트 결과를 기록하여 의사결정 근거로 활용.
 >   - **문서화 필수**: 실험 결과와 의사결정 과정은 prj-docs/knowledge/에 상세히 기록.
 >   - **안전 우선**: 파일 수정 전 원본 확인 및 파괴적 변경 시 사용자 보고 의무화.
@@ -60,6 +60,7 @@
 >   - [x] Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현
 >   - [x] Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 구현 및 회귀 검증
 >   - [x] Step 8: k6 성능 기준선 확정 및 병목 제거
+>   - [x] Step 9: 결제/좌석 점유 상태머신(홀드/확정/만료) 구현
 
 ---
 
@@ -106,15 +107,21 @@
 >   - 완료 근거: `prj-docs/api-test/k6-before-step8.md` + `prj-docs/api-test/k6-latest.md` + `prj-docs/api-test/k6-summary-before-step8.json` + `prj-docs/api-test/k6-summary.json`.
 >   - 구현 반영: `join` Redis Lua 원자 처리 + 핫패스 로그 레벨 조정(`info -> debug`).
 >
-> - [ ] **Step 9: 결제/좌석 점유 상태머신(홀드/확정/만료) 구현**
+> - [x] **Step 9: 결제/좌석 점유 상태머신(홀드/확정/만료) 구현**
 >   - 목표: 예약 이후 결제 단계까지 상태 전이를 일관된 도메인 규칙으로 통합한다.
 >   - 완료 기준: 상태 전이 다이어그램/API 명세/회귀 스크립트가 함께 갱신된다.
->   - 다음 액션: `HOLD -> PAYING -> CONFIRMED|EXPIRED` 전이 규칙과 TTL 정책 정의.
+>   - 완료 근거:
+>     - 상태머신/만료 처리: `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 예약 API(v6): `src/main/java/com/ticketrush/api/controller/ReservationController.java`
+>     - 예약 만료 스케줄러: `src/main/java/com/ticketrush/global/scheduler/ReservationLifecycleScheduler.java`
+>     - API 명세/HTTP/스크립트: `prj-docs/api-specs/reservation-api.md`, `scripts/http/reservation.http`, `scripts/api/v8-reservation-lifecycle.sh`
+>     - 테스트: `ReservationStateMachineTest`, `ReservationLifecycleServiceIntegrationTest`, `ReservationLifecycleSchedulerTest`
+>   - 검증 메모(2026-02-11): `./gradlew test --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS.
 >
 > - [ ] **Step 10: 취소/환불/재판매 대기열 연계 구현**
 >   - 목표: 취소 좌석을 대기열과 안전하게 재연결하는 재판매 플로우를 완성한다.
 >   - 완료 기준: 취소/환불 API + 재판매 이벤트 처리 + 데이터 정합성 테스트를 통과한다.
->   - 다음 액션: 취소 이벤트 스키마와 재할당 우선순위 규칙 정의.
+ >   - 다음 액션: `EXPIRED/CANCELLED` 좌석을 대기열 상위 사용자에게 재할당하는 이벤트 흐름 정의.
 >
 > - [ ] **Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현**
 >   - 목표: 고정 로직이 아닌 정책 기반으로 판매 조건을 제어한다.

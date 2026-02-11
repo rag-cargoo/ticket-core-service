@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:32:34`
+> - **Updated At**: `2026-02-11 20:36:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -289,6 +289,81 @@ data: SUCCESS
 **Response Summary (204 No Content)**
 
 - 성공 시 응답 바디 없음.
+
+---
+
+### 1.7. Step 9: 좌석 홀드 생성 (HOLD)
+- **Endpoint**: `POST /api/reservations/v6/holds`
+- **Description**: 결제 대기 상태를 만들고 좌석을 임시 점유(`TEMP_RESERVED`)로 전환합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Body | `userId` | Long | Yes | 예약 요청 유저 ID |
+| Body | `seatId` | Long | Yes | 점유할 좌석 ID |
+
+**Response Summary (201 Created)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | Long | 예약 ID |
+| `status` | String | `HOLD` |
+| `holdExpiresAt` | DateTime | 점유 만료 시각 |
+
+---
+
+### 1.8. Step 9: 결제 진행 전이 (HOLD -> PAYING)
+- **Endpoint**: `POST /api/reservations/v6/{reservationId}/paying`
+- **Description**: 결제 진행 상태로 전이합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `reservationId` | Long | Yes | 대상 예약 ID |
+| Body | `userId` | Long | Yes | 예약 소유자 유저 ID |
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | String | `PAYING` |
+
+---
+
+### 1.9. Step 9: 결제 확정 전이 (PAYING -> CONFIRMED)
+- **Endpoint**: `POST /api/reservations/v6/{reservationId}/confirm`
+- **Description**: 결제 완료를 반영하고 좌석을 최종 점유(`RESERVED`)로 확정합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `reservationId` | Long | Yes | 대상 예약 ID |
+| Body | `userId` | Long | Yes | 예약 소유자 유저 ID |
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | String | `CONFIRMED` |
+| `confirmedAt` | DateTime | 최종 확정 시각 |
+
+---
+
+### 1.10. Step 9: 예약 상태 조회
+- **Endpoint**: `GET /api/reservations/v6/{reservationId}?userId={userId}`
+- **Description**: 상태머신 진행 상태(`HOLD/PAYING/CONFIRMED/EXPIRED`)와 타임스탬프를 조회합니다.
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | String | 예약 상태 |
+| `holdExpiresAt` | DateTime | 홀드 만료 시각 |
+| `confirmedAt` | DateTime | 확정 시각 |
+| `expiredAt` | DateTime | 만료 시각 |
 
 ---
 

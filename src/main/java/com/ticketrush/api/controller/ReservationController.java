@@ -2,12 +2,15 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
+import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.global.lock.RedissonLockFacade;
 import com.ticketrush.global.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SseEmitterManager;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
+import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
+import com.ticketrush.api.dto.reservation.ReservationStateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -26,6 +29,7 @@ public class ReservationController {
     private final RedissonLockFacade redissonLockFacade;
     private final KafkaReservationProducer kafkaProducer;
     private final ReservationQueueService queueService;
+    private final ReservationLifecycleService reservationLifecycleService;
     private final SseEmitterManager sseManager;
 
     /**
@@ -95,6 +99,44 @@ public class ReservationController {
     @PostMapping("/v5-opt/queue-sse")
     public ResponseEntity<Map<String, String>> createSseOptimisticReservation(@RequestBody ReservationRequest request) {
         return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
+    }
+
+    /**
+     * [v6] Step 9 - 좌석 홀드 생성
+     */
+    @PostMapping("/v6/holds")
+    public ResponseEntity<ReservationLifecycleResponse> createHold(@RequestBody ReservationRequest request) {
+        return ResponseEntity.status(201).body(reservationLifecycleService.createHold(request));
+    }
+
+    /**
+     * [v6] Step 9 - 결제 진행 상태 전이 (HOLD -> PAYING)
+     */
+    @PostMapping("/v6/{reservationId}/paying")
+    public ResponseEntity<ReservationLifecycleResponse> startPaying(
+            @PathVariable Long reservationId,
+            @RequestBody ReservationStateRequest request) {
+        return ResponseEntity.ok(reservationLifecycleService.startPaying(reservationId, request.getUserId()));
+    }
+
+    /**
+     * [v6] Step 9 - 결제 확정 상태 전이 (PAYING -> CONFIRMED)
+     */
+    @PostMapping("/v6/{reservationId}/confirm")
+    public ResponseEntity<ReservationLifecycleResponse> confirm(
+            @PathVariable Long reservationId,
+            @RequestBody ReservationStateRequest request) {
+        return ResponseEntity.ok(reservationLifecycleService.confirm(reservationId, request.getUserId()));
+    }
+
+    /**
+     * [v6] Step 9 - 예약 상태 조회
+     */
+    @GetMapping("/v6/{reservationId}")
+    public ResponseEntity<ReservationLifecycleResponse> getReservation(
+            @PathVariable Long reservationId,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(reservationLifecycleService.getReservation(reservationId, userId));
     }
 
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {

@@ -6,11 +6,24 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.HttpStatus;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleBadRequest(IllegalArgumentException e, HttpServletRequest request) {
+        log.warn(">>>> [400 Error] URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> handleConflict(IllegalStateException e, HttpServletRequest request) {
+        log.warn(">>>> [409 Error] URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleAll(Exception e, HttpServletRequest request) {

@@ -5,7 +5,7 @@ import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
-import com.ticketrush.interfaces.dto.ReservationRequest;
+import com.ticketrush.api.dto.ReservationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

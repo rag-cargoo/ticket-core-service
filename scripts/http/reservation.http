@@ -49,3 +49,31 @@ GET http://localhost:8080/api/reservations/users/1
 
 ### 8. 예약 취소
 DELETE http://localhost:8080/api/reservations/1
+
+### 9. Step 9 - 좌석 홀드 생성 (HOLD)
+POST http://localhost:8080/api/reservations/v6/holds
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 11
+}
+
+### 10. Step 9 - 결제 진행 전이 (HOLD -> PAYING)
+POST http://localhost:8080/api/reservations/v6/{{reservationId}}/paying
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+### 11. Step 9 - 결제 확정 전이 (PAYING -> CONFIRMED)
+POST http://localhost:8080/api/reservations/v6/{{reservationId}}/confirm
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+### 12. Step 9 - 상태 조회
+GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1

@@ -48,6 +48,20 @@ public class Seat {
         this.status = SeatStatus.RESERVED;
     }
 
+    public void hold() {
+        if (this.status != SeatStatus.AVAILABLE) {
+            throw new IllegalStateException("Seat is not available for hold.");
+        }
+        this.status = SeatStatus.TEMP_RESERVED;
+    }
+
+    public void confirmHeldSeat() {
+        if (this.status != SeatStatus.TEMP_RESERVED) {
+            throw new IllegalStateException("Seat hold is required before confirmation.");
+        }
+        this.status = SeatStatus.RESERVED;
+    }
+
     public void cancel() {
         this.status = SeatStatus.AVAILABLE;
     }
