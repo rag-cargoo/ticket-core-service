@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-10 21:11:49`
+> - **Updated At**: `2026-02-11 09:34:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -63,6 +63,10 @@ bash scripts/api/run-step7-regression.sh
 - 실행 내용:
   - 인프라/앱 기동 후 `v7-sse-rank-push.sh` 회귀 검증
   - 결과 리포트(`prj-docs/api-test/latest.md`)와 런타임 로그(`step7-regression.log`) 생성
+- 기본 안정화 옵션:
+  - `STEP7_COMPOSE_BUILD=true` (기본): app 이미지를 다시 빌드하여 로컬 코드 반영 보장
+  - `STEP7_FORCE_RECREATE=true` (기본): `down -> up` 재생성으로 docker-compose 재기동 오류 회피
+  - `STEP7_KEEP_ENV=true|false` (기본 false): 검증 후 compose 환경 유지 여부
 - CI(Jenkins/GitHub Actions) 도입 시에는 위 스크립트를 그대로 호출해 동일 절차를 재사용한다.
 
 ---

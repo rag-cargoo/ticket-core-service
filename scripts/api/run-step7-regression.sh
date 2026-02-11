@@ -10,6 +10,8 @@ health_timeout_sec="${STEP7_HEALTH_TIMEOUT_SEC:-300}"
 health_interval_sec="${STEP7_HEALTH_INTERVAL_SEC:-5}"
 log_file="${STEP7_LOG_FILE:-$project_abs/step7-regression.log}"
 keep_env="${STEP7_KEEP_ENV:-false}"
+compose_build="${STEP7_COMPOSE_BUILD:-true}"
+force_recreate="${STEP7_FORCE_RECREATE:-true}"
 
 compose_cmd=()
 if docker compose version >/dev/null 2>&1; then
@@ -36,8 +38,17 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "[step7-regression] compose up: postgres-db redis zookeeper kafka app"
-"${compose_cmd[@]}" up -d postgres-db redis zookeeper kafka app
+if [[ "$compose_build" == "true" ]]; then
+  if [[ "$force_recreate" == "true" ]]; then
+    echo "[step7-regression] compose down (force recreate)"
+    "${compose_cmd[@]}" down || true
+  fi
+  echo "[step7-regression] compose up --build: postgres-db redis zookeeper kafka app"
+  "${compose_cmd[@]}" up --build -d postgres-db redis zookeeper kafka app
+else
+  echo "[step7-regression] compose up: postgres-db redis zookeeper kafka app"
+  "${compose_cmd[@]}" up -d postgres-db redis zookeeper kafka app
+fi
 
 echo "[step7-regression] waiting for backend health: $health_url"
 start_ts="$(date +%s)"
