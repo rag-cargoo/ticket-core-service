@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-09 01:38:36`
+> - **Updated At**: `2026-02-11 11:06:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -39,6 +39,8 @@
 10. 중요 커밋의 `strict` 전환은 사용자 승인 후 수행하고, 완료 후 기본 모드를 `quick`으로 복귀한다.
 11. 에이전트 최종 보고에는 항상 현재 `pre-commit` 모드와 전환 명령(`precommit_mode.sh status|quick|strict`)을 포함한다.
 12. `strict`에서 `knowledge/*.md`는 Failure-First/Before&After/Execution Log 품질 규칙을, `api-specs/*.md`는 6-Step 표준 토큰을 만족해야 커밋 가능하다.
+13. 임시 산출물(`*.log`, `*.tmp`, k6 대시보드 HTML/스크린샷)은 `.codex/tmp/<tool>/<run-id>/`에 저장하고, 영구 증빙 파일(`*.md`, `*.json`)만 프로젝트 문서 경로에 유지한다.
+14. pre-commit 체인은 `.codex/tmp/` 밖에 임시 산출물이 stage되면 warning을 출력한다(차단 아님).
 
 ## Done Criteria
 1. 코드, 테스트, 문서(`task.md`, 필요 시 API 명세)가 서로 모순 없이 정합성을 가진다.
