@@ -196,7 +196,7 @@ bash scripts/api/v12-social-auth-contract.sh
   - 네이버 authorize-url + state 생성 계약 확인
   - exchange 입력값 검증(`code`/`state`) 400 응답 계약 확인
 - 실행 리포트:
-  - `prj-docs/api-test/step13-social-auth-latest.md`
+  - `prj-docs/api-test/auth-track-a1-social-auth-latest.md`
 
 ---
 

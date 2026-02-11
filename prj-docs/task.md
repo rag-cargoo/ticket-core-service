@@ -22,9 +22,9 @@
 > - Step 10: 취소/환불/재판매 대기열 연계 구현
 > - Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현
 > - Step 12: 부정사용 방지/감사 추적 기능 구현
-> - Step 13: 인증/인가 + 소셜 로그인(카카오) 통합
-> - Step 14: 프론트엔드 연동 + 검색/탐색 UX 구현
-> - Step 15: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
+> - Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
+> - UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
+> - Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
 > - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
 <!-- DOC_TOC_END -->
 
@@ -106,10 +106,11 @@
 
 ---
 
-## 다음 단계 로드맵 (Step 8+)
+## 다음 단계 로드맵 (Step + Track)
 ---
 > [!TIP]
-> 기능 고도화는 스텝 단위로 진행하며, 각 스텝은 `목표 / 완료 기준 / 다음 액션`을 명시합니다.
+> Step 0~12는 동시성 제어 스텝으로 관리하고, 이후 기능 고도화는 Track 단위로 분리합니다.
+> 각 항목은 `목표 / 완료 기준 / 다음 액션`을 명시합니다.
 >
 > - [x] **Step 8: k6 성능 기준선 확정 및 병목 제거**
 >   - 목표: `join/status/subscribe` 기준 처리량, p95, 에러율 기준선을 확정한다.
@@ -171,7 +172,7 @@
 >     - 실행 리포트: `prj-docs/api-test/step12-abuse-audit-latest.md`
 >   - 검증 메모(2026-02-12): `./gradlew test --rerun-tasks --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS (`17 tests completed, 0 failed`).
 >   - API E2E 메모(2026-02-12): `bash scripts/api/v11-abuse-audit.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step12/20260212-010759-e2e/v11-step12-e2e.log`.
->   - 다음 액션: Step 13 인증/인가 + 카카오 로그인 도메인 모델(`users/auth_identities/refresh_tokens`) 설계.
+>   - 다음 액션: Auth Track A2 인증/인가 + 소셜 로그인 통합 도메인 모델(`users/auth_identities/refresh_tokens`) 설계.
 >
 > - [x] **Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영**
 >   - 목표: 프론트 OAuth 콜백 이전에 백엔드 code 교환/사용자 매핑 계약을 먼저 고정한다.
@@ -181,20 +182,20 @@
 >     - provider client: `src/main/java/com/ticketrush/domain/auth/oauth/KakaoOAuthClient.java`, `src/main/java/com/ticketrush/domain/auth/oauth/NaverOAuthClient.java`
 >     - 사용자 식별 확장: `src/main/java/com/ticketrush/domain/user/User.java`, `src/main/java/com/ticketrush/domain/user/UserRepository.java`
 >     - 문서/스크립트: `prj-docs/api-specs/social-auth-api.md`, `prj-docs/knowledge/social-login-oauth-연동-전략.md`, `scripts/http/auth-social.http`, `scripts/api/v12-social-auth-contract.sh`
->     - 실행 리포트: `prj-docs/api-test/step13-social-auth-latest.md`
+>     - 실행 리포트: `prj-docs/api-test/auth-track-a1-social-auth-latest.md`
 >   - 검증 메모(2026-02-12): `./gradlew test --tests '*SocialAuthServiceTest'` PASS.
 >
-> - [ ] **Step 13: 인증/인가 + 소셜 로그인(카카오) 통합**
+> - [ ] **Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합**
 >   - 목표: 예약/결제 API를 인증된 사용자 컨텍스트로 보호하고 소셜 로그인으로 온보딩을 단순화한다.
 >   - 완료 기준: `JWT Access/Refresh`, Role 인가, `Kakao OAuth2` 로그인/회원 연동, 만료/재발급 흐름 테스트를 통과한다.
 >   - 다음 액션: auth 도메인 설계(`users`, `auth_identities`, `refresh_tokens`) + 카카오 콜백 처리 API 초안 작성.
 >
-> - [ ] **Step 14: 프론트엔드 연동 + 검색/탐색 UX 구현**
+> - [ ] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현**
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.
 >   - 완료 기준: 핵심 화면/상태 전이 UI, 공연 검색/필터/정렬, 오류/재시도 UX까지 동작한다.
 >   - 다음 액션: 페이지 라우트와 API contract 매핑표 작성 후 MVP 화면 우선 구현.
 >
-> - [ ] **Step 15: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
+> - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
 >   - 목표: 실제 과금 없이도 운영 결제와 유사한 상태/실패 시나리오를 재현 가능한 테스트 환경을 만든다.
 >   - 완료 기준: `PaymentIntent` 상태머신, idempotency key, 서명 검증 가능한 가짜 웹훅, 중복/지연/순서역전 테스트를 통과한다.
 >   - 다음 액션: `PaymentGateway` 인터페이스 + `SandboxGateway` 구현, 시나리오 스크립트(`approve/deny/timeout/retry`) 작성.

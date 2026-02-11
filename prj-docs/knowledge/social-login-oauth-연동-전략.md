@@ -1,4 +1,4 @@
-# 소셜 로그인 OAuth 연동 전략 (Step 13)
+# 소셜 로그인 OAuth 연동 전략 (Auth Track A1)
 
 <!-- DOC_META_START -->
 > [!NOTE]
