@@ -57,6 +57,35 @@
 | http_req_duration.p(99) | 5.405 ms | 4.810 ms | -0.595 ms (-11.01%) |
 | http_req_failed.rate | 0 | 0 | 변화 없음 |
 
+### Beginner Guide: 어떤 값을 보면 되는가
+
+- `http_reqs.rate/count`: 같은 조건에서 값이 늘면 처리량이 좋아진 것이다.
+- `http_req_duration.p(95)`: 전체 요청 중 느린 5% 구간의 응답시간이다. 낮을수록 좋다.
+- `http_req_duration.p(99)`: 최악에 가까운 1% 구간의 응답시간이다. 병목 체감과 가장 직접적으로 연결된다.
+- `http_req_failed.rate`: 실패율이다. `0`이 유지되어야 안정성 저하 없이 개선된 것으로 본다.
+- `join_accepted.count`/`join_rejected.count`: Step 6 throttling 정책 영향값이다.
+  - `accepted=400`은 정책이 정상 동작한다는 뜻이다.
+  - `rejected` 증가는 과부하 방지 정책이 작동한 결과이며, 성능 퇴화 신호가 아니다.
+
+### 해석: 이번 Step 8에서 실제로 개선된 점
+
+- 처리량: `193.464 -> 194.410 req/s` (`+0.49%`)로 소폭 상승했다.
+- Tail latency:
+  - `p95 3.848ms -> 3.552ms` (`-7.68%`)
+  - `p99 5.405ms -> 4.810ms` (`-11.01%`)
+- 안정성: `http_req_failed.rate = 0`이 before/after 모두 유지됐다.
+- 정책 일관성: `join_accepted.count = 400`이 유지되어 throttling 동작이 깨지지 않았다.
+
+### 판정 기준과 결과
+
+| 판정 항목 | 기준 | 결과 |
+| --- | --- | --- |
+| 안정성 | `http_req_failed.rate == 0` 유지 | PASS (`0 -> 0`) |
+| 응답속도 | `p95/p99`가 baseline 대비 악화되지 않을 것 | PASS (둘 다 개선) |
+| 처리량 | `http_reqs.rate`가 baseline 대비 유지/상승 | PASS (`+0.49%`) |
+| 정책 보존 | `join_accepted.count`가 정책값(400) 유지 | PASS (`400 -> 400`) |
+
 ### Verdict
 
 - Step 8의 "코드 병목 제거 + 동일 조건 재측정 + before/after 증빙" 조건 충족.
+- 초보자 관점 결론: 같은 안정성(실패율 0)을 유지한 채, 느린 구간(p95/p99) 응답을 줄였기 때문에 "실제 체감 성능이 좋아진 개선"으로 본다.
