@@ -49,3 +49,10 @@ app:
     activation-delay-millis: 10000
     sse-timeout-millis: 300000
     sse-heartbeat-delay-millis: 15000
+  abuse-guard:
+    hold-request-window-seconds: 10
+    hold-request-max-count: 3
+    duplicate-request-window-seconds: 300
+    device-window-seconds: 600
+    device-max-distinct-users: 1
+    audit-query-default-limit: 100

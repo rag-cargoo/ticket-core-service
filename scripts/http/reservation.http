@@ -56,7 +56,9 @@ Content-Type: application/json
 
 {
   "userId": 1,
-  "seatId": 11
+  "seatId": 11,
+  "requestFingerprint": "hold-req-001",
+  "deviceFingerprint": "device-001"
 }
 
 ### 10. Step 9 - 결제 진행 전이 (HOLD -> PAYING)
@@ -136,5 +138,21 @@ Content-Type: application/json
 
 {
   "userId": 1,
-  "seatId": 11
+  "seatId": 11,
+  "requestFingerprint": "policy-req-001",
+  "deviceFingerprint": "device-policy-001"
 }
+
+### 21. Step 12 - 부정사용 방지 검증 (rate/duplicate/device)
+POST http://localhost:8080/api/reservations/v6/holds
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 12,
+  "requestFingerprint": "abuse-req-001",
+  "deviceFingerprint": "device-abuse-001"
+}
+
+### 22. Step 12 - 감사 로그 조회
+GET http://localhost:8080/api/reservations/v6/audit/abuse?result=BLOCKED&limit=20

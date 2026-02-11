@@ -32,6 +32,7 @@ public class ReservationLifecycleService {
     private final UserRepository userRepository;
     private final ReservationProperties reservationProperties;
     private final SalesPolicyService salesPolicyService;
+    private final AbuseAuditService abuseAuditService;
     private final WaitingQueueService waitingQueueService;
     private final SseEmitterManager sseEmitterManager;
 
@@ -44,11 +45,13 @@ public class ReservationLifecycleService {
 
         LocalDateTime now = LocalDateTime.now();
         salesPolicyService.validateHoldRequest(user, seat, now);
+        abuseAuditService.validateHoldRequest(request, user, seat, now);
         seat.hold();
 
         LocalDateTime holdExpiresAt = now.plusSeconds(reservationProperties.getHoldTtlSeconds());
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
         reservationRepository.save(reservation);
+        abuseAuditService.recordAllowedHold(request, user, seat, reservation.getId(), now);
         return ReservationLifecycleResponse.from(reservation);
     }
 

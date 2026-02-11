@@ -157,10 +157,20 @@
 >   - API E2E 메모(2026-02-12): `bash scripts/api/v10-sales-policy-engine.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log`.
 >   - 다음 액션: Step 12 부정사용 방지 룰(요청 빈도/디바이스 지문/감사 로그) 초안 구현.
 >
-> - [ ] **Step 12: 부정사용 방지/감사 추적 기능 구현**
+> - [x] **Step 12: 부정사용 방지/감사 추적 기능 구현**
 >   - 목표: 우회/봇/중복 시도를 탐지하고 추적 가능한 감사 이력을 남긴다.
 >   - 완료 기준: 차단 규칙, 감사 로그, 운영 조회 API까지 연결된다.
->   - 다음 액션: rate rule + device/account fingerprint 최소 규칙 초안 작성.
+>   - 완료 근거:
+>     - 감사 로그 엔티티/리포지토리: `src/main/java/com/ticketrush/domain/reservation/entity/AbuseAuditLog.java`, `src/main/java/com/ticketrush/domain/reservation/repository/AbuseAuditLogRepository.java`
+>     - 차단/조회 서비스: `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditService.java`
+>     - 차단 로그 별도 트랜잭션 보존: `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditWriter.java`
+>     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 운영 조회 API: `src/main/java/com/ticketrush/api/controller/ReservationController.java` (`GET /api/reservations/v6/audit/abuse`)
+>     - 운영 스크립트/문서: `scripts/api/v11-abuse-audit.sh`, `scripts/http/reservation.http`, `prj-docs/api-specs/reservation-api.md`, `prj-docs/knowledge/동시성-제어-전략.md`
+>     - 실행 리포트: `prj-docs/api-test/step12-abuse-audit-latest.md`
+>   - 검증 메모(2026-02-12): `./gradlew test --rerun-tasks --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS (`17 tests completed, 0 failed`).
+>   - API E2E 메모(2026-02-12): `bash scripts/api/v11-abuse-audit.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step12/20260212-010759-e2e/v11-step12-e2e.log`.
+>   - 다음 액션: Step 13 인증/인가 + 카카오 로그인 도메인 모델(`users/auth_identities/refresh_tokens`) 설계.
 >
 > - [ ] **Step 13: 인증/인가 + 소셜 로그인(카카오) 통합**
 >   - 목표: 예약/결제 API를 인증된 사용자 컨텍스트로 보호하고 소셜 로그인으로 온보딩을 단순화한다.

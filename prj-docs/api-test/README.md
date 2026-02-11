@@ -18,7 +18,8 @@
 > - 6. Step 9 상태머신 검증 실행
 > - 7. Step 10 취소/환불/재판매 연계 검증 실행
 > - 8. Step 11 판매 정책 엔진 검증 실행
-> - 9. Playwright MCP로 k6 HTML 열기
+> - 9. Step 12 부정사용 방지/감사 추적 검증 실행
+> - 10. Playwright MCP로 k6 HTML 열기
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -33,7 +34,7 @@ make test-suite
 ```
 
 - 내부적으로 `scripts/api/run-api-script-tests.sh`를 호출합니다.
-- 기본 실행 세트는 `v1`~`v10` 스크립트입니다.
+- 기본 실행 세트는 `v1`~`v11` 스크립트입니다.
 - 기본 헬스체크 URL은 `http://127.0.0.1:8080/api/concerts` 입니다.
 - 필요하면 `API_SCRIPT_HEALTH_URL` 환경변수로 변경할 수 있습니다.
 - 기존 환경과의 호환을 위해 `TICKETRUSH_HEALTH_URL`도 별칭으로 지원합니다.
@@ -165,7 +166,24 @@ bash scripts/api/v10-sales-policy-engine.sh
 
 ---
 
-## 9. Playwright MCP로 k6 HTML 열기
+## 9. Step 12 부정사용 방지/감사 추적 검증 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+bash scripts/api/v11-abuse-audit.sh
+```
+
+- 검증 흐름:
+  - 유저별 요청 빈도 초과 차단(`RATE_LIMIT_EXCEEDED`)
+  - 중복 `requestFingerprint` 차단(`DUPLICATE_REQUEST_FINGERPRINT`)
+  - 다계정 `deviceFingerprint` 차단(`DEVICE_FINGERPRINT_MULTI_ACCOUNT`)
+  - 감사 조회 API(`GET /api/reservations/v6/audit/abuse`)에서 차단 사유 조회 확인
+- Step 12 실행 리포트:
+  - `prj-docs/api-test/step12-abuse-audit-latest.md`
+
+---
+
+## 10. Playwright MCP로 k6 HTML 열기
 
 `k6-web-dashboard.html`은 로컬 파일이므로 Playwright MCP에서 `file://` 직접 열기가 실패할 수 있습니다.
 표준 절차는 "로컬 HTTP 서빙 + MCP `navigate`" 입니다.

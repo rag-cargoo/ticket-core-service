@@ -2,21 +2,26 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
+import com.ticketrush.domain.reservation.service.AbuseAuditService;
 import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
+import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.global.lock.RedissonLockFacade;
 import com.ticketrush.global.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SseEmitterManager;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
+import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +35,7 @@ public class ReservationController {
     private final KafkaReservationProducer kafkaProducer;
     private final ReservationQueueService queueService;
     private final ReservationLifecycleService reservationLifecycleService;
+    private final AbuseAuditService abuseAuditService;
     private final SseEmitterManager sseManager;
 
     /**
@@ -157,6 +163,28 @@ public class ReservationController {
             @PathVariable Long reservationId,
             @RequestParam Long userId) {
         return ResponseEntity.ok(reservationLifecycleService.getReservation(reservationId, userId));
+    }
+
+    /**
+     * [v6] Step 12 - 부정사용/감사 추적 로그 조회
+     */
+    @GetMapping("/v6/audit/abuse")
+    public ResponseEntity<List<AbuseAuditResponse>> getAbuseAudits(
+            @RequestParam(required = false) AbuseAuditLog.AuditAction action,
+            @RequestParam(required = false) AbuseAuditLog.AuditResult result,
+            @RequestParam(required = false) AbuseAuditLog.AuditReason reason,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long concertId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toAt,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(
+                abuseAuditService.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
+                        .stream()
+                        .map(AbuseAuditResponse::from)
+                        .toList()
+        );
     }
 
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {

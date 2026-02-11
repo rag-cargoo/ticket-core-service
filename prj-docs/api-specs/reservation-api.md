@@ -303,6 +303,8 @@ data: SUCCESS
 | :--- | :--- | :--- | :--- | :--- |
 | Body | `userId` | Long | Yes | 예약 요청 유저 ID |
 | Body | `seatId` | Long | Yes | 점유할 좌석 ID |
+| Body | `requestFingerprint` | String | No | 중복 요청 방지용 클라이언트 요청 식별자 |
+| Body | `deviceFingerprint` | String | No | 디바이스 단위 부정사용 탐지 식별자 |
 
 **Response Summary (201 Created)**
 
@@ -469,6 +471,68 @@ data: SUCCESS
 - `PUT /api/concerts/{concertId}/sales-policy`
 - `GET /api/concerts/{concertId}/sales-policy`
 - 상세 필드는 `prj-docs/api-specs/concert-api.md`의 Step 11 섹션을 참조합니다.
+
+---
+
+### 1.15. Step 12: 부정사용 방지 규칙 (Rate/Duplicate/Device)
+- **Target Endpoint**: `POST /api/reservations/v6/holds`
+- **Description**: Step 12부터 HOLD 생성 시 부정사용 방지 룰을 선검증하고, 결과를 감사 로그로 기록합니다.
+
+**검증 규칙**
+
+| Rule | 입력 필드 | 차단 조건 | 실패 시 |
+| :--- | :--- | :--- | :--- |
+| Rate Limit | `userId` | 최근 윈도우(`app.abuse-guard.hold-request-window-seconds`) 내 HOLD 시도가 허용 횟수 초과 | `409 Conflict` (`Rate limit exceeded...`) |
+| Duplicate Request Fingerprint | `requestFingerprint` | 같은 유저가 중복 윈도우 내 동일 `requestFingerprint` 재사용 | `409 Conflict` (`Duplicate request fingerprint detected...`) |
+| Device Multi-Account | `deviceFingerprint` | 같은 디바이스를 다른 계정이 윈도우 내 사용한 이력이 임계치 이상 | `409 Conflict` (`Device fingerprint used by multiple accounts...`) |
+
+**감사 로그 기록**
+
+| Field | Meaning |
+| :--- | :--- |
+| `action` | `HOLD_CREATE` |
+| `result` | `ALLOWED` or `BLOCKED` |
+| `reason` | `NONE`, `RATE_LIMIT_EXCEEDED`, `DUPLICATE_REQUEST_FINGERPRINT`, `DEVICE_FINGERPRINT_MULTI_ACCOUNT` |
+
+---
+
+### 1.16. Step 12: 부정사용 감사 로그 조회 API
+- **Endpoint**: `GET /api/reservations/v6/audit/abuse`
+- **Description**: 운영자가 차단 이력과 허용 이력을 필터링 조회합니다.
+
+**Parameters (Optional)**
+
+| Query | Type | Description |
+| :--- | :--- | :--- |
+| `action` | Enum | `HOLD_CREATE` |
+| `result` | Enum | `ALLOWED`, `BLOCKED` |
+| `reason` | Enum | 차단/허용 사유 |
+| `userId` | Long | 유저 기준 필터 |
+| `concertId` | Long | 공연 기준 필터 |
+| `fromAt` | DateTime | 조회 시작 시각(ISO-8601) |
+| `toAt` | DateTime | 조회 종료 시각(ISO-8601) |
+| `limit` | Integer | 최대 조회 건수 (기본값은 설정값 사용) |
+
+**Response Example**
+
+```json
+[
+  {
+    "id": 15,
+    "action": "HOLD_CREATE",
+    "result": "BLOCKED",
+    "reason": "RATE_LIMIT_EXCEEDED",
+    "userId": 1001,
+    "concertId": 1,
+    "seatId": 33,
+    "reservationId": null,
+    "requestFingerprint": "rate-a-4",
+    "deviceFingerprint": "device-a",
+    "detailMessage": "Rate limit exceeded. userId=1001, windowSeconds=10",
+    "occurredAt": "2026-02-12T00:52:31"
+  }
+]
+```
 
 ---
 

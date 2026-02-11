@@ -12,14 +12,17 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
+import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.global.config.AbuseGuardProperties;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.sse.SseEmitterManager;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,8 @@ import static org.mockito.Mockito.when;
 @Import({
         ReservationLifecycleService.class,
         SalesPolicyService.class,
+        AbuseAuditService.class,
+        AbuseAuditWriter.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
 })
 class ReservationLifecycleServiceIntegrationTest {
@@ -54,6 +59,18 @@ class ReservationLifecycleServiceIntegrationTest {
             ReservationProperties properties = new ReservationProperties();
             properties.setHoldTtlSeconds(1);
             properties.setExpireCheckDelayMillis(1000);
+            return properties;
+        }
+
+        @Bean
+        AbuseGuardProperties abuseGuardProperties() {
+            AbuseGuardProperties properties = new AbuseGuardProperties();
+            properties.setHoldRequestWindowSeconds(60);
+            properties.setHoldRequestMaxCount(2);
+            properties.setDuplicateRequestWindowSeconds(600);
+            properties.setDeviceWindowSeconds(600);
+            properties.setDeviceMaxDistinctUsers(1);
+            properties.setAuditQueryDefaultLimit(100);
             return properties;
         }
 
@@ -72,10 +89,16 @@ class ReservationLifecycleServiceIntegrationTest {
     private ReservationLifecycleService reservationLifecycleService;
 
     @jakarta.annotation.Resource
+    private AbuseAuditService abuseAuditService;
+
+    @jakarta.annotation.Resource
     private ReservationRepository reservationRepository;
 
     @jakarta.annotation.Resource
     private SalesPolicyRepository salesPolicyRepository;
+
+    @jakarta.annotation.Resource
+    private AbuseAuditLogRepository abuseAuditLogRepository;
 
     @jakarta.annotation.Resource
     private SeatRepository seatRepository;
@@ -242,6 +265,90 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationRequest(vipUser.getId(), secondSeat.getId())
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Per-user reservation limit exceeded");
+    }
+
+    @Test
+    void holdShouldBlockWhenRateLimitExceeded() {
+        User user = userRepository.save(new User("step12-rate-user-" + System.nanoTime(), UserTier.BASIC));
+        Seat firstSeat = saveSeat("A-201");
+
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 5; i++) {
+            abuseAuditLogRepository.save(
+                    AbuseAuditLog.allowedHold(
+                            user,
+                            firstSeat,
+                            new ReservationRequest(user.getId(), firstSeat.getId(), "seed-rate-" + i, "device-rate"),
+                            null,
+                            now.minusSeconds(1)
+                    )
+            );
+        }
+
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), firstSeat.getId(), "rate-new", "device-rate")
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Rate limit exceeded");
+
+        assertThat(abuseAuditLogRepository.countByActionAndUserIdAndOccurredAtAfter(
+                AbuseAuditLog.AuditAction.HOLD_CREATE,
+                user.getId(),
+                LocalDateTime.now().minusMinutes(5)
+        )).isGreaterThanOrEqualTo(6);
+    }
+
+    @Test
+    void holdShouldBlockWhenRequestFingerprintIsDuplicated() {
+        User user = userRepository.save(new User("step12-dup-user-" + System.nanoTime(), UserTier.BASIC));
+        Seat firstSeat = saveSeat("A-204");
+        Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-205"));
+
+        reservationLifecycleService.createHold(new ReservationRequest(user.getId(), firstSeat.getId(), "dup-req-1", "device-dup"));
+
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), secondSeat.getId(), "dup-req-1", "device-dup")
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Duplicate request fingerprint detected");
+    }
+
+    @Test
+    void holdShouldBlockWhenDeviceFingerprintIsSharedAcrossAccounts() {
+        User userA = userRepository.save(new User("step12-device-user-a-" + System.nanoTime(), UserTier.BASIC));
+        User userB = userRepository.save(new User("step12-device-user-b-" + System.nanoTime(), UserTier.BASIC));
+        Seat firstSeat = saveSeat("A-206");
+        Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-207"));
+
+        reservationLifecycleService.createHold(new ReservationRequest(userA.getId(), firstSeat.getId(), "dev-req-a", "shared-device-1"));
+
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(
+                new ReservationRequest(userB.getId(), secondSeat.getId(), "dev-req-b", "shared-device-1")
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Device fingerprint used by multiple accounts");
+    }
+
+    @Test
+    void abuseAuditQuery_shouldReturnBlockedEvent() {
+        User user = userRepository.save(new User("step12-audit-user-" + System.nanoTime(), UserTier.BASIC));
+        Seat firstSeat = saveSeat("A-208");
+        Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-209"));
+
+        reservationLifecycleService.createHold(new ReservationRequest(user.getId(), firstSeat.getId(), "audit-dup-1", "audit-device"));
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), secondSeat.getId(), "audit-dup-1", "audit-device")
+        )).isInstanceOf(IllegalStateException.class);
+
+        List<AbuseAuditLog> blockedLogs = abuseAuditService.getAuditLogs(
+                AbuseAuditLog.AuditAction.HOLD_CREATE,
+                AbuseAuditLog.AuditResult.BLOCKED,
+                AbuseAuditLog.AuditReason.DUPLICATE_REQUEST_FINGERPRINT,
+                user.getId(),
+                null,
+                null,
+                null,
+                10
+        );
+        assertThat(blockedLogs).isNotEmpty();
+        assertThat(blockedLogs.get(0).getReason()).isEqualTo(AbuseAuditLog.AuditReason.DUPLICATE_REQUEST_FINGERPRINT);
     }
 
     private Seat saveSeat(String seatNo) {
