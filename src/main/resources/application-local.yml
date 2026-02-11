@@ -1,5 +1,6 @@
 spring:
   config:
+    import: optional:file:.env.local[.properties]
     activate:
       on-profile: local
   datasource:
@@ -74,3 +75,13 @@ app:
     device-window-seconds: 600
     device-max-distinct-users: 1
     audit-query-default-limit: 100
+  social:
+    kakao:
+      client-id: ${KAKAO_CLIENT_ID:}
+      client-secret: ${KAKAO_CLIENT_SECRET:}
+      redirect-uri: ${KAKAO_REDIRECT_URI:}
+    naver:
+      client-id: ${NAVER_CLIENT_ID:}
+      client-secret: ${NAVER_CLIENT_SECRET:}
+      redirect-uri: ${NAVER_REDIRECT_URI:}
+      service-url: ${NAVER_SERVICE_URL:}

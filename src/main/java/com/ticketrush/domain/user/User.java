@@ -8,12 +8,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_users_social_provider_social_id", columnNames = {"social_provider", "social_id"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
@@ -29,6 +35,19 @@ public class User {
     @Column(nullable = false)
     private UserTier tier;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "social_provider", length = 20)
+    private SocialProvider socialProvider;
+
+    @Column(name = "social_id", length = 100)
+    private String socialId;
+
+    @Column(length = 255)
+    private String email;
+
+    @Column(name = "display_name", length = 100)
+    private String displayName;
+
     public User(String username) {
         this(username, UserTier.BASIC);
     }
@@ -36,5 +55,26 @@ public class User {
     public User(String username, UserTier tier) {
         this.username = username;
         this.tier = tier == null ? UserTier.BASIC : tier;
+    }
+
+    public static User socialUser(
+            String username,
+            UserTier tier,
+            SocialProvider socialProvider,
+            String socialId,
+            String email,
+            String displayName
+    ) {
+        User user = new User(username, tier);
+        user.socialProvider = socialProvider;
+        user.socialId = socialId;
+        user.email = email;
+        user.displayName = displayName;
+        return user;
+    }
+
+    public void updateSocialProfile(String email, String displayName) {
+        this.email = email;
+        this.displayName = displayName;
     }
 }

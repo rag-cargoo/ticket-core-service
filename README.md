@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-10 21:11:49`
+> - **Updated At**: `2026-02-12 02:15:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -67,4 +67,6 @@ make test-k6
 - 프로젝트 에이전트 규칙: [Project Agent (Rules)](/workspace/apps/backend/ticket-core-service/prj-docs/PROJECT_AGENT.md)
 - 아키텍처: [Architecture](/workspace/apps/backend/ticket-core-service/prj-docs/rules/architecture.md)
 - 동시성 전략 기록: [동시성 제어 전략](/workspace/apps/backend/ticket-core-service/prj-docs/knowledge/동시성-제어-전략.md)
+- 소셜 로그인 전략 기록: [소셜 로그인 OAuth 연동 전략](/workspace/apps/backend/ticket-core-service/prj-docs/knowledge/social-login-oauth-연동-전략.md)
 - 예약 API 명세: [Reservation API](/workspace/apps/backend/ticket-core-service/prj-docs/api-specs/reservation-api.md)
+- 소셜 인증 API 명세: [Social Auth API](/workspace/apps/backend/ticket-core-service/prj-docs/api-specs/social-auth-api.md)

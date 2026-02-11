@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 22:15:00`
+> - **Updated At**: `2026-02-12 02:15:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -97,6 +97,7 @@
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장
+> - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - [ ] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
 > - [ ] 소셜 로그인 연동 (`Kakao OAuth2`)
 > - [ ] 검색 기능 고도화 (공연 검색/필터/정렬, 페이징)
@@ -171,6 +172,17 @@
 >   - 검증 메모(2026-02-12): `./gradlew test --rerun-tasks --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS (`17 tests completed, 0 failed`).
 >   - API E2E 메모(2026-02-12): `bash scripts/api/v11-abuse-audit.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step12/20260212-010759-e2e/v11-step12-e2e.log`.
 >   - 다음 액션: Step 13 인증/인가 + 카카오 로그인 도메인 모델(`users/auth_identities/refresh_tokens`) 설계.
+>
+> - [x] **Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영**
+>   - 목표: 프론트 OAuth 콜백 이전에 백엔드 code 교환/사용자 매핑 계약을 먼저 고정한다.
+>   - 완료 기준: `authorize-url`/`exchange` API, provider client, 사용자 social 식별자, 테스트/문서/스크립트가 함께 반영된다.
+>   - 완료 근거:
+>     - 컨트롤러/서비스: `src/main/java/com/ticketrush/api/controller/SocialAuthController.java`, `src/main/java/com/ticketrush/domain/auth/service/SocialAuthService.java`
+>     - provider client: `src/main/java/com/ticketrush/domain/auth/oauth/KakaoOAuthClient.java`, `src/main/java/com/ticketrush/domain/auth/oauth/NaverOAuthClient.java`
+>     - 사용자 식별 확장: `src/main/java/com/ticketrush/domain/user/User.java`, `src/main/java/com/ticketrush/domain/user/UserRepository.java`
+>     - 문서/스크립트: `prj-docs/api-specs/social-auth-api.md`, `prj-docs/knowledge/social-login-oauth-연동-전략.md`, `scripts/http/auth-social.http`, `scripts/api/v12-social-auth-contract.sh`
+>     - 실행 리포트: `prj-docs/api-test/step13-social-auth-latest.md`
+>   - 검증 메모(2026-02-12): `./gradlew test --tests '*SocialAuthServiceTest'` PASS.
 >
 > - [ ] **Step 13: 인증/인가 + 소셜 로그인(카카오) 통합**
 >   - 목표: 예약/결제 API를 인증된 사용자 컨텍스트로 보호하고 소셜 로그인으로 온보딩을 단순화한다.
