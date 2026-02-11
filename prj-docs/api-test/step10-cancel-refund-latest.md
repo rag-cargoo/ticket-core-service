@@ -4,7 +4,7 @@
 - Run Time (UTC): 2026-02-11 13:03:58 UTC
 - Scope: `CONFIRMED -> CANCELLED -> REFUNDED` 상태 전이 + 취소 시 대기열 상위 1명 `ACTIVE` 승격
 - Before Baseline Commit: `1f2279e` (`docs(step9): add before-after matrix and test interpretation guide`)
-- After Implementation: working tree (Step 10 implementation + tests + script + docs)
+- After Implementation Commit: `69e215c` (`feat(step10): implement cancel-refund lifecycle and resale queue linkage`)
 - API E2E Run ID: `20260211-220150-e2e`
 
 ## Execution Command

@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 20:36:00`
+> - **Updated At**: `2026-02-11 22:08:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -206,7 +206,7 @@ data: SUCCESS
 
 ---
 
-### 1.4. 동기식 즉시 예약 (v1, v2, v3)
+### 1.5. 동기식 즉시 예약 (v1, v2, v3)
 - **Endpoint**: `POST /api/reservations/{version}`
 - **Description**: 대기열 없이 즉시 DB 반영을 시도하는 블로킹 방식입니다. **활성 토큰이 필수입니다.**
 
@@ -251,7 +251,7 @@ data: SUCCESS
 
 ---
 
-### 1.5. 유저별 예약 목록 조회
+### 1.6. 유저별 예약 목록 조회
 - **Endpoint**: `GET /api/reservations/users/{userId}`
 - **Description**: 특정 유저가 성공한 모든 예약 내역을 조회합니다.
 
@@ -276,9 +276,10 @@ data: SUCCESS
 
 ---
 
-### 1.6. 예약 취소 (Cleanup)
+### 1.7. 예약 취소 (Cleanup, Legacy)
 - **Endpoint**: `DELETE /api/reservations/{id}`
 - **Description**: 확정된 예약을 취소하고 좌석을 다시 예매 가능 상태로 되돌립니다.
+- **Deprecation Note**: Step 10 이후 신규 플로우는 `POST /api/reservations/v6/{reservationId}/cancel` + `POST /api/reservations/v6/{reservationId}/refund` 사용을 권장합니다.
 
 **Parameters**
 
@@ -292,7 +293,7 @@ data: SUCCESS
 
 ---
 
-### 1.7. Step 9: 좌석 홀드 생성 (HOLD)
+### 1.8. Step 9: 좌석 홀드 생성 (HOLD)
 - **Endpoint**: `POST /api/reservations/v6/holds`
 - **Description**: 결제 대기 상태를 만들고 좌석을 임시 점유(`TEMP_RESERVED`)로 전환합니다.
 
@@ -313,7 +314,7 @@ data: SUCCESS
 
 ---
 
-### 1.8. Step 9: 결제 진행 전이 (HOLD -> PAYING)
+### 1.9. Step 9: 결제 진행 전이 (HOLD -> PAYING)
 - **Endpoint**: `POST /api/reservations/v6/{reservationId}/paying`
 - **Description**: 결제 진행 상태로 전이합니다.
 
@@ -332,7 +333,7 @@ data: SUCCESS
 
 ---
 
-### 1.9. Step 9: 결제 확정 전이 (PAYING -> CONFIRMED)
+### 1.10. Step 9: 결제 확정 전이 (PAYING -> CONFIRMED)
 - **Endpoint**: `POST /api/reservations/v6/{reservationId}/confirm`
 - **Description**: 결제 완료를 반영하고 좌석을 최종 점유(`RESERVED`)로 확정합니다.
 
@@ -352,7 +353,7 @@ data: SUCCESS
 
 ---
 
-### 1.10. Step 9: 예약 상태 조회
+### 1.11. Step 9: 예약 상태 조회
 - **Endpoint**: `GET /api/reservations/v6/{reservationId}?userId={userId}`
 - **Description**: 상태머신 진행 상태(`HOLD/PAYING/CONFIRMED/EXPIRED/CANCELLED/REFUNDED`)와 타임스탬프를 조회합니다.
 
@@ -369,7 +370,7 @@ data: SUCCESS
 
 ---
 
-### 1.11. Step 10: 예약 취소 + 재판매 대기열 연계 (CONFIRMED -> CANCELLED)
+### 1.12. Step 10: 예약 취소 + 재판매 대기열 연계 (CONFIRMED -> CANCELLED)
 - **Endpoint**: `POST /api/reservations/v6/{reservationId}/cancel`
 - **Description**: 확정 예약을 취소하고 좌석을 `AVAILABLE`로 복구한 뒤, 같은 콘서트 대기열 상위 1명을 `ACTIVE`로 승격합니다.
 
@@ -411,7 +412,7 @@ data: SUCCESS
 
 ---
 
-### 1.12. Step 10: 환불 완료 처리 (CANCELLED -> REFUNDED)
+### 1.13. Step 10: 환불 완료 처리 (CANCELLED -> REFUNDED)
 - **Endpoint**: `POST /api/reservations/v6/{reservationId}/refund`
 - **Description**: 취소된 예약에 대해 환불 완료 상태를 기록합니다.
 
@@ -452,13 +453,15 @@ data: SUCCESS
 ---
 
 ## 2. 공통 에러 응답 (Common Error)
-모든 에러 상황(4xx, 5xx)에서 반환되는 표준 객체입니다.
+현재 구현(`GlobalExceptionHandler`)은 대부분 에러를 **문자열 본문**으로 반환합니다.
 
-```json
-{
-  "timestamp": "2026-02-05T21:30:00.000",
-  "status": 400,
-  "error": "Bad Request",
-  "path": "/api/reservations/..."
-}
+| HTTP Status | Trigger | Response Body Shape | Example |
+| :--- | :--- | :--- | :--- |
+| `400 Bad Request` | `IllegalArgumentException` | Plain text | `User not found: 999` |
+| `409 Conflict` | `IllegalStateException` | Plain text | `Only CONFIRMED reservation can transition to CANCELLED.` |
+| `500 Internal Server Error` | 기타 예외 | Plain text | `...` |
+| `400 Bad Request` | JSON 파싱 실패 | Plain text (prefix 포함) | `JSON Parsing Error: ...` |
+
+```text
+Only CANCELLED reservation can transition to REFUNDED.
 ```
