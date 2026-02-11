@@ -3,14 +3,15 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:34:32`
+> - **Updated At**: `2026-02-12 07:37:25`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
 ## 단계/트랙 목차 (Index)
 ---
+### A) 동시성 제어 Step (0~12)
+
 > [!TIP]
-> - [동시성 제어 Step (0~12)]
 > - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
 > - Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 > - Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
@@ -24,7 +25,10 @@
 > - Step 10: 취소/환불/재판매 대기열 연계 구현
 > - Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현
 > - Step 12: 부정사용 방지/감사 추적 기능 구현
-> - [후속 기능 Track (Post Step 12)]
+
+### B) 후속 기능 Track (Post Step 12)
+
+> [!TIP]
 > - Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 > - UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
