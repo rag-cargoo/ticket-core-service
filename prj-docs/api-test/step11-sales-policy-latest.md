@@ -4,7 +4,7 @@
 - Run Time (KST): 2026-02-12 00:16:22 KST (API E2E), 2026-02-12 00:28:03 KST (JUnit rerun)
 - Scope: 선예매 등급 제어 + 일반 오픈 시각 제어 + 1인 동시 예약 제한(같은 공연 기준)
 - Before Baseline Commit: `69e215c` (`feat(step10): implement cancel-refund lifecycle and resale queue linkage`)
-- After Implementation Commit: `TBD (current working tree)`
+- After Implementation Commit: `e6177c4` (`feat(step11): add sales policy engine and verification flow`)
 - API E2E Run ID: `20260212-001622-e2e`
 
 ## Execution Command
@@ -51,6 +51,18 @@ BUILD SUCCESSFUL in 1m
 | `ReservationStateMachineTest` | 6 | 0 | 0 | 0 | 기존 상태 전이 규칙 회귀 |
 | `ReservationLifecycleServiceIntegrationTest` | 6 | 0 | 0 | 0 | Step11 선예매 등급 차단 + 1인 제한 검증 포함 |
 | `ReservationLifecycleSchedulerTest` | 1 | 0 | 0 | 0 | 홀드 만료 스케줄러 위임 |
+
+## 테스트 검증 설명 (로그 판독 기준)
+
+| 확인 위치 | 기대 값 | 판정 의미 |
+| --- | --- | --- |
+| `.codex/tmp/ticket-core-service/step11/20260212-002803-tests/gradle-step11-tests.log` | `BUILD SUCCESSFUL` | Step11 포함 회귀 테스트가 컴파일/실행 단계까지 통과 |
+| `TEST-com.ticketrush.domain.reservation.service.ReservationLifecycleServiceIntegrationTest.xml` | `tests=6, failures=0, errors=0` | 선예매 등급 차단 + 1인 제한 통합 테스트 통과 |
+| `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/e2e-status.txt` | `health_check_ok` | 실제 기동된 API 서버 대상으로 E2E가 수행됨 |
+| `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log` Step 3 | `code=409` | BASIC 유저 선예매 차단 동작 확인 |
+| `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log` Step 4 | `status=HOLD` | VIP 유저 선예매 허용 동작 확인 |
+| `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log` Step 5 | `code=409` | VIP 동일 공연 2차 HOLD 제한 동작 확인 |
+| `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log` 마지막 줄 | `검증 종료 (PASS)` | 정책 API + 예약 API 연계 시나리오 전체 통과 |
 
 ## Before/After Code Validation
 
