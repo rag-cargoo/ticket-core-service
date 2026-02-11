@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:55:34`
+> - **Updated At**: `2026-02-12 07:58:11`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -61,7 +61,10 @@
 
 ## 당면 과제/완료 현황 (Current Tasks)
 ---
+### A) 동시성 Step 완료 현황 (Step 0~12)
+
 > [!NOTE]
+>   - [x] Step 0 (락 없음): Race Condition 발생 확인
 >   - [x] Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 >   - [x] Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
 >   - [x] Step 3: Redis 분산 락(Redisson) 구현 및 검증
@@ -74,10 +77,16 @@
 >   - [x] Step 10: 취소/환불/재판매 대기열 연계 구현
 >   - [x] Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현
 >   - [x] Step 12: 부정사용 방지/감사 추적 기능 구현
+
+### B) Track 진행 현황 (Post Step 12)
+
+> [!NOTE]
 >   - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 >   - [ ] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 >   - [ ] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
 >   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
+
+---
 
 ## 후속 백로그 (Merged TODO)
 ---
