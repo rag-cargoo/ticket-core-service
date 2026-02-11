@@ -118,6 +118,7 @@
 >     - 실행 리포트: `prj-docs/api-test/step9-lifecycle-latest.md`
 >     - 테스트: `ReservationStateMachineTest`, `ReservationLifecycleServiceIntegrationTest`, `ReservationLifecycleSchedulerTest`
 >   - 검증 메모(2026-02-11): `./gradlew test --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS.
+>   - API E2E 메모(2026-02-11): `bash scripts/api/v8-reservation-lifecycle.sh` PASS (`HOLD -> PAYING -> CONFIRMED`), 로그: `.codex/tmp/ticket-core-service/step9/20260211-213008-e2e/v8-step9-e2e.log`.
 >
 > - [ ] **Step 10: 취소/환불/재판매 대기열 연계 구현**
 >   - 목표: 취소 좌석을 대기열과 안전하게 재연결하는 재판매 플로우를 완성한다.

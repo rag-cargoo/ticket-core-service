@@ -5,6 +5,7 @@
 - Scope: `HOLD -> PAYING -> CONFIRMED|EXPIRED` 상태 전이 + TTL 만료 복구 + 스케줄러 위임
 - Before Baseline Commit: `dd75e50` (`docs(step8): consolidate k6 verification explanation`)
 - After Implementation Commit: `7d0ff85` (`feat(step9): implement reservation lifecycle state machine`)
+- API E2E Run ID: `20260211-213008-e2e`
 
 ## Execution Command
 
@@ -29,6 +30,30 @@ cd workspace/apps/backend/ticket-core-service
 BUILD SUCCESSFUL in 58s
 4 actionable tasks: 4 executed
 ```
+
+## API E2E Evidence (`v8-reservation-lifecycle.sh`)
+
+- Health check marker: `.codex/tmp/ticket-core-service/step9/20260211-213008-e2e/e2e-status.txt`
+- API lifecycle log: `.codex/tmp/ticket-core-service/step9/20260211-213008-e2e/v8-step9-e2e.log`
+
+```text
+[Step 2] HOLD 생성... 성공 (reservationId=1, status=HOLD)
+[Step 3] PAYING 전이... 성공 (status=PAYING)
+[Step 4] CONFIRMED 전이... 성공 (status=CONFIRMED)
+[Step 5] 상태 조회... 성공 (status=CONFIRMED)
+>>>> [v8 Test] 검증 종료 (PASS).
+```
+
+## 테스트 검증 설명 (판정 기준)
+
+| 확인 위치 | 기대 값 | 해석 |
+| --- | --- | --- |
+| `.codex/tmp/ticket-core-service/step9/20260211-213008-e2e/e2e-status.txt` | `health_check_ok` | 백엔드가 실제로 기동된 상태에서 테스트가 수행되었음을 의미 |
+| `.../v8-step9-e2e.log` Step 2 | `status=HOLD` | 초기 점유 상태 전이가 정상인지 확인 |
+| `.../v8-step9-e2e.log` Step 3 | `status=PAYING` | 결제 진행 상태 전이가 정상인지 확인 |
+| `.../v8-step9-e2e.log` Step 4/5 | `status=CONFIRMED` | 최종 확정 상태와 조회 결과가 일치하는지 확인 |
+| `.../v8-step9-e2e.log` 마지막 줄 | `검증 종료 (PASS)` | 전체 시나리오(유저 생성 -> 좌석 조회 -> HOLD -> PAYING -> CONFIRMED)가 중간 실패 없이 완료됨 |
+| `build/test-results/test/*.xml` + Gradle 요약 | `Failures=0`, `Errors=0`, `BUILD SUCCESSFUL` | 단위/통합/스케줄러 테스트가 모두 통과했음을 의미 |
 
 ## Test Matrix (JUnit XML 기반)
 
