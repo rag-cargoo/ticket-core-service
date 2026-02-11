@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:58:11`
+> - **Updated At**: `2026-02-12 07:59:32`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -88,24 +88,32 @@
 
 ---
 
-## 후속 백로그 (Merged TODO)
+## 후속 백로그 (Open TODO)
 ---
 > [!WARNING]
-> Step 12 + Auth Track A1 완료 이후 잔여 작업과 차기 단계 선행 준비 항목입니다.
+> Step 12 + Auth Track A1 완료 이후 남은 작업 항목입니다.
 >
-> - [x] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
-> - [x] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
->   - 완료 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 동일 조건 before/after 측정 완료.
->   - 개선 결과: `http_req_duration.p95 3.848ms -> 3.552ms(-7.68%)`, `p99 5.405ms -> 4.810ms(-11.01%)`, `http_reqs 58067 -> 58360(+0.50%)`.
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장
-> - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - [ ] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
 > - [ ] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [ ] 검색 기능 고도화 (공연 검색/필터/정렬, 페이징)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
+
+---
+
+## 완료 로그 (Done Log)
+---
+> [!NOTE]
+> 후속 백로그에서 완료된 항목 기록입니다.
+>
+> - [x] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
+> - [x] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
+> - [x] 완료 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 동일 조건 before/after 측정 완료
+> - [x] 개선 결과: `http_req_duration.p95 3.848ms -> 3.552ms(-7.68%)`, `p99 5.405ms -> 4.810ms(-11.01%)`, `http_reqs 58067 -> 58360(+0.50%)`
+> - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 
 ---
 
