@@ -2,6 +2,8 @@ package com.ticketrush.domain.reservation.service;
 
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
+import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
+import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.reservation.entity.Reservation;
@@ -9,11 +11,14 @@ import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.global.config.ReservationProperties;
+import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.global.sse.SseEmitterManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +31,8 @@ public class ReservationLifecycleService {
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
     private final ReservationProperties reservationProperties;
+    private final WaitingQueueService waitingQueueService;
+    private final SseEmitterManager sseEmitterManager;
 
     @Transactional
     public ReservationLifecycleResponse createHold(ReservationRequest request) {
@@ -59,6 +66,27 @@ public class ReservationLifecycleService {
         expireIfNeeded(reservation, now);
         reservation.confirmPayment(now);
         reservation.getSeat().confirmHeldSeat();
+        return ReservationLifecycleResponse.from(reservation);
+    }
+
+    @Transactional
+    public ReservationLifecycleResponse cancel(Long reservationId, Long userId) {
+        Reservation reservation = getOwnedReservation(reservationId, userId);
+        LocalDateTime now = LocalDateTime.now();
+        reservation.cancel(now);
+        reservation.getSeat().cancel();
+
+        Long concertId = reservation.getSeat().getConcertOption().getConcert().getId();
+        List<Long> activatedUsers = waitingQueueService.activateUsers(concertId, 1);
+        notifyActivatedUsers(concertId, activatedUsers);
+
+        return ReservationLifecycleResponse.from(reservation, activatedUsers);
+    }
+
+    @Transactional
+    public ReservationLifecycleResponse refund(Long reservationId, Long userId) {
+        Reservation reservation = getOwnedReservation(reservationId, userId);
+        reservation.refund(LocalDateTime.now());
         return ReservationLifecycleResponse.from(reservation);
     }
 
@@ -100,5 +128,20 @@ public class ReservationLifecycleService {
         }
         reservation.expire(now);
         reservation.getSeat().cancel();
+    }
+
+    private void notifyActivatedUsers(Long concertId, List<Long> activatedUsers) {
+        for (Long activatedUserId : activatedUsers) {
+            Long activeTtlSeconds = waitingQueueService.getActiveTtlSeconds(activatedUserId);
+            WaitingQueueSsePayload payload = WaitingQueueSsePayload.builder()
+                    .userId(activatedUserId)
+                    .concertId(concertId)
+                    .status(WaitingQueueStatus.ACTIVE.name())
+                    .rank(0L)
+                    .activeTtlSeconds(activeTtlSeconds)
+                    .timestamp(Instant.now().toString())
+                    .build();
+            sseEmitterManager.sendQueueActivated(activatedUserId, concertId, payload);
+        }
     }
 }

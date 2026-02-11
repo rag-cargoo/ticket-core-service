@@ -1,6 +1,6 @@
 # Makefile for TicketRush API Testing
 
-.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-k6 test-k6-dashboard test-suite test-all setup-perms
+.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-suite test-all setup-perms
 
 # 기본 명령어 (도움말)
 help:
@@ -13,6 +13,7 @@ help:
 	@echo " make test-v3    : [v3] Redis 분산 락 예약 API 테스트"
 	@echo " make test-v6    : [v6] 유입량 제어(Throttling) 테스트"
 	@echo " make test-v7    : [v7] SSE 순번 자동 푸시 테스트"
+	@echo " make test-v9    : [v9] Step10 취소/환불/재판매 연계 테스트"
 	@echo " make test-k6    : [perf] k6 대기열 부하 테스트"
 	@echo " make test-k6-dashboard : [perf] k6 + 웹 대시보드(5665) 실행"
 	@echo " make test-suite : 변경된 API 스크립트 실행 + 리포트 생성"
@@ -46,6 +47,9 @@ test-v6:
 test-v7:
 	/bin/bash ./scripts/api/v7-sse-rank-push.sh
 
+test-v9:
+	/bin/bash ./scripts/api/v9-cancel-refund-resale.sh
+
 test-k6:
 	bash ./scripts/perf/run-k6-waiting-queue.sh
 
@@ -60,4 +64,4 @@ setup:
 	chmod +x scripts/api/*.sh
 	@echo "All scripts are now executable."
 # 전체 테스트 실행
-test-all: test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7
+test-all: test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9

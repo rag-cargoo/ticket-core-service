@@ -354,7 +354,7 @@ data: SUCCESS
 
 ### 1.10. Step 9: 예약 상태 조회
 - **Endpoint**: `GET /api/reservations/v6/{reservationId}?userId={userId}`
-- **Description**: 상태머신 진행 상태(`HOLD/PAYING/CONFIRMED/EXPIRED`)와 타임스탬프를 조회합니다.
+- **Description**: 상태머신 진행 상태(`HOLD/PAYING/CONFIRMED/EXPIRED/CANCELLED/REFUNDED`)와 타임스탬프를 조회합니다.
 
 **Response Summary (200 OK)**
 
@@ -364,6 +364,90 @@ data: SUCCESS
 | `holdExpiresAt` | DateTime | 홀드 만료 시각 |
 | `confirmedAt` | DateTime | 확정 시각 |
 | `expiredAt` | DateTime | 만료 시각 |
+| `cancelledAt` | DateTime | 취소 시각 |
+| `refundedAt` | DateTime | 환불 완료 시각 |
+
+---
+
+### 1.11. Step 10: 예약 취소 + 재판매 대기열 연계 (CONFIRMED -> CANCELLED)
+- **Endpoint**: `POST /api/reservations/v6/{reservationId}/cancel`
+- **Description**: 확정 예약을 취소하고 좌석을 `AVAILABLE`로 복구한 뒤, 같은 콘서트 대기열 상위 1명을 `ACTIVE`로 승격합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `reservationId` | Long | Yes | 취소 대상 예약 ID |
+| Body | `userId` | Long | Yes | 예약 소유자 유저 ID |
+
+**Request Example**
+
+```json
+{
+  "userId": 1
+}
+```
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | String | `CANCELLED` |
+| `cancelledAt` | DateTime | 취소 시각 |
+| `resaleActivatedUserIds` | Long[] | 재판매로 활성화된 대기열 유저 ID 목록 |
+
+**Response Example**
+
+```json
+{
+  "id": 10,
+  "userId": 1,
+  "seatId": 22,
+  "status": "CANCELLED",
+  "cancelledAt": "2026-02-11T22:10:15",
+  "resaleActivatedUserIds": [1002]
+}
+```
+
+---
+
+### 1.12. Step 10: 환불 완료 처리 (CANCELLED -> REFUNDED)
+- **Endpoint**: `POST /api/reservations/v6/{reservationId}/refund`
+- **Description**: 취소된 예약에 대해 환불 완료 상태를 기록합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `reservationId` | Long | Yes | 환불 대상 예약 ID |
+| Body | `userId` | Long | Yes | 예약 소유자 유저 ID |
+
+**Request Example**
+
+```json
+{
+  "userId": 1
+}
+```
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `status` | String | `REFUNDED` |
+| `refundedAt` | DateTime | 환불 완료 시각 |
+
+**Response Example**
+
+```json
+{
+  "id": 10,
+  "userId": 1,
+  "seatId": 22,
+  "status": "REFUNDED",
+  "refundedAt": "2026-02-11T22:11:01"
+}
+```
 
 ---
 

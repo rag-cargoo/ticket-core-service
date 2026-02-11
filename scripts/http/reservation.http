@@ -77,3 +77,22 @@ Content-Type: application/json
 
 ### 12. Step 9 - 상태 조회
 GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1
+
+### 13. Step 10 - 예약 취소 (CONFIRMED -> CANCELLED)
+POST http://localhost:8080/api/reservations/v6/{{reservationId}}/cancel
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+### 14. Step 10 - 환불 완료 (CANCELLED -> REFUNDED)
+POST http://localhost:8080/api/reservations/v6/{{reservationId}}/refund
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+### 15. Step 10 - 최종 상태 조회
+GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1

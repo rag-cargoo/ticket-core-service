@@ -16,7 +16,9 @@ import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
+import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.config.ReservationProperties;
+import com.ticketrush.global.sse.SseEmitterManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -24,8 +26,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @Import({
@@ -42,6 +50,16 @@ class ReservationLifecycleServiceIntegrationTest {
             properties.setHoldTtlSeconds(1);
             properties.setExpireCheckDelayMillis(1000);
             return properties;
+        }
+
+        @Bean
+        WaitingQueueService waitingQueueService() {
+            return mock(WaitingQueueService.class);
+        }
+
+        @Bean
+        SseEmitterManager sseEmitterManager() {
+            return mock(SseEmitterManager.class);
         }
     }
 
@@ -68,6 +86,12 @@ class ReservationLifecycleServiceIntegrationTest {
 
     @jakarta.annotation.Resource
     private ConcertOptionRepository concertOptionRepository;
+
+    @jakarta.annotation.Resource
+    private WaitingQueueService waitingQueueService;
+
+    @jakarta.annotation.Resource
+    private SseEmitterManager sseEmitterManager;
 
     @Test
     void holdToPayingToConfirmed_shouldReserveSeat() {
@@ -109,6 +133,53 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(expired.getExpiredAt()).isNotNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
+    }
+
+    @Test
+    void cancelConfirmed_shouldReleaseSeatAndActivateWaitingUser() {
+        User user = userRepository.save(new User("step10-cancel-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-103");
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId());
+
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of(999L));
+        when(waitingQueueService.getActiveTtlSeconds(999L)).thenReturn(240L);
+
+        ReservationLifecycleResponse cancelled = reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        assertThat(cancelled.getStatus()).isEqualTo(Reservation.ReservationStatus.CANCELLED.name());
+        assertThat(cancelled.getCancelledAt()).isNotNull();
+        assertThat(cancelled.getResaleActivatedUserIds()).containsExactly(999L);
+        assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
+                .isEqualTo(Seat.SeatStatus.AVAILABLE);
+
+        verify(waitingQueueService).activateUsers(concertId, 1);
+        verify(sseEmitterManager).sendQueueActivated(eq(999L), eq(concertId), any());
+    }
+
+    @Test
+    void refundCancelled_shouldSetRefundedStatus() {
+        User user = userRepository.save(new User("step10-refund-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-104");
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId());
+
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
+        reservationLifecycleService.cancel(hold.getId(), user.getId());
+        ReservationLifecycleResponse refunded = reservationLifecycleService.refund(hold.getId(), user.getId());
+
+        assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
+        assertThat(refunded.getRefundedAt()).isNotNull();
     }
 
     private Seat saveSeat(String seatNo) {

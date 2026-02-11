@@ -16,7 +16,8 @@
 > - 4. Step 7 회귀 실행 스크립트
 > - 5. k6 부하 테스트 실행
 > - 6. Step 9 상태머신 검증 실행
-> - 7. Playwright MCP로 k6 HTML 열기
+> - 7. Step 10 취소/환불/재판매 연계 검증 실행
+> - 8. Playwright MCP로 k6 HTML 열기
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -128,7 +129,24 @@ bash scripts/api/v8-reservation-lifecycle.sh
 
 ---
 
-## 7. Playwright MCP로 k6 HTML 열기
+## 7. Step 10 취소/환불/재판매 연계 검증 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+bash scripts/api/v9-cancel-refund-resale.sh
+```
+
+- 검증 흐름:
+  - 대기 유저 큐 진입(`WAITING`)
+  - `HOLD -> PAYING -> CONFIRMED` 생성
+  - `CANCELLED` 전이 + 대기열 상위 유저 `ACTIVE` 승격
+  - `REFUNDED` 전이 + 최종 상태 확인
+- Step 10 실행 리포트:
+  - `prj-docs/api-test/step10-cancel-refund-latest.md`
+
+---
+
+## 8. Playwright MCP로 k6 HTML 열기
 
 `k6-web-dashboard.html`은 로컬 파일이므로 Playwright MCP에서 `file://` 직접 열기가 실패할 수 있습니다.
 표준 절차는 "로컬 HTTP 서빙 + MCP `navigate`" 입니다.

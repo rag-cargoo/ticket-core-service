@@ -130,6 +130,26 @@ public class ReservationController {
     }
 
     /**
+     * [v6] Step 10 - 예약 취소 상태 전이 (CONFIRMED -> CANCELLED)
+     */
+    @PostMapping("/v6/{reservationId}/cancel")
+    public ResponseEntity<ReservationLifecycleResponse> cancel(
+            @PathVariable Long reservationId,
+            @RequestBody ReservationStateRequest request) {
+        return ResponseEntity.ok(reservationLifecycleService.cancel(reservationId, request.getUserId()));
+    }
+
+    /**
+     * [v6] Step 10 - 환불 완료 상태 전이 (CANCELLED -> REFUNDED)
+     */
+    @PostMapping("/v6/{reservationId}/refund")
+    public ResponseEntity<ReservationLifecycleResponse> refund(
+            @PathVariable Long reservationId,
+            @RequestBody ReservationStateRequest request) {
+        return ResponseEntity.ok(reservationLifecycleService.refund(reservationId, request.getUserId()));
+    }
+
+    /**
      * [v6] Step 9 - 예약 상태 조회
      */
     @GetMapping("/v6/{reservationId}")

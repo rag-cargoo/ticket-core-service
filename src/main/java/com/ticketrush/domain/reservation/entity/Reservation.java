@@ -40,6 +40,10 @@ public class Reservation {
 
     private LocalDateTime expiredAt;
 
+    private LocalDateTime cancelledAt;
+
+    private LocalDateTime refundedAt;
+
     public Reservation(User user, Seat seat) {
         this(user, seat, ReservationStatus.PENDING, LocalDateTime.now(), null);
     }
@@ -85,6 +89,18 @@ public class Reservation {
         this.holdExpiresAt = null;
     }
 
+    public void cancel(LocalDateTime now) {
+        ensureStatus(ReservationStatus.CONFIRMED, "Only CONFIRMED reservation can transition to CANCELLED.");
+        this.status = ReservationStatus.CANCELLED;
+        this.cancelledAt = now;
+    }
+
+    public void refund(LocalDateTime now) {
+        ensureStatus(ReservationStatus.CANCELLED, "Only CANCELLED reservation can transition to REFUNDED.");
+        this.status = ReservationStatus.REFUNDED;
+        this.refundedAt = now;
+    }
+
     public boolean isExpired(LocalDateTime now) {
         return holdExpiresAt != null && !holdExpiresAt.isAfter(now);
     }
@@ -106,6 +122,6 @@ public class Reservation {
     }
 
     public enum ReservationStatus {
-        PENDING, HOLD, PAYING, CONFIRMED, EXPIRED, CANCELLED
+        PENDING, HOLD, PAYING, CONFIRMED, EXPIRED, CANCELLED, REFUNDED
     }
 }
