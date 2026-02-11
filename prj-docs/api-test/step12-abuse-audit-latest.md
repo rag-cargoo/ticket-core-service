@@ -4,7 +4,7 @@
 - Run Time (KST): 2026-02-12 01:07:59 KST (API E2E), 2026-02-12 01:20:05 KST (JUnit rerun)
 - Scope: HOLD 요청에 대한 `rate-limit`, `requestFingerprint 중복`, `deviceFingerprint 다계정` 차단 + 운영 감사 조회 API
 - Before Baseline Commit: `e6177c4` (`feat(step11): add sales policy engine and verification flow`)
-- After Implementation Commit: `TBD (current working tree)`
+- After Implementation Commit: `00fa391` (`feat(step12): add abuse guard rules and audit tracking`)
 - API E2E Run ID: `20260212-010759-e2e`
 
 ## Execution Command
