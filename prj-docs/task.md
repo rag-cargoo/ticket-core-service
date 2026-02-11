@@ -3,13 +3,15 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 02:15:34`
+> - **Updated At**: `2026-02-12 07:34:32`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
-## 단계 목차 (Step Index)
+## 단계/트랙 목차 (Index)
 ---
 > [!TIP]
+> - [동시성 제어 Step (0~12)]
+> - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
 > - Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 > - Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
 > - Step 3: Redis 분산 락(Redisson) 구현 및 검증
@@ -22,10 +24,11 @@
 > - Step 10: 취소/환불/재판매 대기열 연계 구현
 > - Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현
 > - Step 12: 부정사용 방지/감사 추적 기능 구현
+> - [후속 기능 Track (Post Step 12)]
+> - Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 > - UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
 > - Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
-> - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
 <!-- DOC_TOC_END -->
 
 > 시스템의 현재 상태와 단계별 목표, 세부 완료 내역을 추적하는 통합 보드입니다.
@@ -35,7 +38,7 @@
 ## 현재 상태 (Status)
 ---
 > [!NOTE]
->   - **현재 단계**: Step 10 완료 (취소/환불/재판매 대기열 연계 반영)
+>   - **현재 단계**: Step 12 완료 + Auth Track A1 완료
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
 >   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 >   - **검증 체인**: pre-commit `quick`(기본) / `strict`(중요 커밋) 모드 운영, strict에서 문서/HTTP/API스크립트 동기화 + 실행 리포트 강제 검증
@@ -108,8 +111,10 @@
 
 ## 다음 단계 로드맵 (Step + Track)
 ---
+### A) 동시성 제어 Step 로드맵 (Step 8~12)
+
 > [!TIP]
-> Step 0~12는 동시성 제어 스텝으로 관리하고, 이후 기능 고도화는 Track 단위로 분리합니다.
+> Step 0~12는 동시성 제어 스텝으로 관리합니다.
 > 각 항목은 `목표 / 완료 기준 / 다음 액션`을 명시합니다.
 >
 > - [x] **Step 8: k6 성능 기준선 확정 및 병목 제거**
@@ -173,6 +178,12 @@
 >   - 검증 메모(2026-02-12): `./gradlew test --rerun-tasks --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS (`17 tests completed, 0 failed`).
 >   - API E2E 메모(2026-02-12): `bash scripts/api/v11-abuse-audit.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step12/20260212-010759-e2e/v11-step12-e2e.log`.
 >   - 다음 액션: Auth Track A2 인증/인가 + 소셜 로그인 통합 도메인 모델(`users/auth_identities/refresh_tokens`) 설계.
+>
+### B) 후속 기능 Track 로드맵 (Post Step 12)
+
+> [!TIP]
+> Step 12 이후 기능 고도화는 Track 단위로 분리하여 관리합니다.
+> 인증/UX/결제 영역은 독립적으로 계획·검증·배포할 수 있습니다.
 >
 > - [x] **Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영**
 >   - 목표: 프론트 OAuth 콜백 이전에 백엔드 code 교환/사용자 매핑 계약을 먼저 고정한다.
