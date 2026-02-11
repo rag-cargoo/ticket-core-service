@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:53:54`
+> - **Updated At**: `2026-02-12 07:55:34`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -78,26 +78,6 @@
 >   - [ ] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 >   - [ ] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
 >   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
-
----
-
-## 운영 안정화 체크리스트 (Step 7 Ops History)
----
-> [!NOTE]
-> 이 섹션은 기존 `prj-docs/TODO.md` 내용을 `task.md`로 통합한 항목입니다.
-> Step 7 안정화 과정에서 완료된 운영 항목(히스토리)이며, 현재는 유지/회귀 검증 대상으로 관리합니다.
->
-> - [x] 대기열 SSE 구독 엔드포인트 추가 (`/api/v1/waiting-queue/subscribe`)
-> - [x] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
-> - [x] 활성 전환 시점(`ACTIVE`) 알림 페이로드 표준화
-> - [x] 타임아웃/재연결 포함 SSE 연결 수명주기 안정화
-> - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit quick/strict) 구성
-> - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
-> - [x] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
-> - [x] Step 7 운영 회귀 테스트 실행 스크립트 정비 (`scripts/api/run-step7-regression.sh`)
-> - [x] Step 7 회귀 스크립트 빌드/재생성 안정화 (`STEP7_COMPOSE_BUILD=true`, `STEP7_FORCE_RECREATE=true`)
-
----
 
 ## 후속 백로그 (Merged TODO)
 ---
@@ -264,3 +244,21 @@
 >   - **OAuth2 Code 교환 백엔드**: 카카오/네이버 authorize-url + exchange API 계약 반영.
 >   - **도메인 확장**: 사용자 social 식별자(`socialProvider`, `socialId`) 기반 매핑 규칙 고정.
 >   - **검증/문서 동기화**: `SocialAuthServiceTest`, API 스크립트, 지식 문서/리포트 동기화 완료.
+
+---
+
+## 부록: 운영 안정화 체크리스트 (Step 7 Archive)
+---
+> [!NOTE]
+> 이 섹션은 기존 `prj-docs/TODO.md`에서 통합된 Step 7 운영 안정화 히스토리입니다.
+> 현재 진행 트랙과 분리하기 위해 부록으로 이동했으며, 필요 시 회귀 검증 시 참조합니다.
+>
+> - [x] 대기열 SSE 구독 엔드포인트 추가 (`/api/v1/waiting-queue/subscribe`)
+> - [x] 대기 순번 변경 이벤트(`RANK_UPDATE`) 자동 푸시 흐름 완성
+> - [x] 활성 전환 시점(`ACTIVE`) 알림 페이로드 표준화
+> - [x] 타임아웃/재연결 포함 SSE 연결 수명주기 안정화
+> - [x] API 변경 시 문서/HTTP/API스크립트 자동 체인 검증(pre-commit quick/strict) 구성
+> - [x] API 스크립트 실행 결과 리포트 자동 생성 (`prj-docs/api-test/latest.md`)
+> - [x] Step 7 API 명세/HTTP 파일/스크립트 최종 동기화 및 회귀 검증
+> - [x] Step 7 운영 회귀 테스트 실행 스크립트 정비 (`scripts/api/run-step7-regression.sh`)
+> - [x] Step 7 회귀 스크립트 빌드/재생성 안정화 (`STEP7_COMPOSE_BUILD=true`, `STEP7_FORCE_RECREATE=true`)
