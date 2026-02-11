@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 09:34:00`
+> - **Updated At**: `2026-02-11 10:40:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -32,7 +32,7 @@
 ## 현재 상태 (Status)
 ---
 > [!NOTE]
->   - **현재 단계**: Step 7 재검증 완료, Step 8 기준선 측정 완료(코드 최적화 진행중)
+>   - **현재 단계**: Step 8 완료 (k6 기준선 확정 + 병목 제거 1차 반영)
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
 >   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 >   - **검증 체인**: pre-commit `quick`(기본) / `strict`(중요 커밋) 모드 운영, strict에서 문서/HTTP/API스크립트 동기화 + 실행 리포트 강제 검증
@@ -59,6 +59,7 @@
 >   - [x] Step 5: Redis Sorted Set 기반 실시간 대기 순번 시스템 구현
 >   - [x] Step 6: 대기열 진입 제한(Throttling) 및 유입량 제어 전략 구현
 >   - [x] Step 7: SSE 기반 실시간 순번 자동 푸시 시스템 구현 및 회귀 검증
+>   - [x] Step 8: k6 성능 기준선 확정 및 병목 제거
 
 ---
 
@@ -85,8 +86,9 @@
 > Step 7 이후 잔여 작업과 차기 단계 선행 준비 항목입니다.
 >
 > - [x] develop -> main 릴리즈 PR 및 Pages 최종 검증 수행 (Issue: `#28`, PR: `#46`)
-> - [ ] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
->   - 진행 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 기준선 PASS 수집 완료(56600+ req, p95 7ms대). 코드 최적화 후 before/after 갱신 예정.
+> - [x] 부하 테스트(k6)를 통한 임계치 측정 및 보고서 작성 (`make test-k6`, 리포트: `prj-docs/api-test/k6-latest.md`)
+>   - 완료 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 동일 조건 before/after 측정 완료.
+>   - 개선 결과: `http_req_duration.p95 3.848ms -> 3.552ms(-7.68%)`, `p99 5.405ms -> 4.810ms(-11.01%)`, `http_reqs 58067 -> 58360(+0.50%)`.
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장
@@ -98,10 +100,11 @@
 > [!TIP]
 > 기능 고도화는 스텝 단위로 진행하며, 각 스텝은 `목표 / 완료 기준 / 다음 액션`을 명시합니다.
 >
-> - [ ] **Step 8: k6 성능 기준선 확정 및 병목 제거**
+> - [x] **Step 8: k6 성능 기준선 확정 및 병목 제거**
 >   - 목표: `join/status/subscribe` 기준 처리량, p95, 에러율 기준선을 확정한다.
 >   - 완료 기준: `prj-docs/api-test/k6-latest.md`에 before/after와 병목 원인/개선 근거를 기록한다.
->   - 다음 액션: `make test-k6` 기본 시나리오 실행 후 병목 구간 1차 식별.
+>   - 완료 근거: `prj-docs/api-test/k6-before-step8.md` + `prj-docs/api-test/k6-latest.md` + `prj-docs/api-test/k6-summary-before-step8.json` + `prj-docs/api-test/k6-summary.json`.
+>   - 구현 반영: `join` Redis Lua 원자 처리 + 핫패스 로그 레벨 조정(`info -> debug`).
 >
 > - [ ] **Step 9: 결제/좌석 점유 상태머신(홀드/확정/만료) 구현**
 >   - 목표: 예약 이후 결제 단계까지 상태 전이를 일관된 도메인 규칙으로 통합한다.
