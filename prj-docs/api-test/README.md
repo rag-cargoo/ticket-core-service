@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 10:41:00`
+> - **Updated At**: `2026-02-11 11:05:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -62,11 +62,12 @@ bash scripts/api/run-step7-regression.sh
 
 - 실행 내용:
   - 인프라/앱 기동 후 `v7-sse-rank-push.sh` 회귀 검증
-  - 결과 리포트(`prj-docs/api-test/latest.md`)와 런타임 로그(`step7-regression.log`) 생성
+  - 결과 리포트(`prj-docs/api-test/latest.md`)와 런타임 로그(`.codex/tmp/ticket-core-service/step7/<run-id>/step7-regression.log`) 생성
 - 기본 안정화 옵션:
   - `STEP7_COMPOSE_BUILD=true` (기본): app 이미지를 다시 빌드하여 로컬 코드 반영 보장
   - `STEP7_FORCE_RECREATE=true` (기본): `down -> up` 재생성으로 docker-compose 재기동 오류 회피
   - `STEP7_KEEP_ENV=true|false` (기본 false): 검증 후 compose 환경 유지 여부
+  - `STEP7_LOG_FILE=/custom/path.log`: 로그 파일 경로 강제 지정
 - CI(Jenkins/GitHub Actions) 도입 시에는 위 스크립트를 그대로 호출해 동일 절차를 재사용한다.
 
 ---
@@ -91,12 +92,13 @@ make test-k6
 - 결과 산출물:
   - `prj-docs/api-test/k6-latest.md`
   - `prj-docs/api-test/k6-before-step8.md` (baseline 보관 시)
-  - `prj-docs/api-test/k6-latest.log`
+  - `.codex/tmp/ticket-core-service/k6/<run-id>/k6-latest.log`
   - `prj-docs/api-test/k6-summary.json`
   - `prj-docs/api-test/k6-summary-before-step8.json` (baseline 보관 시)
-  - `prj-docs/api-test/k6-web-dashboard.html` (대시보드 활성 시)
+  - `.codex/tmp/ticket-core-service/k6/<run-id>/k6-web-dashboard.html` (대시보드 활성 시)
 - 실행 환경에 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행합니다.
 - Docker fallback 기본 네트워크는 `host`이며, 필요 시 `K6_DOCKER_NETWORK`로 변경합니다.
+- 임시 산출물 기본 루트는 `.codex/tmp/ticket-core-service/k6/`이며, 필요 시 `CODEX_TMP_DIR`로 변경합니다.
 - 웹 대시보드를 함께 보고 싶으면 아래처럼 실행합니다.
 
 ```bash
@@ -131,7 +133,9 @@ curl -sS http://127.0.0.1:9222/json/version
 
 ```bash
 cd workspace/apps/backend/ticket-core-service
-nohup python3 -m http.server 18080 --bind 127.0.0.1 --directory prj-docs/api-test >/tmp/k6-http.log 2>&1 &
+repo_root="$(git rev-parse --show-toplevel)"
+latest_run_dir="$(ls -1dt "$repo_root"/.codex/tmp/ticket-core-service/k6/* 2>/dev/null | head -n 1)"
+nohup python3 -m http.server 18080 --bind 127.0.0.1 --directory "$latest_run_dir" >/tmp/k6-http.log 2>&1 &
 curl -sS -I http://127.0.0.1:18080/k6-web-dashboard.html | head -n 1
 ```
 

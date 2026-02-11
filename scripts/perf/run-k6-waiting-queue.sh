@@ -3,10 +3,14 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_abs="$(cd "$script_dir/../.." && pwd)"
+repo_root="$(git -C "$project_abs" rev-parse --show-toplevel 2>/dev/null || echo "$project_abs")"
+tmp_root="${CODEX_TMP_DIR:-$repo_root/.codex/tmp/ticket-core-service/k6}"
+run_stamp="${K6_RUN_STAMP:-$(date -u '+%Y%m%dT%H%M%SZ')}"
+run_tmp_dir="${tmp_root}/${run_stamp}"
 
 k6_script="${K6_SCRIPT:-$project_abs/scripts/perf/k6-waiting-queue-join.js}"
 report_file="${K6_REPORT_FILE:-$project_abs/prj-docs/api-test/k6-latest.md}"
-log_file="${K6_LOG_FILE:-$project_abs/prj-docs/api-test/k6-latest.log}"
+log_file="${K6_LOG_FILE:-$run_tmp_dir/k6-latest.log}"
 summary_json="${K6_SUMMARY_JSON:-$project_abs/prj-docs/api-test/k6-summary.json}"
 
 api_host="${API_HOST:-http://127.0.0.1:8080}"
@@ -21,7 +25,7 @@ docker_user="${K6_DOCKER_USER:-$(id -u):$(id -g)}"
 k6_web_dashboard="${K6_WEB_DASHBOARD:-false}"
 k6_web_dashboard_host="${K6_WEB_DASHBOARD_HOST:-127.0.0.1}"
 k6_web_dashboard_port="${K6_WEB_DASHBOARD_PORT:-5665}"
-k6_web_dashboard_export="${K6_WEB_DASHBOARD_EXPORT:-$project_abs/prj-docs/api-test/k6-web-dashboard.html}"
+k6_web_dashboard_export="${K6_WEB_DASHBOARD_EXPORT:-$run_tmp_dir/k6-web-dashboard.html}"
 
 health_url="${K6_HEALTH_URL:-${api_host}/api/concerts}"
 run_started_utc="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
@@ -64,6 +68,30 @@ echo "[k6] api_host=$api_host concert_id=$concert_id vus=$vus duration=$duration
 echo "[k6] docker_image=$dock_k6_image docker_network=$dock_network"
 echo "[k6] docker_user=$docker_user"
 echo "[k6] web_dashboard=$k6_web_dashboard host=$k6_web_dashboard_host port=$k6_web_dashboard_port"
+echo "[k6] tmp_run_dir=$run_tmp_dir"
+
+require_path_under_repo() {
+  local path="$1"
+  if [[ "$path" != "$repo_root/"* ]]; then
+    echo "[k6] path must be under repo root: $path"
+    echo "[k6] repo root: $repo_root"
+    exit 1
+  fi
+}
+
+to_container_path() {
+  local path="$1"
+  echo "/repo/${path#$repo_root/}"
+}
+
+to_repo_relative() {
+  local path="$1"
+  if [[ "$path" == "$repo_root/"* ]]; then
+    echo "${path#$repo_root/}"
+  else
+    echo "$path"
+  fi
+}
 
 run_k6_local() {
   set +e
@@ -93,22 +121,24 @@ run_k6_docker() {
     exit 1
   fi
 
-  # Docker fallback needs paths under project root to mount into /work.
-  if [[ "$k6_script" != "$project_abs/"* ]] || [[ "$summary_json" != "$project_abs/"* ]] || [[ "$log_file" != "$project_abs/"* ]] || [[ "$k6_web_dashboard_export" != "$project_abs/"* ]]; then
-    echo "[k6] docker fallback requires K6_SCRIPT/K6_SUMMARY_JSON/K6_LOG_FILE/K6_WEB_DASHBOARD_EXPORT under project root"
-    exit 1
-  fi
+  require_path_under_repo "$k6_script"
+  require_path_under_repo "$summary_json"
+  require_path_under_repo "$log_file"
+  require_path_under_repo "$k6_web_dashboard_export"
 
-  local k6_script_in_container="/work/${k6_script#$project_abs/}"
-  local summary_in_container="/work/${summary_json#$project_abs/}"
-  local dashboard_export_in_container="/work/${k6_web_dashboard_export#$project_abs/}"
+  local k6_script_in_container
+  local summary_in_container
+  local dashboard_export_in_container
+  k6_script_in_container="$(to_container_path "$k6_script")"
+  summary_in_container="$(to_container_path "$summary_json")"
+  dashboard_export_in_container="$(to_container_path "$k6_web_dashboard_export")"
 
   set +e
   docker run --rm \
     --network "$dock_network" \
     --user "$docker_user" \
-    -v "$project_abs:/work" \
-    -w /work \
+    -v "$repo_root:/repo" \
+    -w /repo \
     -e K6_WEB_DASHBOARD="$k6_web_dashboard" \
     -e K6_WEB_DASHBOARD_HOST="$k6_web_dashboard_host" \
     -e K6_WEB_DASHBOARD_PORT="$k6_web_dashboard_port" \
@@ -163,6 +193,11 @@ if [[ "$k6_rc" -ne 0 ]]; then
   result="FAIL"
 fi
 
+log_display="$(to_repo_relative "$log_file")"
+summary_display="$(to_repo_relative "$summary_json")"
+dashboard_display="$(to_repo_relative "$k6_web_dashboard_export")"
+report_display="$(to_repo_relative "$report_file")"
+
 cat >"$report_file" <<EOF
 # k6 Waiting Queue Load Test Report
 
@@ -194,9 +229,9 @@ cat >"$report_file" <<EOF
 
 ## Artifacts
 
-- k6 raw log: \`${log_file#$project_abs/}\`
-- k6 summary json: \`${summary_json#$project_abs/}\`
-- k6 web dashboard html: \`${k6_web_dashboard_export#$project_abs/}\`
+- k6 raw log: \`${log_display}\`
+- k6 summary json: \`${summary_display}\`
+- k6 web dashboard html: \`${dashboard_display}\`
 EOF
 
 if [[ "$k6_rc" -ne 0 ]]; then
@@ -209,8 +244,8 @@ if [[ "$k6_rc" -ne 0 ]]; then
 EOF
 fi
 
-echo "[k6] report: ${report_file#$project_abs/}"
-echo "[k6] summary: ${summary_json#$project_abs/}"
-echo "[k6] log: ${log_file#$project_abs/}"
+echo "[k6] report: ${report_display}"
+echo "[k6] summary: ${summary_display}"
+echo "[k6] log: ${log_display}"
 
 exit "$k6_rc"

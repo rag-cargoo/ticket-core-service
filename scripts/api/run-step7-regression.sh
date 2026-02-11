@@ -3,12 +3,16 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_abs="$(cd "$script_dir/../.." && pwd)"
+repo_root="$(git -C "$project_abs" rev-parse --show-toplevel 2>/dev/null || echo "$project_abs")"
+
+run_stamp="$(date -u '+%Y%m%dT%H%M%SZ')"
+default_log_file="${repo_root}/.codex/tmp/ticket-core-service/step7/${run_stamp}/step7-regression.log"
 
 compose_file="${STEP7_COMPOSE_FILE:-$project_abs/docker-compose.yml}"
 health_url="${API_SCRIPT_HEALTH_URL:-http://127.0.0.1:8080/api/concerts}"
 health_timeout_sec="${STEP7_HEALTH_TIMEOUT_SEC:-300}"
 health_interval_sec="${STEP7_HEALTH_INTERVAL_SEC:-5}"
-log_file="${STEP7_LOG_FILE:-$project_abs/step7-regression.log}"
+log_file="${STEP7_LOG_FILE:-$default_log_file}"
 keep_env="${STEP7_KEEP_ENV:-false}"
 compose_build="${STEP7_COMPOSE_BUILD:-true}"
 force_recreate="${STEP7_FORCE_RECREATE:-true}"
