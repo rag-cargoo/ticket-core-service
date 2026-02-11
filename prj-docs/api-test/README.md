@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-11 09:34:00`
+> - **Updated At**: `2026-02-11 10:41:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -83,10 +83,17 @@ make test-k6
 - 기본 파라미터:
   - `K6_VUS=60`
   - `K6_DURATION=60s`
+- Step 8 권장 재현(동일 조건 before/after):
+  - `K6_VUS=20 K6_DURATION=300s make test-k6`
+  - `cp prj-docs/api-test/k6-latest.md prj-docs/api-test/k6-before-step8.md`
+  - `cp prj-docs/api-test/k6-summary.json prj-docs/api-test/k6-summary-before-step8.json`
+  - 코드 변경 후 동일 명령 재실행
 - 결과 산출물:
   - `prj-docs/api-test/k6-latest.md`
+  - `prj-docs/api-test/k6-before-step8.md` (baseline 보관 시)
   - `prj-docs/api-test/k6-latest.log`
   - `prj-docs/api-test/k6-summary.json`
+  - `prj-docs/api-test/k6-summary-before-step8.json` (baseline 보관 시)
   - `prj-docs/api-test/k6-web-dashboard.html` (대시보드 활성 시)
 - 실행 환경에 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행합니다.
 - Docker fallback 기본 네트워크는 `host`이며, 필요 시 `K6_DOCKER_NETWORK`로 변경합니다.

@@ -26,7 +26,7 @@ public class WaitingQueueController {
 
     @PostMapping("/join")
     public ResponseEntity<WaitingQueueResponse> join(@RequestBody WaitingQueueRequest request) {
-        log.info(">>>> [Incoming Request] join - userId: {}, concertId: {}", request.getUserId(), request.getConcertId());
+        log.debug(">>>> [Incoming Request] join - userId: {}, concertId: {}", request.getUserId(), request.getConcertId());
         return ResponseEntity.ok(waitingQueueService.join(request.getUserId(), request.getConcertId()));
     }
 
@@ -34,7 +34,7 @@ public class WaitingQueueController {
     public ResponseEntity<WaitingQueueResponse> getStatus(
             @RequestParam Long userId,
             @RequestParam Long concertId) {
-        log.info(">>>> [Incoming Request] status - userId: {}, concertId: {}", userId, concertId);
+        log.debug(">>>> [Incoming Request] status - userId: {}, concertId: {}", userId, concertId);
         return ResponseEntity.ok(waitingQueueService.getStatus(userId, concertId));
     }
 
@@ -42,7 +42,7 @@ public class WaitingQueueController {
     public SseEmitter subscribe(
             @RequestParam Long userId,
             @RequestParam Long concertId) {
-        log.info(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
+        log.debug(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
 
         SseEmitter emitter = sseEmitterManager.subscribeQueue(userId, concertId);
         WaitingQueueResponse currentStatus = waitingQueueService.getStatus(userId, concertId);
