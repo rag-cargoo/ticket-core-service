@@ -5,6 +5,9 @@ import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.ConcertSetupRequest;
+import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
+import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
+import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class ConcertController {
 
     private final ConcertService concertService;
+    private final SalesPolicyService salesPolicyService;
 
     /**
      * [Admin/Test] 공연 및 좌석 일괄 생성
@@ -69,5 +73,24 @@ public class ConcertController {
         return ResponseEntity.ok(concertService.getAvailableSeats(optionId).stream()
                 .map(SeatResponse::from)
                 .collect(Collectors.toList()));
+    }
+
+    /**
+     * [Admin/Test] Step 11 - 공연 판매 정책 생성/수정
+     */
+    @PutMapping("/{concertId}/sales-policy")
+    public ResponseEntity<SalesPolicyResponse> upsertSalesPolicy(
+            @PathVariable Long concertId,
+            @RequestBody SalesPolicyUpsertRequest request
+    ) {
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.upsert(concertId, request)));
+    }
+
+    /**
+     * [Read] Step 11 - 공연 판매 정책 조회
+     */
+    @GetMapping("/{concertId}/sales-policy")
+    public ResponseEntity<SalesPolicyResponse> getSalesPolicy(@PathVariable Long concertId) {
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.getByConcertId(concertId)));
     }
 }

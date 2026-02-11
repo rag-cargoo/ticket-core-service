@@ -2,6 +2,7 @@ package com.ticketrush.domain.user.service;
 
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
+import com.ticketrush.domain.user.UserTier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +15,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User createUser(String username) {
+    public User createUser(String username, UserTier tier) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username already exists: " + username);
         }
-        return userRepository.save(new User(username));
+        return userRepository.save(new User(username, tier));
     }
 
     @Override

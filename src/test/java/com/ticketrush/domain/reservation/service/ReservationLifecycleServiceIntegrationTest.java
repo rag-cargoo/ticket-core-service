@@ -13,8 +13,11 @@ import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.reservation.entity.Reservation;
+import com.ticketrush.domain.reservation.entity.SalesPolicy;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
+import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.config.ReservationProperties;
@@ -29,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -38,6 +42,7 @@ import static org.mockito.Mockito.when;
 @DataJpaTest
 @Import({
         ReservationLifecycleService.class,
+        SalesPolicyService.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
 })
 class ReservationLifecycleServiceIntegrationTest {
@@ -68,6 +73,9 @@ class ReservationLifecycleServiceIntegrationTest {
 
     @jakarta.annotation.Resource
     private ReservationRepository reservationRepository;
+
+    @jakarta.annotation.Resource
+    private SalesPolicyRepository salesPolicyRepository;
 
     @jakarta.annotation.Resource
     private SeatRepository seatRepository;
@@ -180,6 +188,60 @@ class ReservationLifecycleServiceIntegrationTest {
 
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
+    }
+
+    @Test
+    void holdInPresale_shouldRejectUserWithInsufficientTier() {
+        User basicUser = userRepository.save(new User("step11-basic-user-" + System.nanoTime(), UserTier.BASIC));
+        Seat seat = saveSeat("A-105");
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        LocalDateTime now = LocalDateTime.now();
+        salesPolicyRepository.save(SalesPolicy.create(
+                seat.getConcertOption().getConcert(),
+                now.minusMinutes(1),
+                now.plusMinutes(10),
+                UserTier.VIP,
+                now.plusMinutes(30),
+                1
+        ));
+
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(new ReservationRequest(basicUser.getId(), seat.getId())))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Presale tier not eligible");
+
+        assertThat(reservationRepository.countByUserIdAndConcertIdAndStatusIn(
+                basicUser.getId(),
+                concertId,
+                List.of(Reservation.ReservationStatus.HOLD, Reservation.ReservationStatus.PAYING, Reservation.ReservationStatus.CONFIRMED)
+        )).isZero();
+    }
+
+    @Test
+    void holdShouldEnforcePerUserReservationLimit() {
+        User vipUser = userRepository.save(new User("step11-vip-user-" + System.nanoTime(), UserTier.VIP));
+        Seat firstSeat = saveSeat("A-106");
+        Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-107"));
+
+        LocalDateTime now = LocalDateTime.now();
+        salesPolicyRepository.save(SalesPolicy.create(
+                firstSeat.getConcertOption().getConcert(),
+                null,
+                null,
+                null,
+                now.minusMinutes(1),
+                1
+        ));
+
+        ReservationLifecycleResponse firstHold = reservationLifecycleService.createHold(
+                new ReservationRequest(vipUser.getId(), firstSeat.getId())
+        );
+        assertThat(firstHold.getStatus()).isEqualTo(Reservation.ReservationStatus.HOLD.name());
+
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(
+                new ReservationRequest(vipUser.getId(), secondSeat.getId())
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Per-user reservation limit exceeded");
     }
 
     private Seat saveSeat(String seatNo) {

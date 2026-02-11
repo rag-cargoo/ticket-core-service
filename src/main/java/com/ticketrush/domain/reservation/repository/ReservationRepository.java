@@ -23,4 +23,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Reservation r set r.holdExpiresAt = :expiresAt where r.id = :reservationId")
     int updateHoldExpiresAt(@Param("reservationId") Long reservationId, @Param("expiresAt") LocalDateTime expiresAt);
+
+    @Query("""
+            select count(r)
+            from Reservation r
+            where r.user.id = :userId
+              and r.seat.concertOption.concert.id = :concertId
+              and r.status in :statuses
+            """)
+    long countByUserIdAndConcertIdAndStatusIn(
+            @Param("userId") Long userId,
+            @Param("concertId") Long concertId,
+            @Param("statuses") Collection<Reservation.ReservationStatus> statuses
+    );
 }

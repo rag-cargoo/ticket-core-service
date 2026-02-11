@@ -29,12 +29,14 @@
 | Location | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | Body | `username` | String | Yes | 사용자 식별 이름 (중복 불가) |
+| Body | `tier` | String | No | 사용자 등급 (`BASIC`, `SILVER`, `GOLD`, `VIP`), 미입력 시 `BASIC` |
 
 **Request Example**
 
 ```json
 {
-  "username": "tester1"
+  "username": "tester1",
+  "tier": "BASIC"
 }
 ```
 
@@ -44,13 +46,15 @@
 | :--- | :--- | :--- |
 | `id` | Long | 발급된 유저 고유 ID |
 | `username` | String | 등록된 사용자 이름 |
+| `tier` | String | 사용자 등급 |
 
 **Response Example**
 
 ```json
 {
   "id": 1,
-  "username": "tester1"
+  "username": "tester1",
+  "tier": "BASIC"
 }
 ```
 
@@ -71,7 +75,8 @@
 ```json
 {
   "id": 1,
-  "username": "tester1"
+  "username": "tester1",
+  "tier": "BASIC"
 }
 ```
 

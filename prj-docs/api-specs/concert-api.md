@@ -152,3 +152,62 @@
 **Response Summary (200 OK)**
 
 `Cleanup completed for ConcertID: 4`
+
+---
+
+### 1.6. [Admin/Test] Step 11 판매 정책 생성/수정
+- **Endpoint**: `PUT /api/concerts/{concertId}/sales-policy`
+- **Description**: 공연별 판매 정책(선예매 기간, 선예매 최소 등급, 일반 오픈 시각, 1인 최대 예약 수)을 생성/수정합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `concertId` | Long | Yes | 대상 공연 ID |
+| Body | `presaleStartAt` | DateTime | No | 선예매 시작 시각 |
+| Body | `presaleEndAt` | DateTime | No | 선예매 종료 시각 (`generalSaleStartAt` 이하) |
+| Body | `presaleMinimumTier` | String | No | 선예매 최소 등급 (`SILVER`/`GOLD`/`VIP`) |
+| Body | `generalSaleStartAt` | DateTime | Yes | 일반 판매 시작 시각 |
+| Body | `maxReservationsPerUser` | Integer | Yes | 1인 최대 동시 예약 수 (`>=1`) |
+
+**Request Example**
+
+```json
+{
+  "presaleStartAt": "2026-02-11T13:00:00",
+  "presaleEndAt": "2026-02-11T13:30:00",
+  "presaleMinimumTier": "VIP",
+  "generalSaleStartAt": "2026-02-11T13:30:00",
+  "maxReservationsPerUser": 1
+}
+```
+
+**Response Example**
+
+```json
+{
+  "id": 1,
+  "concertId": 4,
+  "presaleStartAt": "2026-02-11T13:00:00",
+  "presaleEndAt": "2026-02-11T13:30:00",
+  "presaleMinimumTier": "VIP",
+  "generalSaleStartAt": "2026-02-11T13:30:00",
+  "maxReservationsPerUser": 1
+}
+```
+
+---
+
+### 1.7. [Read] Step 11 판매 정책 조회
+- **Endpoint**: `GET /api/concerts/{concertId}/sales-policy`
+- **Description**: 대상 공연의 현재 판매 정책을 조회합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Path | `concertId` | Long | Yes | 조회 대상 공연 ID |
+
+**Response Summary (200 OK)**
+
+- `PUT /api/concerts/{concertId}/sales-policy` 응답과 동일한 필드 구조를 반환합니다.

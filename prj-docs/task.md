@@ -142,10 +142,20 @@
 >   - API E2E 메모(2026-02-11): `bash scripts/api/v9-cancel-refund-resale.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step10/20260211-220150-e2e/v9-step10-e2e.log`.
 >   - 다음 액션: Step 11 정책 엔진(선예매/등급/1인 제한) 모델 정의.
 >
-> - [ ] **Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현**
+> - [x] **Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현**
 >   - 목표: 고정 로직이 아닌 정책 기반으로 판매 조건을 제어한다.
 >   - 완료 기준: 정책 변경이 코드 수정 없이 설정/테이블 중심으로 반영된다.
->   - 다음 액션: 정책 모델(기간/등급/수량 제한)과 검증 인터셉터 구조 설계.
+>   - 완료 근거:
+>     - 정책 테이블/검증 도메인: `src/main/java/com/ticketrush/domain/reservation/entity/SalesPolicy.java`
+>     - 정책 서비스: `src/main/java/com/ticketrush/domain/reservation/service/SalesPolicyService.java`
+>     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 정책 API: `src/main/java/com/ticketrush/api/controller/ConcertController.java` (`PUT/GET /api/concerts/{concertId}/sales-policy`)
+>     - 유저 등급 확장: `src/main/java/com/ticketrush/domain/user/User.java`, `src/main/java/com/ticketrush/domain/user/UserTier.java`
+>     - 운영 스크립트/문서: `scripts/api/v10-sales-policy-engine.sh`, `scripts/http/reservation.http`, `prj-docs/api-specs/*.md`, `prj-docs/knowledge/동시성-제어-전략.md`
+>     - 실행 리포트: `prj-docs/api-test/step11-sales-policy-latest.md`
+>   - 검증 메모(2026-02-12): `./gradlew test --rerun-tasks --tests '*ReservationStateMachineTest' --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'` PASS (`13 tests completed, 0 failed`).
+>   - API E2E 메모(2026-02-12): `bash scripts/api/v10-sales-policy-engine.sh` PASS, 로그: `.codex/tmp/ticket-core-service/step11/20260212-001622-e2e/v10-step11-e2e.log`.
+>   - 다음 액션: Step 12 부정사용 방지 룰(요청 빈도/디바이스 지문/감사 로그) 초안 구현.
 >
 > - [ ] **Step 12: 부정사용 방지/감사 추적 기능 구현**
 >   - 목표: 우회/봇/중복 시도를 탐지하고 추적 가능한 감사 이력을 남긴다.

@@ -31,6 +31,7 @@ public class ReservationLifecycleService {
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
     private final ReservationProperties reservationProperties;
+    private final SalesPolicyService salesPolicyService;
     private final WaitingQueueService waitingQueueService;
     private final SseEmitterManager sseEmitterManager;
 
@@ -41,9 +42,10 @@ public class ReservationLifecycleService {
         Seat seat = seatRepository.findByIdWithPessimisticLock(request.getSeatId())
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + request.getSeatId()));
 
+        LocalDateTime now = LocalDateTime.now();
+        salesPolicyService.validateHoldRequest(user, seat, now);
         seat.hold();
 
-        LocalDateTime now = LocalDateTime.now();
         LocalDateTime holdExpiresAt = now.plusSeconds(reservationProperties.getHoldTtlSeconds());
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
         reservationRepository.save(reservation);

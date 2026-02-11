@@ -452,6 +452,26 @@ data: SUCCESS
 
 ---
 
+### 1.14. Step 11: HOLD 생성 시 판매 정책 검증
+- **Target Endpoint**: `POST /api/reservations/v6/holds`
+- **Description**: Step 11부터 홀드 생성 시 공연별 정책(선예매 기간/등급/1인 제한)을 선검증합니다.
+
+**검증 규칙**
+
+| Rule | 설명 | 실패 시 |
+| :--- | :--- | :--- |
+| 선예매 기간 + 등급 | 선예매 창(`presaleStartAt~presaleEndAt`)에서는 `presaleMinimumTier` 이상만 HOLD 가능 | `409 Conflict` (`Presale tier not eligible...`) |
+| 일반 판매 오픈 시각 | 선예매 창이 아니면서 `generalSaleStartAt` 이전이면 HOLD 불가 | `409 Conflict` (`Sale has not opened yet...`) |
+| 1인 제한 | 같은 공연에서 `HOLD/PAYING/CONFIRMED` 개수가 `maxReservationsPerUser` 이상이면 HOLD 불가 | `409 Conflict` (`Per-user reservation limit exceeded...`) |
+
+**정책 설정 API**
+
+- `PUT /api/concerts/{concertId}/sales-policy`
+- `GET /api/concerts/{concertId}/sales-policy`
+- 상세 필드는 `prj-docs/api-specs/concert-api.md`의 Step 11 섹션을 참조합니다.
+
+---
+
 ## 2. 공통 에러 응답 (Common Error)
 현재 구현(`GlobalExceptionHandler`)은 대부분 에러를 **문자열 본문**으로 반환합니다.
 

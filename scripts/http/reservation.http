@@ -96,3 +96,45 @@ Content-Type: application/json
 
 ### 15. Step 10 - 최종 상태 조회
 GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1
+
+### 16. Step 11 - 판매 정책 생성/수정 (선예매/등급/1인 제한)
+PUT http://localhost:8080/api/concerts/{{concertId}}/sales-policy
+Content-Type: application/json
+
+{
+  "presaleStartAt": "2026-02-11T13:00:00",
+  "presaleEndAt": "2026-02-11T13:30:00",
+  "presaleMinimumTier": "VIP",
+  "generalSaleStartAt": "2026-02-11T13:30:00",
+  "maxReservationsPerUser": 1
+}
+
+### 17. Step 11 - 판매 정책 조회
+GET http://localhost:8080/api/concerts/{{concertId}}/sales-policy
+
+### 18. Step 11 - 등급 지정 유저 생성 (BASIC/VIP)
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "username": "step11-basic-user",
+  "tier": "BASIC"
+}
+
+### 19. Step 11 - VIP 유저 생성
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "username": "step11-vip-user",
+  "tier": "VIP"
+}
+
+### 20. Step 11 - 홀드 생성 시 정책 검증 적용
+POST http://localhost:8080/api/reservations/v6/holds
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "seatId": 11
+}
