@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketRush U1 Auth Console</title>
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body class="u1-body">
+  <div class="u1-bg-shape u1-bg-shape-a"></div>
+  <div class="u1-bg-shape u1-bg-shape-b"></div>
+  <main class="u1-main">
+    <header class="u1-hero">
+      <p class="u1-kicker">UX Track U1</p>
+      <h1>Auth + Reservation v7 MVP Console</h1>
+      <p>One flow login: authorize, callback exchange, token storage, and signed API checks.</p>
+    </header>
+
+    <section class="u1-card">
+      <h2>API Target</h2>
+      <div class="u1-row">
+        <label for="apiBaseInput">API Base URL</label>
+        <input id="apiBaseInput" type="text" placeholder="http://127.0.0.1:8080">
+        <button id="useCurrentOriginBtn" type="button" class="u1-btn u1-btn-ghost">Use Current Origin</button>
+      </div>
+      <p class="u1-hint">If this page is served by Spring Boot, current origin is recommended.</p>
+    </section>
+
+    <section class="u1-card">
+      <h2>Session Snapshot</h2>
+      <div class="u1-status-row">
+        <span id="loginStatusBadge" class="u1-badge u1-badge-off">Logged Out</span>
+        <button id="clearSessionBtn" type="button" class="u1-btn">Clear Local Session</button>
+      </div>
+      <div>
+        <h3>Current User (/api/auth/me)</h3>
+        <pre id="currentUserView" class="u1-user-view">-</pre>
+      </div>
+    </section>
+
+    <section class="u1-card">
+      <h2>Social Login</h2>
+      <div class="u1-actions">
+        <button id="loginKakaoBtn" type="button" class="u1-btn u1-btn-primary">Login with Kakao</button>
+        <button id="loginNaverBtn" type="button" class="u1-btn u1-btn-primary-alt">Login with Naver</button>
+      </div>
+      <div class="u1-actions">
+        <button id="meBtn" type="button" class="u1-btn">GET /api/auth/me</button>
+        <button id="refreshBtn" type="button" class="u1-btn">POST /api/auth/token/refresh</button>
+        <button id="logoutBtn" type="button" class="u1-btn u1-btn-warn">POST /api/auth/logout</button>
+      </div>
+      <div class="u1-token-grid">
+        <div>
+          <h3>Access Token</h3>
+          <code id="accessTokenView" class="u1-token-view">-</code>
+        </div>
+        <div>
+          <h3>Refresh Token</h3>
+          <code id="refreshTokenView" class="u1-token-view">-</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="u1-card">
+      <h2>Reservation v7</h2>
+      <div class="u1-grid">
+        <div class="u1-row">
+          <label for="seatIdInput">Seat ID</label>
+          <input id="seatIdInput" type="number" min="1" placeholder="1">
+          <button id="createHoldBtn" type="button" class="u1-btn">POST /v7/holds</button>
+        </div>
+        <div class="u1-row">
+          <label for="reservationIdInput">Reservation ID</label>
+          <input id="reservationIdInput" type="number" min="1" placeholder="Reservation ID from hold response">
+        </div>
+      </div>
+      <div class="u1-actions">
+        <button id="startPayingBtn" type="button" class="u1-btn">POST /v7/{id}/paying</button>
+        <button id="confirmBtn" type="button" class="u1-btn">POST /v7/{id}/confirm</button>
+        <button id="cancelBtn" type="button" class="u1-btn">POST /v7/{id}/cancel</button>
+        <button id="refundBtn" type="button" class="u1-btn">POST /v7/{id}/refund</button>
+      </div>
+      <div class="u1-actions">
+        <button id="getReservationBtn" type="button" class="u1-btn">GET /v7/{id}</button>
+        <button id="getMyReservationsBtn" type="button" class="u1-btn">GET /v7/me</button>
+      </div>
+    </section>
+
+    <section class="u1-card">
+      <h2>Console</h2>
+      <pre id="consoleView" class="u1-console"></pre>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

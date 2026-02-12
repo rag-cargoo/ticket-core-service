@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 07:59:32`
+> - **Updated At**: `2026-02-12 17:01:50`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -223,6 +223,7 @@
 > - [ ] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현**
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.
 >   - 완료 기준: 핵심 화면/상태 전이 UI, 공연 검색/필터/정렬, 오류/재시도 UX까지 동작한다.
+>   - 진행 메모(2026-02-12): 프론트 MVP를 `src/main/resources/static/ux/u1`로 영구 배치하고, 기존 redirect URI 호환을 위해 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html` 리다이렉트 엔트리를 추가했다.
 >   - 다음 액션: 페이지 라우트와 API contract 매핑표 작성 후 MVP 화면 우선 구현.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
