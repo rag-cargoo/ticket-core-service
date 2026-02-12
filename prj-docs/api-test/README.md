@@ -20,7 +20,8 @@
 > - 8. Step 11 판매 정책 엔진 검증 실행
 > - 9. Step 12 부정사용 방지/감사 추적 검증 실행
 > - 10. Auth Track: 소셜 로그인 계약 검증 실행
-> - 11. Playwright MCP로 k6 HTML 열기
+> - 11. Auth Track A2 인증 세션/가드 검증 실행
+> - 12. Playwright MCP로 k6 HTML 열기
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -35,7 +36,7 @@ make test-suite
 ```
 
 - 내부적으로 `scripts/api/run-api-script-tests.sh`를 호출합니다.
-- 기본 실행 세트는 `v1`~`v11` 스크립트입니다.
+- 기본 실행 세트는 `v1`~`v12` + `a*`(Track) 스크립트입니다.
 - 기본 헬스체크 URL은 `http://127.0.0.1:8080/api/concerts` 입니다.
 - 필요하면 `API_SCRIPT_HEALTH_URL` 환경변수로 변경할 수 있습니다.
 - 기존 환경과의 호환을 위해 `TICKETRUSH_HEALTH_URL`도 별칭으로 지원합니다.
@@ -212,7 +213,7 @@ bash scripts/api/a2-auth-track-session-guard.sh
   - `POST /api/auth/token/refresh` 입력 검증(`400`, `refresh token is required`)
   - `POST /api/reservations/v7/holds` 무토큰 접근 차단(`401`)
 - 실행 리포트:
-  - `prj-docs/api-test/auth-track-a2-session-guard-latest.md` (생성 예정)
+  - `prj-docs/api-test/auth-track-a2-session-guard-latest.md`
 
 ---
 

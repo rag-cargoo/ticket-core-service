@@ -42,7 +42,7 @@
 ## 현재 상태 (Status)
 ---
 > [!NOTE]
->   - **현재 단계**: Step 12 완료 + Auth Track A1 완료
+>   - **현재 단계**: Step 12 완료 + Auth Track A1/A2 완료
 >   - **목표**: 고성능 선착순 티켓팅 시스템 구현
 >   - **Tech Stack**: Java 17 / Spring Boot 3.4.1 / JPA / Redisson / PostgreSQL / Redis / Kafka / SSE
 >   - **검증 체인**: pre-commit `quick`(기본) / `strict`(중요 커밋) 모드 운영, strict에서 문서/HTTP/API스크립트 동기화 + 실행 리포트 강제 검증
@@ -82,7 +82,7 @@
 
 > [!NOTE]
 >   - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
->   - [ ] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
+>   - [x] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 >   - [ ] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
 >   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
 
@@ -114,6 +114,7 @@
 > - [x] 완료 메모(2026-02-11): `K6_VUS=20`, `K6_DURATION=300s` 동일 조건 before/after 측정 완료
 > - [x] 개선 결과: `http_req_duration.p95 3.848ms -> 3.552ms(-7.68%)`, `p99 5.405ms -> 4.810ms(-11.01%)`, `http_reqs 58067 -> 58360(+0.50%)`
 > - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
+> - [x] Auth Track A2: 인증/인가 + 소셜 로그인 통합 (JWT/Role 가드 + A2 스크립트/리포트)
 
 ---
 
@@ -204,11 +205,20 @@
 >     - 실행 리포트: `prj-docs/api-test/auth-track-a1-social-auth-latest.md`
 >   - 검증 메모(2026-02-12): `./gradlew test --tests '*SocialAuthServiceTest'` PASS.
 >
-> - [ ] **Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합**
+> - [x] **Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합**
 >   - 목표: 예약/결제 API를 인증된 사용자 컨텍스트로 보호하고 소셜 로그인으로 온보딩을 단순화한다.
 >   - 완료 기준: `JWT Access/Refresh`, Role 인가, `Kakao OAuth2` 로그인/회원 연동, 만료/재발급 흐름 테스트를 통과한다.
->   - 진행 메모(네이밍 규칙): Step 검증은 `v*.sh`, Track 검증은 `a*.sh` 접두어를 사용한다. (예: `scripts/api/a2-auth-track-session-guard.sh`)
->   - 다음 액션: auth 도메인 설계(`users`, `auth_identities`, `refresh_tokens`) + 카카오 콜백 처리 API 초안 작성 + A2 회귀 리포트(`prj-docs/api-test/auth-track-a2-session-guard-latest.md`) 생성.
+>   - 완료 근거:
+>     - 보안/인가: `src/main/java/com/ticketrush/global/config/SecurityConfig.java`, `src/main/java/com/ticketrush/domain/auth/security/JwtAuthenticationFilter.java`
+>     - 세션 API: `src/main/java/com/ticketrush/api/controller/AuthController.java`
+>     - 토큰 서비스/저장소: `src/main/java/com/ticketrush/domain/auth/service/AuthSessionService.java`, `src/main/java/com/ticketrush/domain/auth/entity/RefreshToken.java`
+>     - 인증 예약 API(v7): `src/main/java/com/ticketrush/api/controller/ReservationController.java`
+>     - 문서/스크립트/리포트: `prj-docs/api-specs/auth-session-api.md`, `scripts/api/a2-auth-track-session-guard.sh`, `prj-docs/api-test/auth-track-a2-session-guard-latest.md`
+>   - 검증 메모(2026-02-12):
+>     - `./gradlew test --rerun-tasks --tests '*AuthSessionServiceTest' --tests '*AuthSecurityIntegrationTest' --tests '*SocialAuthServiceTest'` PASS (`9 tests completed, 0 failed`)
+>     - `bash scripts/api/a2-auth-track-session-guard.sh` PASS, 로그: `.codex/tmp/ticket-core-service/auth-a2/20260212-091614-contract/a2-auth-track-session-guard.log`
+>   - 진행 메모(네이밍 규칙): Step 검증은 `v*.sh`, Track 검증은 `a*.sh` 접두어를 사용한다.
+>   - 다음 액션: UX Track U1 프론트 콜백/세션 저장/로그인 상태 UI 연결.
 >
 > - [ ] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현**
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.
