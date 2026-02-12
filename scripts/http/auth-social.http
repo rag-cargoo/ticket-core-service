@@ -21,3 +21,26 @@ Content-Type: application/json
   "code": "NAVER_AUTH_CODE",
   "state": "dev-state-001"
 }
+
+### 5. Access/Refresh 토큰 재발급 (A2)
+POST http://localhost:8080/api/auth/token/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "REFRESH_TOKEN_FROM_EXCHANGE_RESPONSE"
+}
+
+### 6. 내 인증 프로필 조회 (A2)
+GET http://localhost:8080/api/auth/me
+Authorization: Bearer ACCESS_TOKEN_FROM_EXCHANGE_RESPONSE
+
+### 7. 인증 사용자 기반 HOLD 생성 (A2, v7)
+POST http://localhost:8080/api/reservations/v7/holds
+Authorization: Bearer ACCESS_TOKEN_FROM_EXCHANGE_RESPONSE
+Content-Type: application/json
+
+{
+  "seatId": 1,
+  "requestFingerprint": "fp-http-sample-001",
+  "deviceFingerprint": "device-http-sample-001"
+}

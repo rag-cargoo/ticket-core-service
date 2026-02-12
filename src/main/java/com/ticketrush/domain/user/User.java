@@ -36,6 +36,10 @@ public class User {
     private UserTier tier;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "social_provider", length = 20)
     private SocialProvider socialProvider;
 
@@ -53,8 +57,13 @@ public class User {
     }
 
     public User(String username, UserTier tier) {
+        this(username, tier, UserRole.USER);
+    }
+
+    public User(String username, UserTier tier, UserRole role) {
         this.username = username;
         this.tier = tier == null ? UserTier.BASIC : tier;
+        this.role = role == null ? UserRole.USER : role;
     }
 
     public static User socialUser(
@@ -65,7 +74,19 @@ public class User {
             String email,
             String displayName
     ) {
-        User user = new User(username, tier);
+        return socialUser(username, tier, UserRole.USER, socialProvider, socialId, email, displayName);
+    }
+
+    public static User socialUser(
+            String username,
+            UserTier tier,
+            UserRole role,
+            SocialProvider socialProvider,
+            String socialId,
+            String email,
+            String displayName
+    ) {
+        User user = new User(username, tier, role);
         user.socialProvider = socialProvider;
         user.socialId = socialId;
         user.email = email;

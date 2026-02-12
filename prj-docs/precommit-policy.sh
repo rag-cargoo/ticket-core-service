@@ -91,6 +91,7 @@ is_runtime_api_script_change() {
   local file_path="$1"
   case "$file_path" in
     "${project_root}/scripts/api/v"*.sh|\
+    "${project_root}/scripts/api/"[a-z][0-9]*.sh|\
     "${project_root}/scripts/api/common.sh"|\
     "${project_root}/scripts/api/setup-test-data.sh")
       return 0
@@ -189,7 +190,7 @@ policy_validate() {
   local project_change_patterns=(
     "^${project_root}/src/main/java/.+\\.java$"
     "^${project_root}/src/main/resources/.+\\.ya?ml$"
-    "^${project_root}/scripts/api/(v[0-9].*\\.sh|common\\.sh|setup-test-data\\.sh)$"
+    "^${project_root}/scripts/api/((v[0-9].*|[a-z][0-9].*)\\.sh|common\\.sh|setup-test-data\\.sh)$"
   )
 
   local needs_chain="false"

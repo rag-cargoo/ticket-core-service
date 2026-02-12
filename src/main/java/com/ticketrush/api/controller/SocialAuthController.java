@@ -3,8 +3,10 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.auth.SocialAuthorizeUrlResponse;
 import com.ticketrush.api.dto.auth.SocialLoginRequest;
 import com.ticketrush.api.dto.auth.SocialLoginResponse;
+import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
 import com.ticketrush.domain.auth.model.SocialLoginResult;
+import com.ticketrush.domain.auth.service.AuthSessionService;
 import com.ticketrush.domain.auth.service.SocialAuthService;
 import com.ticketrush.domain.user.SocialProvider;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class SocialAuthController {
 
     private final SocialAuthService socialAuthService;
+    private final AuthSessionService authSessionService;
 
     @GetMapping("/{provider}/authorize-url")
     public ResponseEntity<SocialAuthorizeUrlResponse> getAuthorizeUrl(
@@ -35,6 +38,7 @@ public class SocialAuthController {
     ) {
         SocialProvider socialProvider = SocialProvider.from(provider);
         SocialLoginResult result = socialAuthService.login(socialProvider, request.getCode(), request.getState());
-        return ResponseEntity.ok(SocialLoginResponse.from(result));
+        AuthTokenPair tokenPair = authSessionService.issueFor(result.getUser());
+        return ResponseEntity.ok(SocialLoginResponse.from(result, tokenPair));
     }
 }

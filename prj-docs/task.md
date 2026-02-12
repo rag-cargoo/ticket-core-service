@@ -207,7 +207,8 @@
 > - [ ] **Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합**
 >   - 목표: 예약/결제 API를 인증된 사용자 컨텍스트로 보호하고 소셜 로그인으로 온보딩을 단순화한다.
 >   - 완료 기준: `JWT Access/Refresh`, Role 인가, `Kakao OAuth2` 로그인/회원 연동, 만료/재발급 흐름 테스트를 통과한다.
->   - 다음 액션: auth 도메인 설계(`users`, `auth_identities`, `refresh_tokens`) + 카카오 콜백 처리 API 초안 작성.
+>   - 진행 메모(네이밍 규칙): Step 검증은 `v*.sh`, Track 검증은 `a*.sh` 접두어를 사용한다. (예: `scripts/api/a2-auth-track-session-guard.sh`)
+>   - 다음 액션: auth 도메인 설계(`users`, `auth_identities`, `refresh_tokens`) + 카카오 콜백 처리 API 초안 작성 + A2 회귀 리포트(`prj-docs/api-test/auth-track-a2-session-guard-latest.md`) 생성.
 >
 > - [ ] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현**
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.

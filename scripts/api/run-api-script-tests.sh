@@ -37,7 +37,7 @@ if [[ "$#" -gt 0 ]]; then
     fi
 
     script_name="$(basename "$script_abs")"
-    if [[ ! "$script_name" =~ ^v[0-9].*\.sh$ ]]; then
+    if [[ ! "$script_name" =~ ^(v[0-9].*|[a-z][0-9].*)\.sh$ ]]; then
       continue
     fi
 
@@ -47,7 +47,7 @@ else
   while IFS= read -r script_abs; do
     [[ -z "$script_abs" ]] && continue
     scripts_to_run+=("$script_abs")
-  done < <(find "$scripts_abs_root" -maxdepth 1 -type f -name 'v*.sh' | sort)
+  done < <(find "$scripts_abs_root" -maxdepth 1 -type f \( -name 'v*.sh' -o -name '[a-z][0-9]*.sh' \) | sort)
 fi
 
 if [[ "${#scripts_to_run[@]}" -eq 0 ]]; then

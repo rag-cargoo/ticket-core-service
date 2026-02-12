@@ -45,3 +45,9 @@ app:
     device-window-seconds: 600
     device-max-distinct-users: 1
     audit-query-default-limit: 100
+  auth:
+    jwt:
+      issuer: "ticketrush"
+      secret: ${AUTH_JWT_SECRET:ticketrush-local-dev-jwt-secret-key-change-this-value}
+      access-token-seconds: ${AUTH_ACCESS_TOKEN_SECONDS:1800}
+      refresh-token-seconds: ${AUTH_REFRESH_TOKEN_SECONDS:1209600}

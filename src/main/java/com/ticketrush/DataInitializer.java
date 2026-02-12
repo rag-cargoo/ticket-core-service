@@ -1,7 +1,9 @@
 package com.ticketrush;
 
 import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserRepository;
+import com.ticketrush.domain.user.UserTier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -24,7 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // 1. 시스템 관리자 유저가 없는 경우에만 생성 (기동 확인용)
         if (userRepository.count() == 0) {
-            userRepository.save(new User("admin"));
+            userRepository.save(new User("admin", UserTier.VIP, UserRole.ADMIN));
             log.info(">>>> Initial data created: Admin user registered.");
         }
 

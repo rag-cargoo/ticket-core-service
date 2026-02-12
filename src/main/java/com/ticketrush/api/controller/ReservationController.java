@@ -11,14 +11,17 @@ import com.ticketrush.global.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SseEmitterManager;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
+import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
 import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
+import com.ticketrush.domain.auth.security.AuthUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
@@ -187,6 +190,106 @@ public class ReservationController {
         );
     }
 
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 HOLD 생성
+     */
+    @PostMapping("/v7/holds")
+    public ResponseEntity<ReservationLifecycleResponse> createHoldV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestBody AuthenticatedHoldRequest request
+    ) {
+        return ResponseEntity.status(201).body(
+                reservationLifecycleService.createHold(request.toReservationRequest(requiredUserId(principal)))
+        );
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 PAYING 전이
+     */
+    @PostMapping("/v7/{reservationId}/paying")
+    public ResponseEntity<ReservationLifecycleResponse> startPayingV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.startPaying(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 CONFIRMED 전이
+     */
+    @PostMapping("/v7/{reservationId}/confirm")
+    public ResponseEntity<ReservationLifecycleResponse> confirmV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.confirm(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 CANCELLED 전이
+     */
+    @PostMapping("/v7/{reservationId}/cancel")
+    public ResponseEntity<ReservationLifecycleResponse> cancelV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.cancel(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 REFUNDED 전이
+     */
+    @PostMapping("/v7/{reservationId}/refund")
+    public ResponseEntity<ReservationLifecycleResponse> refundV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.refund(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 예약 상태 조회
+     */
+    @GetMapping("/v7/{reservationId}")
+    public ResponseEntity<ReservationLifecycleResponse> getReservationV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.getReservation(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 본인 예약 목록 조회
+     */
+    @GetMapping("/v7/me")
+    public ResponseEntity<List<ReservationResponse>> getMyReservationsV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal
+    ) {
+        return ResponseEntity.ok(reservationService.getReservationsByUserId(requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 부정사용 감사 로그 조회 (관리자 권한 전용)
+     */
+    @GetMapping("/v7/audit/abuse")
+    public ResponseEntity<List<AbuseAuditResponse>> getAbuseAuditsV7(
+            @RequestParam(required = false) AbuseAuditLog.AuditAction action,
+            @RequestParam(required = false) AbuseAuditLog.AuditResult result,
+            @RequestParam(required = false) AbuseAuditLog.AuditReason reason,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long concertId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toAt,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(
+                abuseAuditService.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
+                        .stream()
+                        .map(AbuseAuditResponse::from)
+                        .toList()
+        );
+    }
+
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
         queueService.setStatus(request.getUserId(), request.getSeatId(), "PENDING");
         kafkaProducer.send(ReservationEvent.of(request.getUserId(), request.getSeatId(), lockType));
@@ -194,6 +297,13 @@ public class ReservationController {
             "message", "Reservation request enqueued",
             "strategy", lockType.name()
         ));
+    }
+
+    private Long requiredUserId(AuthUserPrincipal principal) {
+        if (principal == null) {
+            throw new IllegalArgumentException("authenticated user is required");
+        }
+        return principal.getUserId();
     }
 
     /**

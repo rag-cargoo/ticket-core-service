@@ -200,7 +200,23 @@ bash scripts/api/v12-social-auth-contract.sh
 
 ---
 
-## 11. Playwright MCP로 k6 HTML 열기
+## 11. Auth Track A2 인증 세션/가드 검증 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+bash scripts/api/a2-auth-track-session-guard.sh
+```
+
+- 검증 흐름:
+  - `/api/auth/me` 무토큰 접근 차단(`401`)
+  - `POST /api/auth/token/refresh` 입력 검증(`400`, `refresh token is required`)
+  - `POST /api/reservations/v7/holds` 무토큰 접근 차단(`401`)
+- 실행 리포트:
+  - `prj-docs/api-test/auth-track-a2-session-guard-latest.md` (생성 예정)
+
+---
+
+## 12. Playwright MCP로 k6 HTML 열기
 
 `k6-web-dashboard.html`은 로컬 파일이므로 Playwright MCP에서 `file://` 직접 열기가 실패할 수 있습니다.
 표준 절차는 "로컬 HTTP 서빙 + MCP `navigate`" 입니다.

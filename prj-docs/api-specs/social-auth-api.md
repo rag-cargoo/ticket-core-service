@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 02:15:34`
-> - **Updated At**: `2026-02-12 02:15:34`
+> - **Updated At**: `2026-02-12 08:25:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -62,7 +62,7 @@ GET /api/auth/social/naver/authorize-url?state=my-state-001
 
 ### 1.2. Authorization Code 교환 및 사용자 매핑
 - **Endpoint**: `POST /api/auth/social/{provider}/exchange`
-- **Description**: `authorization code`를 access token으로 교환하고, 소셜 계정 기준으로 내부 사용자를 생성/조회합니다.
+- **Description**: `authorization code`를 access token으로 교환하고, 소셜 계정 기준으로 내부 사용자를 생성/조회한 뒤 Access/Refresh 토큰을 함께 발급합니다.
 
 **Parameters**
 
@@ -91,9 +91,17 @@ GET /api/auth/social/naver/authorize-url?state=my-state-001
   "socialId": "123456789",
   "email": "user@example.com",
   "displayName": "테스터",
-  "newUser": true
+  "role": "USER",
+  "newUser": true,
+  "tokenType": "Bearer",
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ...",
+  "accessTokenExpiresInSeconds": 1800,
+  "refreshTokenExpiresInSeconds": 1209600
 }
 ```
+
+추가 인증 세션 API(`refresh`, `logout`, `me`)는 `prj-docs/api-specs/auth-session-api.md`를 참조하세요.
 
 ---
 
