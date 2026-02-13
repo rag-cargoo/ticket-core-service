@@ -314,6 +314,59 @@ select:focus {
   font-size: 0.82rem;
 }
 
+.u1-guide-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: var(--ink-700);
+}
+
+.u1-guide-steps-compact {
+  margin-top: 8px;
+}
+
+.u1-guide-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.u1-guide-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.u1-guide-box h3 {
+  margin: 0;
+}
+
+.u1-guide-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--ink-700);
+}
+
+.u1-guide-details {
+  border: 1px dashed rgba(31, 42, 44, 0.26);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 8px 10px;
+}
+
+.u1-guide-details summary {
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .u1-form-grid {
   display: grid;
   gap: 10px;
@@ -476,6 +529,10 @@ select:focus {
   .u1-form-grid {
     grid-template-columns: 1.5fr 1fr 1fr 1fr;
     align-items: end;
+  }
+
+  .u1-guide-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .u1-explorer-grid {

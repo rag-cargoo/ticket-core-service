@@ -39,6 +39,57 @@
     </section>
 
     <section class="u1-card">
+      <h2>How To Test (Quick Guide)</h2>
+      <p class="u1-hint">Recommended E2E order: login -> concert/seat selection -> queue check -> reservation transition.</p>
+      <ol class="u1-guide-steps">
+        <li>Click <code>Use Current Origin</code> to keep API base aligned with this page.</li>
+        <li>Run <code>Login with Kakao</code> or <code>Login with Naver</code> and confirm green action status.</li>
+        <li>Click <code>Refresh Concerts</code>, select concert/option/AVAILABLE seat (Seat ID auto-filled).</li>
+        <li>Use queue actions (<code>join/status/subscribe</code>) with auto-filled <code>userId</code> and <code>concertId</code>.</li>
+        <li>Create hold and copy returned reservation id, then test <code>paying/confirm/cancel/refund</code>.</li>
+      </ol>
+
+      <div class="u1-guide-grid">
+        <article class="u1-guide-box">
+          <h3>Social Login Checkpoints</h3>
+          <ul class="u1-guide-list">
+            <li><code>Current User</code> should show <code>userId/provider/email</code>.</li>
+            <li><code>Token Pair Check</code> should be <code>DIFFERENT (normal)</code>.</li>
+            <li>Action status should show timestamp + green/red result immediately.</li>
+          </ul>
+        </article>
+        <article class="u1-guide-box">
+          <h3>Queue Input Example</h3>
+          <ul class="u1-guide-list">
+            <li><code>User ID</code>: leave empty to auto-use logged-in user.</li>
+            <li><code>Concert ID</code>: leave empty after concert select for auto-fill.</li>
+            <li><code>Queue Status</code>: expected <code>WAITING</code> then <code>ACTIVE</code>.</li>
+          </ul>
+        </article>
+      </div>
+
+      <details class="u1-guide-details">
+        <summary>Reservation v7 Example Scenario</summary>
+        <ol class="u1-guide-steps u1-guide-steps-compact">
+          <li>Pick an <code>AVAILABLE</code> seat in explorer (fills <code>Seat ID</code>).</li>
+          <li>Click <code>POST /v7/holds</code> and read <code>id</code> from Console.</li>
+          <li>Paste that value into <code>Reservation ID</code> input.</li>
+          <li>Run <code>POST /v7/{id}/paying</code> -> <code>POST /v7/{id}/confirm</code>.</li>
+          <li>Verify with <code>GET /v7/{id}</code> or <code>GET /v7/me</code>.</li>
+        </ol>
+      </details>
+
+      <details class="u1-guide-details">
+        <summary>If Something Fails</summary>
+        <ul class="u1-guide-list">
+          <li>Red status with timeout/network error: backend URL is wrong or server is down.</li>
+          <li><code>access token is empty</code>: login first or avoid clearing local session before API calls.</li>
+          <li>Callback errors after login: check provider redirect URI and host consistency (<code>localhost</code> vs <code>127.0.0.1</code>).</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="u1-card">
       <h2>Social Login</h2>
       <div class="u1-actions">
         <button id="loginKakaoBtn" type="button" class="u1-btn u1-btn-primary">Login with Kakao</button>
