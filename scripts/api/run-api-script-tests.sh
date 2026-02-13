@@ -13,6 +13,8 @@ report_abs_path="${project_abs}/prj-docs/api-test/latest.md"
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
+# Default health probe keeps script-side dependency minimal.
+# OAuth callback redirect(`/login/oauth2/code/{provider}`)와 같은 브라우저 라우트 검증은 Playwright/U1 시나리오에서 다룬다.
 health_url="${API_SCRIPT_HEALTH_URL:-${TICKETRUSH_HEALTH_URL:-http://127.0.0.1:8080/api/concerts}}"
 
 declare -a scripts_to_run=()

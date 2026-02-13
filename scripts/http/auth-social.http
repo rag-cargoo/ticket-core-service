@@ -2,7 +2,7 @@
 GET http://localhost:8080/api/auth/social/kakao/authorize-url
 
 ### 2. 네이버 인가 URL 조회 (state 지정)
-GET http://localhost:8080/api/auth/social/naver/authorize-url?state=dev-state-001
+GET http://localhost:8080/api/auth/social/naver/authorize-url?state=u1_naver_1770963678337_d4xmuaov06
 
 ### 3. 카카오 code 교환
 POST http://localhost:8080/api/auth/social/kakao/exchange
@@ -19,7 +19,7 @@ Content-Type: application/json
 
 {
   "code": "NAVER_AUTH_CODE",
-  "state": "dev-state-001"
+  "state": "u1_naver_1770963678337_d4xmuaov06"
 }
 
 ### 5. Access/Refresh 토큰 재발급 (A2)
@@ -44,3 +44,6 @@ Content-Type: application/json
   "requestFingerprint": "fp-http-sample-001",
   "deviceFingerprint": "device-http-sample-001"
 }
+
+### 8. Provider callback -> U1 callback redirect 확인
+GET http://localhost:8080/login/oauth2/code/naver?code=sample-code&state=u1_naver_1770963678337_d4xmuaov06

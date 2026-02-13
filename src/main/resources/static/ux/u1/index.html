@@ -13,7 +13,7 @@
     <header class="u1-hero">
       <p class="u1-kicker">UX Track U1</p>
       <h1>Auth + Reservation v7 MVP Console</h1>
-      <p>One flow login: authorize, callback exchange, token storage, and signed API checks.</p>
+      <p>One flow login, concert exploration, and signed reservation APIs from one page.</p>
     </header>
 
     <section class="u1-card">
@@ -44,6 +44,7 @@
         <button id="loginKakaoBtn" type="button" class="u1-btn u1-btn-primary">Login with Kakao</button>
         <button id="loginNaverBtn" type="button" class="u1-btn u1-btn-primary-alt">Login with Naver</button>
       </div>
+      <p id="actionStatus" class="u1-action-status u1-action-info">Ready</p>
       <div class="u1-actions">
         <button id="meBtn" type="button" class="u1-btn">GET /api/auth/me</button>
         <button id="refreshBtn" type="button" class="u1-btn">POST /api/auth/token/refresh</button>
@@ -51,14 +52,93 @@
       </div>
       <div class="u1-token-grid">
         <div>
-          <h3>Access Token</h3>
+          <h3>Access Token State</h3>
           <code id="accessTokenView" class="u1-token-view">-</code>
         </div>
         <div>
-          <h3>Refresh Token</h3>
+          <h3>Refresh Token State</h3>
           <code id="refreshTokenView" class="u1-token-view">-</code>
         </div>
+        <div>
+          <h3>Token Pair Check</h3>
+          <code id="tokenPairView" class="u1-token-view u1-token-neutral">-</code>
+        </div>
       </div>
+    </section>
+
+    <section class="u1-card">
+      <h2>Concert Explorer</h2>
+      <div class="u1-form-grid">
+        <div class="u1-field">
+          <label for="concertSearchInput">Search</label>
+          <input id="concertSearchInput" type="text" placeholder="title / artist / id">
+        </div>
+        <div class="u1-field">
+          <label for="concertArtistFilter">Artist Filter</label>
+          <select id="concertArtistFilter">
+            <option value="all">All Artists</option>
+          </select>
+        </div>
+        <div class="u1-field">
+          <label for="concertSortSelect">Sort</label>
+          <select id="concertSortSelect">
+            <option value="title_asc">Title A to Z</option>
+            <option value="title_desc">Title Z to A</option>
+            <option value="artist_asc">Artist A to Z</option>
+            <option value="artist_desc">Artist Z to A</option>
+            <option value="id_desc">Latest ID</option>
+            <option value="id_asc">Oldest ID</option>
+          </select>
+        </div>
+        <div class="u1-field u1-field-actions">
+          <button id="refreshConcertsBtn" type="button" class="u1-btn">Refresh Concerts</button>
+          <label class="u1-check" for="seatAvailableOnlyCheck">
+            <input id="seatAvailableOnlyCheck" type="checkbox" checked>
+            Show AVAILABLE seats only
+          </label>
+        </div>
+      </div>
+
+      <p id="concertResultSummary" class="u1-hint">Load concerts to start exploring.</p>
+
+      <div class="u1-explorer-grid">
+        <section class="u1-subcard">
+          <h3>Concerts</h3>
+          <div id="concertList" class="u1-scroll-list"></div>
+        </section>
+        <section class="u1-subcard">
+          <h3>Options</h3>
+          <div id="optionList" class="u1-scroll-list"></div>
+        </section>
+        <section class="u1-subcard">
+          <h3>Seats</h3>
+          <div id="seatList" class="u1-scroll-list"></div>
+        </section>
+      </div>
+
+      <p class="u1-hint">Selecting an AVAILABLE seat auto-fills <code>Seat ID</code> for reservation hold.</p>
+    </section>
+
+    <section class="u1-card">
+      <h2>Waiting Queue (Step 7)</h2>
+      <div class="u1-grid">
+        <div class="u1-row">
+          <label for="queueUserIdInput">User ID</label>
+          <input id="queueUserIdInput" type="number" min="1" placeholder="auto from /api/auth/me">
+        </div>
+        <div class="u1-row">
+          <label for="queueConcertIdInput">Concert ID</label>
+          <input id="queueConcertIdInput" type="number" min="1" placeholder="auto from selected concert">
+        </div>
+      </div>
+      <div class="u1-actions">
+        <button id="queueJoinBtn" type="button" class="u1-btn">POST /api/v1/waiting-queue/join</button>
+        <button id="queueStatusBtn" type="button" class="u1-btn">GET /api/v1/waiting-queue/status</button>
+        <button id="queueSubscribeBtn" type="button" class="u1-btn">SSE /subscribe</button>
+        <button id="queueUnsubscribeBtn" type="button" class="u1-btn u1-btn-ghost">Close SSE</button>
+      </div>
+      <p class="u1-hint">Queue APIs are open endpoints. Reservation v7 still requires authenticated access token.</p>
+      <pre id="queueStateView" class="u1-user-view">-</pre>
     </section>
 
     <section class="u1-card">

@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
 
 const messageEl = document.getElementById("callbackMessage");
 const consoleEl = document.getElementById("callbackConsole");
+const REQUEST_TIMEOUT_MS = 8000;
 
 function apiBase() {
   const stored = localStorage.getItem(STORAGE_KEYS.apiBase);
@@ -18,8 +19,35 @@ function apiBase() {
   return window.location.origin;
 }
 
+function summarizeTokenForLog(token) {
+  if (typeof token !== "string" || !token) {
+    return "missing";
+  }
+  return `stored (len=${token.length})`;
+}
+
+function redactTokenFields(payload) {
+  if (Array.isArray(payload)) {
+    return payload.map((item) => redactTokenFields(item));
+  }
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const next = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (key === "accessToken" || key === "refreshToken") {
+      next[key] = summarizeTokenForLog(value);
+      continue;
+    }
+    next[key] = redactTokenFields(value);
+  }
+  return next;
+}
+
 function log(tag, payload) {
-  const body = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+  const safePayload = redactTokenFields(payload);
+  const body = typeof safePayload === "string" ? safePayload : JSON.stringify(safePayload, null, 2);
   const prev = consoleEl.textContent || "";
   consoleEl.textContent = `[${new Date().toISOString()}] ${tag}\n${body}\n\n${prev}`;
 }
@@ -32,9 +60,16 @@ function parseProvider(stateValue) {
   if (!stateValue) {
     return null;
   }
-  const parts = stateValue.split("|");
-  if (parts.length >= 2 && parts[0] === "u1") {
-    return parts[1];
+  // Preferred: u1_<provider>_<ts>_<nonce> (URL-safe)
+  const safeParts = stateValue.split("_");
+  if (safeParts.length >= 2 && safeParts[0] === "u1") {
+    return safeParts[1];
+  }
+
+  // Legacy fallback: u1|<provider>|<ts>|<nonce>
+  const legacyParts = stateValue.split("|");
+  if (legacyParts.length >= 2 && legacyParts[0] === "u1") {
+    return legacyParts[1];
   }
   return null;
 }
@@ -47,8 +82,33 @@ function parseJsonResponse(text) {
   }
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`request timeout (${timeoutMs}ms). check backend server`);
+    }
+    throw new Error(`network error. check backend server (${String(error.message || error)})`);
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+function clearStoredSession() {
+  localStorage.removeItem(STORAGE_KEYS.accessToken);
+  localStorage.removeItem(STORAGE_KEYS.refreshToken);
+  localStorage.removeItem(STORAGE_KEYS.authUser);
+}
+
 async function callExchange(provider, code, stateValue) {
-  const response = await fetch(`${apiBase()}/api/auth/social/${provider}/exchange`, {
+  const response = await fetchWithTimeout(`${apiBase()}/api/auth/social/${provider}/exchange`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -69,6 +129,22 @@ async function callExchange(provider, code, stateValue) {
   return parsed;
 }
 
+async function callAuthMe(accessToken) {
+  const response = await fetchWithTimeout(`${apiBase()}/api/auth/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  const text = await response.text();
+  const parsed = parseJsonResponse(text);
+  if (!response.ok) {
+    throw new Error(`auth/me ${response.status} ${JSON.stringify(parsed, null, 2)}`);
+  }
+  return parsed;
+}
+
 function buildUserSnapshot(loginResponse, provider) {
   return {
     userId: loginResponse.userId || null,
@@ -81,14 +157,25 @@ function buildUserSnapshot(loginResponse, provider) {
   };
 }
 
+function isLikelyU1State(stateValue) {
+  return /^u1_[a-z]+_[0-9]{10,}_[a-z0-9]+$/i.test(String(stateValue || ""));
+}
+
 function validateState(returnedState) {
-  const expectedState = localStorage.getItem(STORAGE_KEYS.oauthState);
-  if (!expectedState) {
-    log("OAUTH_STATE_WARN", "missing expected oauth state in localStorage");
-    return;
-  }
   if (!returnedState) {
     throw new Error("missing oauth state from callback");
+  }
+
+  const expectedState = localStorage.getItem(STORAGE_KEYS.oauthState);
+  if (!expectedState) {
+    if (!isLikelyU1State(returnedState)) {
+      throw new Error("missing expected oauth state in localStorage and callback state format is invalid");
+    }
+    log("OAUTH_STATE_WARN", {
+      reason: "missing expected oauth state in localStorage; continuing with callback state",
+      returnedState
+    });
+    return;
   }
   if (returnedState !== expectedState) {
     throw new Error("oauth state mismatch");
@@ -114,7 +201,11 @@ async function run() {
     return;
   }
 
-  const provider = parseProvider(stateValue) || localStorage.getItem(STORAGE_KEYS.oauthProvider) || "kakao";
+  const provider =
+    parseProvider(stateValue) ||
+    params.get("provider") ||
+    localStorage.getItem(STORAGE_KEYS.oauthProvider) ||
+    "kakao";
   localStorage.setItem(STORAGE_KEYS.oauthProvider, provider);
 
   try {
@@ -123,14 +214,22 @@ async function run() {
     setMessage(`Exchanging authorization code for provider=${provider}...`);
     const loginResponse = await callExchange(provider, code, stateValue);
 
-    localStorage.setItem(STORAGE_KEYS.accessToken, loginResponse.accessToken || "");
-    localStorage.setItem(STORAGE_KEYS.refreshToken, loginResponse.refreshToken || "");
+    if (!loginResponse.accessToken || !loginResponse.refreshToken) {
+      throw new Error("token pair is missing in exchange response");
+    }
 
-    const snapshot = buildUserSnapshot(loginResponse, provider);
+    localStorage.setItem(STORAGE_KEYS.accessToken, loginResponse.accessToken);
+    localStorage.setItem(STORAGE_KEYS.refreshToken, loginResponse.refreshToken);
+
+    const me = await callAuthMe(loginResponse.accessToken);
+    const snapshot = {
+      ...buildUserSnapshot(loginResponse, provider),
+      ...me
+    };
     localStorage.setItem(STORAGE_KEYS.authUser, JSON.stringify(snapshot));
     localStorage.removeItem(STORAGE_KEYS.oauthState);
 
-    log("SOCIAL_EXCHANGE_OK", loginResponse);
+    log("SOCIAL_EXCHANGE_OK", { exchange: loginResponse, me });
     setMessage("Exchange successful. Redirecting back to console...");
 
     const summary = encodeURIComponent(`provider=${provider}&userId=${loginResponse.userId || "-"}`);
@@ -139,6 +238,7 @@ async function run() {
     }, 400);
   } catch (errorObj) {
     const message = String(errorObj.message || errorObj);
+    clearStoredSession();
     setMessage("Exchange failed. Check the details below.");
     log("SOCIAL_EXCHANGE_ERROR", message);
   }

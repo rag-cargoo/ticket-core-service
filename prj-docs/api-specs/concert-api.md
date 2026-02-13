@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:32:34`
+> - **Updated At**: `2026-02-12 18:30:52`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -11,6 +11,7 @@
 ---
 > [!TIP]
 > - 1. API 상세 명세 (Endpoint Details)
+> - 2. UX Track U1 연동 계약 메모
 <!-- DOC_TOC_END -->
 
 공연 정보, 예약 가능 일정 및 좌석 현황을 제공하는 API입니다.
@@ -211,3 +212,18 @@
 **Response Summary (200 OK)**
 
 - `PUT /api/concerts/{concertId}/sales-policy` 응답과 동일한 필드 구조를 반환합니다.
+
+---
+
+## 2. UX Track U1 연동 계약 메모
+
+`src/main/resources/static/ux/u1/index.html` 기준으로 콘서트 탐색 섹션에서 아래 순서로 호출한다.
+
+| UI 단계 | Endpoint | 클라이언트 처리 기준 |
+| :--- | :--- | :--- |
+| 콘서트 목록 로드 | `GET /api/concerts` | 검색어(`id/title/artistName`) + 아티스트 필터 + 정렬(`title/artist/id`)을 브라우저에서 처리 |
+| 콘서트 선택 | `GET /api/concerts/{id}/options` | `concertDate` 오름차순으로 정렬 후 첫 옵션 자동 선택(최초 진입 시) |
+| 옵션 선택 | `GET /api/concerts/options/{optionId}/seats` | `seatNumber` 오름차순 렌더링, `AVAILABLE`만 표시하는 필터 토글 지원 |
+| 좌석 선택 | (추가 API 없음) | `AVAILABLE` 좌석만 선택 가능, 선택 즉시 Reservation v7 `seatId` 입력값 자동 채움 |
+
+오류 응답은 상태 코드 그대로 콘솔 로그에 노출하고, 사용자 재시도는 동일 버튼 액션으로 처리한다.

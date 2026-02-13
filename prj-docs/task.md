@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 17:01:50`
+> - **Updated At**: `2026-02-13 15:35:14`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -97,8 +97,9 @@
 > - [ ] 공연 조회 캐싱 전략 도입
 > - [ ] 아티스트/기획사 엔티티 확장
 > - [ ] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
-> - [ ] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
-> - [ ] 검색 기능 고도화 (공연 검색/필터/정렬, 페이징)
+> - [x] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
+> - [x] Naver OAuth 서비스 설정 오류 수정 및 재검증 완료 (`disp_stat=207` 해소, 관리자 콘솔 `8080` 콜백 정합성 반영, U1 Playwright 로그인 성공 확인)
+> - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
 
@@ -115,6 +116,12 @@
 > - [x] 개선 결과: `http_req_duration.p95 3.848ms -> 3.552ms(-7.68%)`, `p99 5.405ms -> 4.810ms(-11.01%)`, `http_reqs 58067 -> 58360(+0.50%)`
 > - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 > - [x] Auth Track A2: 인증/인가 + 소셜 로그인 통합 (JWT/Role 가드 + A2 스크립트/리포트)
+> - [x] UX Track U1 MVP(1차): 콘서트 탐색(검색/아티스트 필터/정렬) + 옵션/좌석 조회 + AVAILABLE 좌석 선택 시 Reservation Hold 입력 자동연동
+> - [x] UX Track U1 MVP(2차): Waiting Queue(join/status/SSE subscribe) 콘솔 UI 통합 + 로그인 사용자/선택 콘서트 기반 기본값 자동 입력
+> - [x] UX Track U1 로그인 안정화: callback에서 state/토큰쌍 검증 + `GET /api/auth/me` 성공 확인 후 세션 저장, index 진입 시 토큰 bootstrap(실패 시 refresh/세션정리)
+> - [x] Naver OAuth 운영 안정화(2026-02-13): 네이버 개발자 콘솔 콜백 URL(`http://localhost:8080/login/oauth2/code/naver`) 정합성 수정 + U1 state URL-safe 포맷(`u1_<provider>_<ts>_<nonce>`) 적용 후 Playwright로 로그인/콜백/세션 저장 성공 검증
+> - [x] U1 로그인 결과 가시성/보안 강화(2026-02-13): 액션 상태 `HH:MM:SS` 타임스탬프 + 성공/실패 색상 배지(초록/빨강) 추가, UI/콘솔 토큰 원문 마스킹(`stored (len=...)`) 반영
+> - [x] OAuth 콜백 라우트 안정화(2026-02-13): `GET /login/oauth2/code/{provider}` -> `/ux/u1/callback.html` 리다이렉트 컨트롤러/테스트 추가, `127.0.0.1`↔`localhost` origin 전환 시 state 처리 보강
 
 ---
 
@@ -224,7 +231,12 @@
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.
 >   - 완료 기준: 핵심 화면/상태 전이 UI, 공연 검색/필터/정렬, 오류/재시도 UX까지 동작한다.
 >   - 진행 메모(2026-02-12): 프론트 MVP를 `src/main/resources/static/ux/u1`로 영구 배치하고, 기존 redirect URI 호환을 위해 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html` 리다이렉트 엔트리를 추가했다.
->   - 다음 액션: 페이지 라우트와 API contract 매핑표 작성 후 MVP 화면 우선 구현.
+>   - 진행 메모(2026-02-12 18:30): `src/main/resources/static/ux/u1/index.html`에 Concert Explorer(검색/필터/정렬/요약)를 추가하고, `app.js`에 `GET /api/concerts -> /{id}/options -> /options/{optionId}/seats` 연동 및 좌석 선택-예약 입력 자동화를 반영했다.
+>   - 진행 메모(2026-02-12 18:51): Waiting Queue 섹션(`POST /api/v1/waiting-queue/join`, `GET /status`, `GET /subscribe`)을 U1 메인 화면에 통합하고, `/api/auth/me.userId`와 선택된 콘서트 ID를 기본 입력으로 자동 동기화했다. SSE 이벤트(`INIT/RANK_UPDATE/ACTIVE/KEEPALIVE`)는 Queue State 패널 + 콘솔 로그에 기록된다.
+>   - 진행 메모(2026-02-12 20:17): `callback.js`에서 OAuth `state`를 strict 검증하고 exchange 응답의 token pair 존재를 확인한 뒤 `GET /api/auth/me` 성공까지 확인 시에만 로그인 완료 처리하도록 강화했다. `app.js`는 초기 로드시 access token 검증 실패 시 refresh 재시도 후 실패하면 세션을 정리한다.
+>   - 진행 메모(2026-02-13 15:35): `index.html/app.js/app.css`에 액션 상태 표시(`HH:MM:SS`), 성공/실패 색상 상태, token pair check(`DIFFERENT` 정상)를 추가했다. 토큰은 UI/콘솔에서 원문 대신 길이 요약만 노출하도록 마스킹 처리했다.
+>   - 진행 메모(2026-02-13 15:35): `SocialAuthCallbackRedirectController`를 추가해 `/login/oauth2/code/{provider}` 콜백을 U1 콜백 페이지로 라우팅했다. callback은 localStorage state 누락 시에도 U1 state 포맷 검증을 통과하면 제한적으로 교환을 진행하도록 보강했다.
+>   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
 >   - 목표: 실제 과금 없이도 운영 결제와 유사한 상태/실패 시나리오를 재현 가능한 테스트 환경을 만든다.
