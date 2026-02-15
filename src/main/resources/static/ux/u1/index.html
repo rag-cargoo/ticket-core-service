@@ -39,52 +39,87 @@
     </section>
 
     <section class="u1-card">
-      <h2>How To Test (Quick Guide)</h2>
-      <p class="u1-hint">Recommended E2E order: login -> concert/seat selection -> queue check -> reservation transition.</p>
+      <h2>테스트 가이드 (빠른 시작)</h2>
+      <p class="u1-hint">권장 순서: 로그인 -> 공연/좌석 선택 -> 대기열 확인 -> 예약 상태 전이</p>
       <ol class="u1-guide-steps">
-        <li>Click <code>Use Current Origin</code> to keep API base aligned with this page.</li>
-        <li>Run <code>Login with Kakao</code> or <code>Login with Naver</code> and confirm green action status.</li>
-        <li>Click <code>Refresh Concerts</code>, select concert/option/AVAILABLE seat (Seat ID auto-filled).</li>
-        <li>Use queue actions (<code>join/status/subscribe</code>) with auto-filled <code>userId</code> and <code>concertId</code>.</li>
-        <li>Create hold and copy returned reservation id, then test <code>paying/confirm/cancel/refund</code>.</li>
+        <li><code>Use Current Origin</code>을 눌러 API Base URL을 현재 페이지 주소로 맞춥니다.</li>
+        <li><code>Login with Kakao</code> 또는 <code>Login with Naver</code>를 눌러 로그인합니다.</li>
+        <li><code>Refresh Concerts</code> 후 공연/옵션/AVAILABLE 좌석을 선택합니다(Seat ID 자동입력).</li>
+        <li>대기열 버튼(<code>join/status/subscribe</code>)으로 순번 상태를 확인합니다.</li>
+        <li><code>POST /v7/holds</code> -> <code>paying/confirm/cancel/refund</code> 순으로 예약 상태를 테스트합니다.</li>
       </ol>
+
+      <article class="u1-guide-box">
+        <h3>원클릭 테스트 입력값 (더미)</h3>
+        <p class="u1-hint">아래 값은 자유롭게 수정 가능합니다. <code>샘플값 적용</code>을 누르면 본문 입력칸에 반영되고 공연 목록을 다시 조회합니다.</p>
+        <div class="u1-guide-form">
+          <div class="u1-field">
+            <label for="sampleApiBaseInput">API Base URL 샘플</label>
+            <input id="sampleApiBaseInput" type="text" value="http://localhost:8080">
+          </div>
+          <div class="u1-field">
+            <label for="sampleQueueUserIdInput">Queue User ID 샘플</label>
+            <input id="sampleQueueUserIdInput" type="number" min="1" value="1">
+          </div>
+          <div class="u1-field">
+            <label for="sampleQueueConcertIdInput">Queue Concert ID 샘플</label>
+            <input id="sampleQueueConcertIdInput" type="number" min="1" value="1">
+          </div>
+          <div class="u1-field">
+            <label for="sampleSeatIdInput">Seat ID 샘플</label>
+            <input id="sampleSeatIdInput" type="number" min="1" value="1">
+          </div>
+          <div class="u1-field">
+            <label for="sampleReservationIdInput">Reservation ID 샘플</label>
+            <input id="sampleReservationIdInput" type="number" min="1" value="1">
+          </div>
+          <div class="u1-field">
+            <label for="sampleSearchInput">콘서트 검색어 샘플</label>
+            <input id="sampleSearchInput" type="text" placeholder="예: IU / NewJeans / 1">
+          </div>
+        </div>
+        <div class="u1-actions">
+          <button id="applySampleValuesBtn" type="button" class="u1-btn u1-btn-primary">샘플값 적용</button>
+          <button id="resetSampleValuesBtn" type="button" class="u1-btn u1-btn-ghost">샘플값 초기화</button>
+        </div>
+      </article>
 
       <div class="u1-guide-grid">
         <article class="u1-guide-box">
-          <h3>Social Login Checkpoints</h3>
+          <h3>소셜 로그인 체크포인트</h3>
           <ul class="u1-guide-list">
-            <li><code>Current User</code> should show <code>userId/provider/email</code>.</li>
-            <li><code>Token Pair Check</code> should be <code>DIFFERENT (normal)</code>.</li>
-            <li>Action status should show timestamp + green/red result immediately.</li>
+            <li><code>Current User</code>에 <code>userId/provider/email</code>이 보이면 정상입니다.</li>
+            <li><code>Token Pair Check</code>는 <code>DIFFERENT (normal)</code>이 정상입니다.</li>
+            <li>상태 메시지는 시간 + 초록(성공)/빨강(실패)으로 즉시 표시됩니다.</li>
           </ul>
         </article>
         <article class="u1-guide-box">
-          <h3>Queue Input Example</h3>
+          <h3>대기열 입력 예시</h3>
           <ul class="u1-guide-list">
-            <li><code>User ID</code>: leave empty to auto-use logged-in user.</li>
-            <li><code>Concert ID</code>: leave empty after concert select for auto-fill.</li>
-            <li><code>Queue Status</code>: expected <code>WAITING</code> then <code>ACTIVE</code>.</li>
+            <li><code>User ID</code>를 비우면 로그인 사용자 ID를 자동으로 사용합니다.</li>
+            <li><code>Concert ID</code>를 비우면 선택된 콘서트 ID를 자동으로 사용합니다.</li>
+            <li><code>Queue Status</code>는 일반적으로 <code>WAITING</code> -> <code>ACTIVE</code> 순서로 변경됩니다.</li>
           </ul>
         </article>
       </div>
 
       <details class="u1-guide-details">
-        <summary>Reservation v7 Example Scenario</summary>
+        <summary>Reservation v7 예시 시나리오</summary>
         <ol class="u1-guide-steps u1-guide-steps-compact">
-          <li>Pick an <code>AVAILABLE</code> seat in explorer (fills <code>Seat ID</code>).</li>
-          <li>Click <code>POST /v7/holds</code> and read <code>id</code> from Console.</li>
-          <li>Paste that value into <code>Reservation ID</code> input.</li>
-          <li>Run <code>POST /v7/{id}/paying</code> -> <code>POST /v7/{id}/confirm</code>.</li>
-          <li>Verify with <code>GET /v7/{id}</code> or <code>GET /v7/me</code>.</li>
+          <li>Explorer에서 <code>AVAILABLE</code> 좌석을 선택합니다(Seat ID 자동입력).</li>
+          <li><code>POST /v7/holds</code>를 누르고 Console의 <code>id</code>를 확인합니다.</li>
+          <li>확인한 값을 <code>Reservation ID</code> 입력칸에 넣습니다.</li>
+          <li><code>POST /v7/{id}/paying</code> -> <code>POST /v7/{id}/confirm</code> 순서로 실행합니다.</li>
+          <li><code>GET /v7/{id}</code> 또는 <code>GET /v7/me</code>로 결과를 확인합니다.</li>
         </ol>
       </details>
 
       <details class="u1-guide-details">
-        <summary>If Something Fails</summary>
+        <summary>실패했을 때 확인할 것</summary>
         <ul class="u1-guide-list">
-          <li>Red status with timeout/network error: backend URL is wrong or server is down.</li>
-          <li><code>access token is empty</code>: login first or avoid clearing local session before API calls.</li>
-          <li>Callback errors after login: check provider redirect URI and host consistency (<code>localhost</code> vs <code>127.0.0.1</code>).</li>
+          <li>timeout/network 오류: API Base URL 오입력 또는 백엔드 미기동 가능성이 큽니다.</li>
+          <li><code>access token is empty</code>: 먼저 소셜 로그인 후 다시 시도하세요.</li>
+          <li>callback 오류: provider redirect URI 설정과 호스트(<code>localhost</code>/<code>127.0.0.1</code>) 일치 여부를 확인하세요.</li>
         </ul>
       </details>
     </section>
@@ -119,6 +154,37 @@
 
     <section class="u1-card">
       <h2>Concert Explorer</h2>
+      <article class="u1-setup-box">
+        <h3>Concert Setup (Admin/Test)</h3>
+        <p class="u1-hint">테스트용 공연/옵션/좌석을 한 번에 생성합니다. 생성 후 Explorer 목록이 자동 갱신됩니다.</p>
+        <div class="u1-form-grid u1-form-grid-setup">
+          <div class="u1-field">
+            <label for="concertSetupTitleInput">Title</label>
+            <input id="concertSetupTitleInput" type="text" placeholder="예: Test Concert">
+          </div>
+          <div class="u1-field">
+            <label for="concertSetupArtistInput">Artist Name</label>
+            <input id="concertSetupArtistInput" type="text" placeholder="예: Test Artist">
+          </div>
+          <div class="u1-field">
+            <label for="concertSetupAgencyInput">Agency Name</label>
+            <input id="concertSetupAgencyInput" type="text" placeholder="예: Test Agency">
+          </div>
+          <div class="u1-field">
+            <label for="concertSetupDateInput">Concert Date/Time</label>
+            <input id="concertSetupDateInput" type="datetime-local">
+          </div>
+          <div class="u1-field">
+            <label for="concertSetupSeatCountInput">Seat Count</label>
+            <input id="concertSetupSeatCountInput" type="number" min="1" step="1" value="30">
+          </div>
+        </div>
+        <div class="u1-actions">
+          <button id="concertSetupCreateBtn" type="button" class="u1-btn u1-btn-primary">POST /api/concerts/setup</button>
+          <button id="concertSetupResetBtn" type="button" class="u1-btn u1-btn-ghost">Reset Setup Form</button>
+        </div>
+      </article>
+
       <div class="u1-form-grid">
         <div class="u1-field">
           <label for="concertSearchInput">Search</label>

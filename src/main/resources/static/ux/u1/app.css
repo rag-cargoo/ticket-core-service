@@ -332,6 +332,11 @@ select:focus {
   gap: 8px;
 }
 
+.u1-guide-form {
+  display: grid;
+  gap: 8px;
+}
+
 .u1-guide-box {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -368,6 +373,15 @@ select:focus {
 }
 
 .u1-form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.u1-setup-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 12px;
   display: grid;
   gap: 10px;
 }
@@ -531,8 +545,17 @@ select:focus {
     align-items: end;
   }
 
+  .u1-form-grid-setup {
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 0.7fr;
+    align-items: end;
+  }
+
   .u1-guide-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .u1-guide-form {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .u1-explorer-grid {

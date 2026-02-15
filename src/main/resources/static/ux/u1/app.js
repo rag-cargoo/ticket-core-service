@@ -10,6 +10,14 @@ const STORAGE_KEYS = {
 const els = {
   apiBaseInput: document.getElementById("apiBaseInput"),
   useCurrentOriginBtn: document.getElementById("useCurrentOriginBtn"),
+  sampleApiBaseInput: document.getElementById("sampleApiBaseInput"),
+  sampleQueueUserIdInput: document.getElementById("sampleQueueUserIdInput"),
+  sampleQueueConcertIdInput: document.getElementById("sampleQueueConcertIdInput"),
+  sampleSeatIdInput: document.getElementById("sampleSeatIdInput"),
+  sampleReservationIdInput: document.getElementById("sampleReservationIdInput"),
+  sampleSearchInput: document.getElementById("sampleSearchInput"),
+  applySampleValuesBtn: document.getElementById("applySampleValuesBtn"),
+  resetSampleValuesBtn: document.getElementById("resetSampleValuesBtn"),
   loginStatusBadge: document.getElementById("loginStatusBadge"),
   actionStatus: document.getElementById("actionStatus"),
   clearSessionBtn: document.getElementById("clearSessionBtn"),
@@ -22,6 +30,13 @@ const els = {
   accessTokenView: document.getElementById("accessTokenView"),
   refreshTokenView: document.getElementById("refreshTokenView"),
   tokenPairView: document.getElementById("tokenPairView"),
+  concertSetupTitleInput: document.getElementById("concertSetupTitleInput"),
+  concertSetupArtistInput: document.getElementById("concertSetupArtistInput"),
+  concertSetupAgencyInput: document.getElementById("concertSetupAgencyInput"),
+  concertSetupDateInput: document.getElementById("concertSetupDateInput"),
+  concertSetupSeatCountInput: document.getElementById("concertSetupSeatCountInput"),
+  concertSetupCreateBtn: document.getElementById("concertSetupCreateBtn"),
+  concertSetupResetBtn: document.getElementById("concertSetupResetBtn"),
   concertSearchInput: document.getElementById("concertSearchInput"),
   concertArtistFilter: document.getElementById("concertArtistFilter"),
   concertSortSelect: document.getElementById("concertSortSelect"),
@@ -212,6 +227,72 @@ function setApiBase(nextBase, options = {}) {
   }
 }
 
+function setSampleDefaults() {
+  if (!els.sampleApiBaseInput) {
+    return;
+  }
+
+  els.sampleApiBaseInput.value = state.apiBase || window.location.origin;
+
+  if (els.sampleQueueUserIdInput) {
+    const suggestedUserId = currentUserId();
+    els.sampleQueueUserIdInput.value = suggestedUserId ? String(suggestedUserId) : "1";
+  }
+
+  if (els.sampleQueueConcertIdInput) {
+    els.sampleQueueConcertIdInput.value = state.selectedConcertId ? String(state.selectedConcertId) : "1";
+  }
+
+  if (els.sampleSeatIdInput) {
+    els.sampleSeatIdInput.value = els.seatIdInput.value || "1";
+  }
+
+  if (els.sampleReservationIdInput) {
+    els.sampleReservationIdInput.value = els.reservationIdInput.value || "1";
+  }
+
+  if (els.sampleSearchInput) {
+    els.sampleSearchInput.value = els.concertSearchInput.value || "";
+  }
+}
+
+function readSampleValues() {
+  return {
+    apiBase: String(els.sampleApiBaseInput?.value || state.apiBase || window.location.origin).trim(),
+    queueUserId: String(els.sampleQueueUserIdInput?.value || "").trim(),
+    queueConcertId: String(els.sampleQueueConcertIdInput?.value || "").trim(),
+    seatId: String(els.sampleSeatIdInput?.value || "").trim(),
+    reservationId: String(els.sampleReservationIdInput?.value || "").trim(),
+    search: String(els.sampleSearchInput?.value || "").trim()
+  };
+}
+
+async function onApplySampleValues() {
+  const sample = readSampleValues();
+  setApiBase(sample.apiBase);
+
+  els.queueUserIdInput.value = sample.queueUserId;
+  els.queueConcertIdInput.value = sample.queueConcertId;
+  els.seatIdInput.value = sample.seatId;
+  els.reservationIdInput.value = sample.reservationId;
+  els.concertSearchInput.value = sample.search;
+
+  await onRefreshConcerts();
+  appendLog("SAMPLE_VALUES_APPLIED", sample);
+}
+
+function onResetSampleValues() {
+  setSampleDefaults();
+  appendLog("SAMPLE_VALUES_RESET", {
+    apiBase: els.sampleApiBaseInput?.value || "",
+    queueUserId: els.sampleQueueUserIdInput?.value || "",
+    queueConcertId: els.sampleQueueConcertIdInput?.value || "",
+    seatId: els.sampleSeatIdInput?.value || "",
+    reservationId: els.sampleReservationIdInput?.value || "",
+    search: els.sampleSearchInput?.value || ""
+  });
+}
+
 function describeTokenState(token) {
   if (!token) {
     return "missing";
@@ -312,6 +393,98 @@ function clearSession() {
     lastEvent: "SESSION_CLEARED"
   });
   renderAuthSummary();
+}
+
+function buildDefaultConcertDateTimeLocal() {
+  const base = new Date();
+  base.setDate(base.getDate() + 7);
+  base.setHours(19, 0, 0, 0);
+  const yyyy = String(base.getFullYear());
+  const mm = String(base.getMonth() + 1).padStart(2, "0");
+  const dd = String(base.getDate()).padStart(2, "0");
+  const hh = String(base.getHours()).padStart(2, "0");
+  const min = String(base.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+function normalizeLocalDateTimeForApi(raw) {
+  const value = String(raw || "").trim();
+  if (!value) {
+    throw new Error("concertDate is required");
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return `${value}:00`;
+  }
+  return value;
+}
+
+function setConcertSetupDefaults() {
+  if (!els.concertSetupTitleInput) {
+    return;
+  }
+  els.concertSetupTitleInput.value = "Test Concert";
+  els.concertSetupArtistInput.value = "Test Artist";
+  els.concertSetupAgencyInput.value = "Test Agency";
+  els.concertSetupDateInput.value = buildDefaultConcertDateTimeLocal();
+  els.concertSetupSeatCountInput.value = "30";
+}
+
+function resetConcertSetupForm() {
+  setConcertSetupDefaults();
+  appendLog("CONCERT_SETUP_RESET", {
+    title: els.concertSetupTitleInput?.value || "",
+    artistName: els.concertSetupArtistInput?.value || "",
+    agencyName: els.concertSetupAgencyInput?.value || "",
+    concertDate: els.concertSetupDateInput?.value || "",
+    seatCount: els.concertSetupSeatCountInput?.value || ""
+  });
+}
+
+function readConcertSetupPayload() {
+  const title = String(els.concertSetupTitleInput?.value || "").trim();
+  const artistName = String(els.concertSetupArtistInput?.value || "").trim();
+  const agencyName = String(els.concertSetupAgencyInput?.value || "").trim();
+  const concertDate = normalizeLocalDateTimeForApi(els.concertSetupDateInput?.value || "");
+  const seatCount = parsePositiveInteger(els.concertSetupSeatCountInput?.value || "");
+
+  if (!title) {
+    throw new Error("title is required");
+  }
+  if (!artistName) {
+    throw new Error("artistName is required");
+  }
+  if (!agencyName) {
+    throw new Error("agencyName is required");
+  }
+  if (!seatCount) {
+    throw new Error("seatCount must be a positive integer");
+  }
+
+  return {
+    title,
+    artistName,
+    agencyName,
+    concertDate,
+    seatCount
+  };
+}
+
+async function onCreateConcertSetup() {
+  const payload = readConcertSetupPayload();
+  const response = await callApi("/api/concerts/setup", {
+    method: "POST",
+    body: payload
+  });
+
+  appendLog("CONCERT_SETUP_CREATED", { payload, response });
+  await onRefreshConcerts();
+
+  const raw = String(response || "");
+  const concertMatch = raw.match(/ConcertID=(\d+)/i);
+  const createdConcertId = concertMatch ? Number(concertMatch[1]) : null;
+  if (createdConcertId) {
+    await onSelectConcert(createdConcertId);
+  }
 }
 
 function requireSeatId() {
@@ -1211,6 +1384,13 @@ function handleCallbackHash() {
 }
 
 function bindEvents() {
+  if (els.applySampleValuesBtn) {
+    els.applySampleValuesBtn.addEventListener("click", () => runAction("SAMPLE_APPLY", onApplySampleValues));
+  }
+  if (els.resetSampleValuesBtn) {
+    els.resetSampleValuesBtn.addEventListener("click", () => runAction("SAMPLE_RESET", async () => onResetSampleValues()));
+  }
+
   els.useCurrentOriginBtn.addEventListener("click", () => {
     runAction("API_BASE_SET", async () => {
       setApiBase(window.location.origin);
@@ -1239,6 +1419,13 @@ function bindEvents() {
   els.meBtn.addEventListener("click", () => runAction("AUTH_ME", onMe));
   els.refreshBtn.addEventListener("click", () => runAction("AUTH_REFRESH", onRefresh));
   els.logoutBtn.addEventListener("click", () => runAction("AUTH_LOGOUT", onLogout));
+
+  if (els.concertSetupCreateBtn) {
+    els.concertSetupCreateBtn.addEventListener("click", () => runAction("CONCERT_SETUP_CREATE", onCreateConcertSetup));
+  }
+  if (els.concertSetupResetBtn) {
+    els.concertSetupResetBtn.addEventListener("click", () => runAction("CONCERT_SETUP_RESET", async () => resetConcertSetupForm()));
+  }
 
   els.refreshConcertsBtn.addEventListener("click", () => runAction("CONCERTS_REFRESH", onRefreshConcerts));
   els.concertSearchInput.addEventListener("input", applyConcertFilters);
@@ -1273,6 +1460,8 @@ function init() {
   renderAuthSummary();
   syncQueueUserIdInput();
   syncQueueConcertIdInput();
+  setSampleDefaults();
+  setConcertSetupDefaults();
   renderConcertList();
   renderOptionList();
   renderSeatList();
