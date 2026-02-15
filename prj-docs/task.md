@@ -236,6 +236,7 @@
 >   - 진행 메모(2026-02-12 20:17): `callback.js`에서 OAuth `state`를 strict 검증하고 exchange 응답의 token pair 존재를 확인한 뒤 `GET /api/auth/me` 성공까지 확인 시에만 로그인 완료 처리하도록 강화했다. `app.js`는 초기 로드시 access token 검증 실패 시 refresh 재시도 후 실패하면 세션을 정리한다.
 >   - 진행 메모(2026-02-13 15:35): `index.html/app.js/app.css`에 액션 상태 표시(`HH:MM:SS`), 성공/실패 색상 상태, token pair check(`DIFFERENT` 정상)를 추가했다. 토큰은 UI/콘솔에서 원문 대신 길이 요약만 노출하도록 마스킹 처리했다.
 >   - 진행 메모(2026-02-13 15:35): `SocialAuthCallbackRedirectController`를 추가해 `/login/oauth2/code/{provider}` 콜백을 U1 콜백 페이지로 라우팅했다. callback은 localStorage state 누락 시에도 U1 state 포맷 검증을 통과하면 제한적으로 교환을 진행하도록 보강했다.
+>   - 진행 메모(2026-02-16 00:58): 구경로 호환 엔트리 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html`를 제거하고 `/ux/u1/*` 단일 경로 운영으로 정리했다.
 >   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**

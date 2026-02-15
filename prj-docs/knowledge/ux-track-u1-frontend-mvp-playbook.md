@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 18:30:52`
-> - **Updated At**: `2026-02-13 15:35:14`
+> - **Updated At**: `2026-02-16 00:58:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -41,9 +41,9 @@
 - Risk: 세션 종료나 워크트리 정리 시 유실되고 재검증 자산이 사라진다.
 - Fix: 영구 경로 `src/main/resources/static/ux/u1`로 고정 배치.
 
-### Failure 2: OAuth redirect URI 변경 시 구경로 호환 누락
-- Risk: provider에 등록된 기존 callback 주소가 실패한다.
-- Fix: `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html`를 redirect wrapper로 유지.
+### Failure 2: 구경로(`/u1/*`) 장기 유지로 인한 운영 혼선
+- Risk: 동일 기능 URL이 2개가 되어 문서/운영 기준이 분산되고 검증 범위가 늘어난다.
+- Fix: 구경로 리다이렉트 엔트리를 제거하고 `/ux/u1/*` 단일 경로만 운영한다.
 
 ### Failure 3: 좌석 선택과 Hold 요청 입력이 분리됨
 - Risk: 사용자가 seatId를 수동 입력하면서 오입력/재현 불일치가 발생한다.
@@ -73,8 +73,6 @@
 | :--- | :--- | :--- |
 | `/ux/u1/index.html` | 메인 콘솔 (세션 + 탐색 + 대기열 + 예약 액션) | `GET /api/auth/me`, `POST /api/auth/token/refresh`, `POST /api/auth/logout`, `GET /api/concerts`, `GET /api/concerts/{id}/options`, `GET /api/concerts/options/{optionId}/seats`, `POST /api/v1/waiting-queue/join`, `GET /api/v1/waiting-queue/status`, `GET /api/v1/waiting-queue/subscribe`, `POST /api/reservations/v7/*` |
 | `/ux/u1/callback.html` | OAuth code exchange 처리 | `POST /api/auth/social/{provider}/exchange` |
-| `/u1/index.html` | Legacy redirect entry | API 없음 (`/ux/u1/index.html`로 redirect) |
-| `/u1/callback.html` | Legacy redirect callback | API 없음 (`/ux/u1/callback.html`로 redirect) |
 
 ---
 
