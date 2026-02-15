@@ -1,8 +1,11 @@
 package com.ticketrush.domain.reservation.service;
 
+import com.ticketrush.api.controller.ReservationController;
+import com.ticketrush.domain.concert.entity.Concert;
+import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.SeatRepository;
-import com.ticketrush.api.controller.ReservationController;
+import com.ticketrush.domain.concert.service.ConcertService;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.api.dto.ReservationRequest;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,18 +44,29 @@ class 동시성_테스트_4_비동기_대기열 {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ConcertService concertService;
+
     private Long targetSeatId;
     private Long targetUserId;
 
     @BeforeEach
     void setUp() {
-        User user = userRepository.save(new User("asyncUser_" + System.currentTimeMillis()));
+        String suffix = String.valueOf(System.currentTimeMillis());
+        User user = userRepository.save(new User("asyncUser_" + suffix));
         targetUserId = user.getId();
 
-        Seat seat = seatRepository.findAll().stream()
-                .filter(s -> s.getStatus() == Seat.SeatStatus.AVAILABLE)
+        Concert concert = concertService.createConcert(
+                "testConcert_async_" + suffix,
+                "testArtist_async_" + suffix,
+                "testAgency_async_" + suffix
+        );
+        ConcertOption option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
+        concertService.createSeats(option.getId(), 1);
+
+        Seat seat = seatRepository.findByConcertOptionIdAndStatus(option.getId(), Seat.SeatStatus.AVAILABLE).stream()
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("Seat setup failed"));
         targetSeatId = seat.getId();
     }
 

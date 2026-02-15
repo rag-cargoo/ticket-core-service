@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 06:26:15`
+> - **Updated At**: `2026-02-16 08:25:31`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -102,8 +102,8 @@
 > - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
-> - [ ] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
-> - [ ] 서비스 계층 인터페이스 전환 동기화 (`src/test`, `scripts/api`, `scripts/http`, `static/ux/u1`, `prj-docs/*`)
+> - [x] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
+> - [x] 서비스 계층 인터페이스 전환 동기화 (`src/test`, `scripts/api`, `scripts/http`, `static/ux/u1`, `prj-docs/*`)
 
 ---
 
@@ -126,6 +126,8 @@
 > - [x] OAuth 콜백 라우트 안정화(2026-02-13): `GET /login/oauth2/code/{provider}` -> `/ux/u1/callback.html` 리다이렉트 컨트롤러/테스트 추가, `127.0.0.1`↔`localhost` origin 전환 시 state 처리 보강
 > - [x] OAuth 콜백 도메인 분리 대응(2026-02-16): `app.frontend.u1-callback-url`(`U1_CALLBACK_URL`) 설정을 추가해 동일 도메인 기본값(`/ux/u1/callback.html`)과 분리 도메인 절대 URL(`https://ui.example.com/ux/u1/callback.html`)을 모두 지원하도록 개선, 컨트롤러/웹MVC 테스트 반영
 > - [x] 분리 도메인 CORS 대응(2026-02-16): `app.frontend.allowed-origins`(`FRONTEND_ALLOWED_ORIGINS`) 설정 기반 CORS 정책을 추가해 분리 프론트 도메인에서 `exchange/me` 호출이 가능하도록 보강
+> - [x] Architecture Track R1 1차 완료(2026-02-16): `auth/reservation` 서비스 계층을 `Service + ServiceImpl`로 분리하고, 연관 테스트 주입 타입 동기화 후 `./gradlew test` 전체 통과 확인
+> - [x] Kafka bootstrap 런타임 정합성 보강(2026-02-16): `application-local.yml`/`application-docker.yml`을 `KAFKA_BOOTSTRAP_SERVERS` 오버라이드 구조로 정리해 호스트/컨테이너 실행 기본값을 분리
 
 ---
 
@@ -250,13 +252,14 @@
 >   - 완료 기준: `PaymentIntent` 상태머신, idempotency key, 서명 검증 가능한 가짜 웹훅, 중복/지연/순서역전 테스트를 통과한다.
 >   - 다음 액션: `PaymentGateway` 인터페이스 + `SandboxGateway` 구현, 시나리오 스크립트(`approve/deny/timeout/retry`) 작성.
 >
-> - [ ] **Architecture Track R1: Service + ServiceImpl 표준화(점진 리팩터링)**
+> - [x] **Architecture Track R1: Service + ServiceImpl 표준화(점진 리팩터링)**
 >   - 목표: Service 계층 의존 방향을 인터페이스 중심으로 통일해 변경 용이성과 배치 안전성을 높인다.
 >   - 완료 기준: 1차 대상(`Auth/Reservation`)의 인터페이스 분리 + 주입 타입 전환 + 테스트/스크립트/문서 동기화가 완료된다.
 >   - 범위 제외: `Payment Track P1`, `UX Track U1`의 기능 추가/변경은 이번 트랙에 포함하지 않는다.
 >   - 진행 메모(2026-02-16 06:26): 회의록 `prj-docs/meeting-notes/2026-02-16-service-interface-split-rollout.md` 생성, 전용 브랜치 `chore/service-interface-split-prep` 생성, 이슈 `#47`(https://github.com/rag-cargoo/2602/issues/47) 등록 완료.
 >   - 진행 메모(2026-02-16 07:29): Kafka bootstrap 주소를 프로파일별 환경변수 오버라이드로 정리했다(`application-local.yml`: `${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`, `application-docker.yml`: `${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}`). 전체 테스트에서 기존 `kafka:9092` DNS 오류는 해소됐고, 동시성 테스트 4건은 기존 시드데이터 부재(`NoSuchElementException`) 이슈로 분리 확인했다.
->   - 다음 액션: `Reservation/Auth`부터 배치 1 적용 후 컴파일/테스트/스크립트/문서 갱신을 동시 검증한다.
+>   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
+>   - 다음 액션: 동일 패턴을 `concert/waiting-queue` 등 후속 서비스 도메인에 확장 적용할지 여부를 별도 이슈로 결정한다.
 
 ---
 
