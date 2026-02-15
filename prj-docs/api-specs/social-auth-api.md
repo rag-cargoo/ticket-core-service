@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 02:15:34`
-> - **Updated At**: `2026-02-13 15:35:14`
+> - **Updated At**: `2026-02-16 01:24:08`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -134,7 +134,9 @@ GET /api/auth/social/naver/authorize-url?state=my-state-001
 
 ### 1.3. Provider Callback Redirect (U1 호환)
 - **Endpoint**: `GET /login/oauth2/code/{provider}`
-- **Description**: provider callback을 U1 콜백 화면(`/ux/u1/callback.html`)으로 리다이렉트하며, 원본 query(`code`, `state`)를 전달하고 `provider`가 없으면 자동 주입합니다.
+- **Description**: provider callback을 U1 콜백 화면으로 리다이렉트하며, 원본 query(`code`, `state`)를 전달하고 `provider`가 없으면 자동 주입합니다.
+  - 기본값: `/ux/u1/callback.html` (동일 도메인)
+  - 설정값: `U1_CALLBACK_URL` (예: `https://ui.example.com/ux/u1/callback.html`, 분리 도메인)
 
 **Parameters**
 
@@ -154,13 +156,20 @@ GET /login/oauth2/code/naver?code=abc123&state=u1_naver_1770963678337_d4xmuaov06
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `Location` | String | `/ux/u1/callback.html?...` 형태의 리다이렉트 URL |
+| `Location` | String | `/ux/u1/callback.html?...` 또는 `https://<frontend>/ux/u1/callback.html?...` 형태의 리다이렉트 URL |
 
 **Response Example**
 
 ```text
 302 Found
 Location: /ux/u1/callback.html?code=abc123&state=u1_naver_1770963678337_d4xmuaov06&provider=naver
+```
+
+분리 도메인 예시 (`U1_CALLBACK_URL=https://ui.example.com/ux/u1/callback.html`):
+
+```text
+302 Found
+Location: https://ui.example.com/ux/u1/callback.html?code=abc123&state=u1_naver_1770963678337_d4xmuaov06&provider=naver
 ```
 
 ---
@@ -181,10 +190,18 @@ Location: /ux/u1/callback.html?code=abc123&state=u1_naver_1770963678337_d4xmuaov
   - `NAVER_CLIENT_ID`
   - `NAVER_CLIENT_SECRET`
   - `NAVER_REDIRECT_URI`
+  - `NAVER_SERVICE_URL`
 - authorize endpoint: `https://nid.naver.com/oauth2.0/authorize`
 - token endpoint: `https://nid.naver.com/oauth2.0/token`
 - profile endpoint: `https://openapi.naver.com/v1/nid/me`
 - `state`는 위변조 방지를 위해 필수입니다.
+
+### 2.3. U1 Callback Redirect 설정
+- 환경 변수:
+  - `U1_CALLBACK_URL` (optional, default: `/ux/u1/callback.html`)
+- 권장:
+  - 백엔드/프론트 동일 도메인: default 유지
+  - 백엔드/프론트 분리 도메인: 프론트 callback 절대 URL 지정
 
 ---
 

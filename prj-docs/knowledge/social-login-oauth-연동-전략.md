@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 02:15:34`
-> - **Updated At**: `2026-02-12 02:15:34`
+> - **Updated At**: `2026-02-16 01:24:08`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -40,6 +40,13 @@
 ### 실패 3: 네이버 `state`를 강제하지 않음
 - 문제: CSRF/요청 위변조 검증 근거가 약해진다.
 - 개선: 네이버 code 교환 시 `state` 필수 검증.
+
+### 실패 4: 콜백 리다이렉트 경로를 동일 도메인으로 고정
+- 문제: AWS 등에서 프론트/백엔드 도메인이 분리되면, provider callback 이후 프론트 콜백 화면으로 안전하게 복귀하지 못한다.
+- 개선: `app.frontend.u1-callback-url`(`U1_CALLBACK_URL`) 설정을 도입해
+  - 기본: `/ux/u1/callback.html` (동일 도메인)
+  - 분리 도메인: `https://<frontend-domain>/ux/u1/callback.html` (절대 URL)
+  을 선택할 수 있게 한다.
 
 ---
 
@@ -88,6 +95,10 @@ POST /api/auth/social/{provider}/exchange
   - `SocialAuthService`
   - `authorize-url` 생성(state 자동 생성)
   - `exchange` 수행 후 신규 생성/기존 갱신
+- 콜백 복귀 책임:
+  - `SocialAuthCallbackRedirectController`
+  - provider callback(`/login/oauth2/code/{provider}`) -> U1 callback URL로 query 보존 리다이렉트
+  - U1 callback URL은 `U1_CALLBACK_URL` 설정으로 환경별(동일/분리 도메인) 제어
 
 ---
 

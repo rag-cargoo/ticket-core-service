@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-13 15:35:14`
+> - **Updated At**: `2026-02-16 01:24:08`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -122,6 +122,7 @@
 > - [x] Naver OAuth 운영 안정화(2026-02-13): 네이버 개발자 콘솔 콜백 URL(`http://localhost:8080/login/oauth2/code/naver`) 정합성 수정 + U1 state URL-safe 포맷(`u1_<provider>_<ts>_<nonce>`) 적용 후 Playwright로 로그인/콜백/세션 저장 성공 검증
 > - [x] U1 로그인 결과 가시성/보안 강화(2026-02-13): 액션 상태 `HH:MM:SS` 타임스탬프 + 성공/실패 색상 배지(초록/빨강) 추가, UI/콘솔 토큰 원문 마스킹(`stored (len=...)`) 반영
 > - [x] OAuth 콜백 라우트 안정화(2026-02-13): `GET /login/oauth2/code/{provider}` -> `/ux/u1/callback.html` 리다이렉트 컨트롤러/테스트 추가, `127.0.0.1`↔`localhost` origin 전환 시 state 처리 보강
+> - [x] OAuth 콜백 도메인 분리 대응(2026-02-16): `app.frontend.u1-callback-url`(`U1_CALLBACK_URL`) 설정을 추가해 동일 도메인 기본값(`/ux/u1/callback.html`)과 분리 도메인 절대 URL(`https://ui.example.com/ux/u1/callback.html`)을 모두 지원하도록 개선, 컨트롤러/웹MVC 테스트 반영
 
 ---
 
@@ -237,6 +238,7 @@
 >   - 진행 메모(2026-02-13 15:35): `index.html/app.js/app.css`에 액션 상태 표시(`HH:MM:SS`), 성공/실패 색상 상태, token pair check(`DIFFERENT` 정상)를 추가했다. 토큰은 UI/콘솔에서 원문 대신 길이 요약만 노출하도록 마스킹 처리했다.
 >   - 진행 메모(2026-02-13 15:35): `SocialAuthCallbackRedirectController`를 추가해 `/login/oauth2/code/{provider}` 콜백을 U1 콜백 페이지로 라우팅했다. callback은 localStorage state 누락 시에도 U1 state 포맷 검증을 통과하면 제한적으로 교환을 진행하도록 보강했다.
 >   - 진행 메모(2026-02-16 00:58): 구경로 호환 엔트리 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html`를 제거하고 `/ux/u1/*` 단일 경로 운영으로 정리했다.
+>   - 진행 메모(2026-02-16 01:24): 콜백 리다이렉트 경로를 `app.frontend.u1-callback-url` 설정형으로 전환했다(기본 `/ux/u1/callback.html`). 운영에서 백엔드/프론트 도메인이 분리된 경우 `U1_CALLBACK_URL=https://<frontend-domain>/ux/u1/callback.html`로 설정해 OAuth 콜백 후 프론트 도메인으로 안전하게 복귀할 수 있다.
 >   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**

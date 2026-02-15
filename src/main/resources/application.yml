@@ -51,3 +51,5 @@ app:
       secret: ${AUTH_JWT_SECRET:ticketrush-local-dev-jwt-secret-key-change-this-value}
       access-token-seconds: ${AUTH_ACCESS_TOKEN_SECONDS:1800}
       refresh-token-seconds: ${AUTH_REFRESH_TOKEN_SECONDS:1209600}
+  frontend:
+    u1-callback-url: ${U1_CALLBACK_URL:/ux/u1/callback.html}
