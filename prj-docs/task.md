@@ -255,6 +255,7 @@
 >   - 완료 기준: 1차 대상(`Auth/Reservation`)의 인터페이스 분리 + 주입 타입 전환 + 테스트/스크립트/문서 동기화가 완료된다.
 >   - 범위 제외: `Payment Track P1`, `UX Track U1`의 기능 추가/변경은 이번 트랙에 포함하지 않는다.
 >   - 진행 메모(2026-02-16 06:26): 회의록 `prj-docs/meeting-notes/2026-02-16-service-interface-split-rollout.md` 생성, 전용 브랜치 `chore/service-interface-split-prep` 생성, 이슈 `#47`(https://github.com/rag-cargoo/2602/issues/47) 등록 완료.
+>   - 진행 메모(2026-02-16 07:29): Kafka bootstrap 주소를 프로파일별 환경변수 오버라이드로 정리했다(`application-local.yml`: `${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`, `application-docker.yml`: `${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}`). 전체 테스트에서 기존 `kafka:9092` DNS 오류는 해소됐고, 동시성 테스트 4건은 기존 시드데이터 부재(`NoSuchElementException`) 이슈로 분리 확인했다.
 >   - 다음 액션: `Reservation/Auth`부터 배치 1 적용 후 컴파일/테스트/스크립트/문서 갱신을 동시 검증한다.
 
 ---
