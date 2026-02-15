@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 02:15:34`
-> - **Updated At**: `2026-02-16 01:24:08`
+> - **Updated At**: `2026-02-16 01:30:11`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -47,6 +47,10 @@
   - 기본: `/ux/u1/callback.html` (동일 도메인)
   - 분리 도메인: `https://<frontend-domain>/ux/u1/callback.html` (절대 URL)
   을 선택할 수 있게 한다.
+
+### 실패 5: 도메인 분리 환경에서 CORS 정책 미설정
+- 문제: 프론트가 분리 도메인일 때 callback.js의 `exchange/me` 호출이 브라우저 CORS에 차단될 수 있다.
+- 개선: `app.frontend.allowed-origins`(`FRONTEND_ALLOWED_ORIGINS`)를 설정해 허용 Origin을 명시한다.
 
 ---
 
@@ -99,6 +103,9 @@ POST /api/auth/social/{provider}/exchange
   - `SocialAuthCallbackRedirectController`
   - provider callback(`/login/oauth2/code/{provider}`) -> U1 callback URL로 query 보존 리다이렉트
   - U1 callback URL은 `U1_CALLBACK_URL` 설정으로 환경별(동일/분리 도메인) 제어
+- 분리 도메인 CORS 제어:
+  - `SecurityConfig.corsConfigurationSource`
+  - `FRONTEND_ALLOWED_ORIGINS`를 comma-separated로 받아 허용 Origin을 제한한다.
 
 ---
 

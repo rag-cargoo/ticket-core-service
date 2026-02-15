@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 02:15:34`
-> - **Updated At**: `2026-02-16 01:24:08`
+> - **Updated At**: `2026-02-16 01:30:11`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -199,9 +199,12 @@ Location: https://ui.example.com/ux/u1/callback.html?code=abc123&state=u1_naver_
 ### 2.3. U1 Callback Redirect 설정
 - 환경 변수:
   - `U1_CALLBACK_URL` (optional, default: `/ux/u1/callback.html`)
+  - `FRONTEND_ALLOWED_ORIGINS` (optional, default: `http://localhost:8080,http://127.0.0.1:8080`)
 - 권장:
   - 백엔드/프론트 동일 도메인: default 유지
-  - 백엔드/프론트 분리 도메인: 프론트 callback 절대 URL 지정
+  - 백엔드/프론트 분리 도메인:
+    - `U1_CALLBACK_URL=https://<frontend-domain>/ux/u1/callback.html`
+    - `FRONTEND_ALLOWED_ORIGINS=https://<frontend-domain>` (복수는 콤마 구분)
 
 ---
 
@@ -231,6 +234,8 @@ Location: https://ui.example.com/ux/u1/callback.html?code=abc123&state=u1_naver_
 4. `POST /api/auth/social/{provider}/exchange` 성공 후 `accessToken`, `refreshToken` 존재를 확인한다.
 5. 발급된 `accessToken`으로 `GET /api/auth/me`를 호출해 인증 세션 유효성을 즉시 확인한다.
 6. 위 단계가 모두 성공한 경우에만 localStorage 세션(`access/refresh/authUser`)을 최종 저장하고 메인 콘솔로 이동한다.
+
+분리 도메인 운영 시에는 U1에서 `apiBase`를 백엔드 도메인으로 지정하고(예: `https://api.example.com`), 백엔드는 `FRONTEND_ALLOWED_ORIGINS`에 U1 도메인을 명시해야 브라우저 CORS 검증을 통과한다.
 
 실패 시에는 부분 저장된 토큰/사용자 스냅샷을 제거하고 오류를 callback 콘솔에 기록한다.
 U1 메인 콘솔(`index.html`)의 상단 액션 상태는 `HH:MM:SS` 타임스탬프 + 성공(초록)/실패(빨강)으로 표시하며, 콘솔 로그에서는 토큰 원문 대신 길이 요약(`stored (len=...)`)만 기록한다.
