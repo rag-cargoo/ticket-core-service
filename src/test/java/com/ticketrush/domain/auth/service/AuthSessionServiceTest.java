@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({AuthSessionService.class, JwtTokenProvider.class, AuthJwtProperties.class})
+@Import({AuthSessionServiceImpl.class, JwtTokenProvider.class, AuthJwtProperties.class})
 @TestPropertySource(properties = {
         "app.auth.jwt.secret=test-auth-session-secret-key-which-is-long-enough",
         "app.auth.jwt.access-token-seconds=300",

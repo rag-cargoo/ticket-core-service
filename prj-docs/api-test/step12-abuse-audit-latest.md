@@ -68,7 +68,7 @@ BUILD SUCCESSFUL in 41s
 
 | 검증 항목 | Before (Step 11) | After (Step 12) | 근거 |
 | --- | --- | --- | --- |
-| 부정사용 차단 엔진 | 없음 | HOLD 요청 선검증(`rate`, `duplicate`, `device`) 도입 | `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditService.java` |
+| 부정사용 차단 엔진 | 없음 | HOLD 요청 선검증(`rate`, `duplicate`, `device`) 도입 | `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditServiceImpl.java` |
 | 감사 로그 저장 | 없음 | 허용/차단 이력 저장(`action/result/reason/fingerprint`) | `src/main/java/com/ticketrush/domain/reservation/entity/AbuseAuditLog.java` |
 | 차단 로그 보존성 | 차단 시 트랜잭션 롤백으로 이력 보존 불가 | 차단 로그를 `REQUIRES_NEW`로 별도 커밋 | `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditWriter.java` |
 | 운영 조회 API | 없음 | `GET /api/reservations/v6/audit/abuse` 필터 조회 제공 | `src/main/java/com/ticketrush/api/controller/ReservationController.java` |

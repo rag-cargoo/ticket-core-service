@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 01:30:11`
+> - **Updated At**: `2026-02-16 06:26:15`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -102,6 +102,8 @@
 > - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
+> - [ ] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
+> - [ ] 서비스 계층 인터페이스 전환 동기화 (`src/test`, `scripts/api`, `scripts/http`, `static/ux/u1`, `prj-docs/*`)
 
 ---
 
@@ -145,7 +147,7 @@
 >   - 목표: 예약 이후 결제 단계까지 상태 전이를 일관된 도메인 규칙으로 통합한다.
 >   - 완료 기준: 상태 전이 다이어그램/API 명세/회귀 스크립트가 함께 갱신된다.
 >   - 완료 근거:
->     - 상태머신/만료 처리: `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 상태머신/만료 처리: `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`
 >     - 예약 API(v6): `src/main/java/com/ticketrush/api/controller/ReservationController.java`
 >     - 예약 만료 스케줄러: `src/main/java/com/ticketrush/global/scheduler/ReservationLifecycleScheduler.java`
 >     - API 명세/HTTP/스크립트: `prj-docs/api-specs/reservation-api.md`, `scripts/http/reservation.http`, `scripts/api/v8-reservation-lifecycle.sh`
@@ -159,7 +161,7 @@
 >   - 완료 기준: 취소/환불 API + 재판매 이벤트 처리 + 데이터 정합성 테스트를 통과한다.
 >   - 완료 근거:
 >     - 상태 전이 확장: `src/main/java/com/ticketrush/domain/reservation/entity/Reservation.java` (`CANCELLED`, `REFUNDED`)
->     - 라이프사이클 서비스: `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 라이프사이클 서비스: `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`
 >     - 예약 API(v6): `src/main/java/com/ticketrush/api/controller/ReservationController.java` (`/cancel`, `/refund`)
 >     - API 명세/HTTP/스크립트: `prj-docs/api-specs/reservation-api.md`, `scripts/http/reservation.http`, `scripts/api/v9-cancel-refund-resale.sh`
 >     - 실행 리포트: `prj-docs/api-test/step10-cancel-refund-latest.md`
@@ -172,8 +174,8 @@
 >   - 완료 기준: 정책 변경이 코드 수정 없이 설정/테이블 중심으로 반영된다.
 >   - 완료 근거:
 >     - 정책 테이블/검증 도메인: `src/main/java/com/ticketrush/domain/reservation/entity/SalesPolicy.java`
->     - 정책 서비스: `src/main/java/com/ticketrush/domain/reservation/service/SalesPolicyService.java`
->     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 정책 서비스: `src/main/java/com/ticketrush/domain/reservation/service/SalesPolicyServiceImpl.java`
+>     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`
 >     - 정책 API: `src/main/java/com/ticketrush/api/controller/ConcertController.java` (`PUT/GET /api/concerts/{concertId}/sales-policy`)
 >     - 유저 등급 확장: `src/main/java/com/ticketrush/domain/user/User.java`, `src/main/java/com/ticketrush/domain/user/UserTier.java`
 >     - 운영 스크립트/문서: `scripts/api/v10-sales-policy-engine.sh`, `scripts/http/reservation.http`, `prj-docs/api-specs/*.md`, `prj-docs/knowledge/동시성-제어-전략.md`
@@ -187,9 +189,9 @@
 >   - 완료 기준: 차단 규칙, 감사 로그, 운영 조회 API까지 연결된다.
 >   - 완료 근거:
 >     - 감사 로그 엔티티/리포지토리: `src/main/java/com/ticketrush/domain/reservation/entity/AbuseAuditLog.java`, `src/main/java/com/ticketrush/domain/reservation/repository/AbuseAuditLogRepository.java`
->     - 차단/조회 서비스: `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditService.java`
+>     - 차단/조회 서비스: `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditServiceImpl.java`
 >     - 차단 로그 별도 트랜잭션 보존: `src/main/java/com/ticketrush/domain/reservation/service/AbuseAuditWriter.java`
->     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`
+>     - 예약 연동(hold 선검증): `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`
 >     - 운영 조회 API: `src/main/java/com/ticketrush/api/controller/ReservationController.java` (`GET /api/reservations/v6/audit/abuse`)
 >     - 운영 스크립트/문서: `scripts/api/v11-abuse-audit.sh`, `scripts/http/reservation.http`, `prj-docs/api-specs/reservation-api.md`, `prj-docs/knowledge/동시성-제어-전략.md`
 >     - 실행 리포트: `prj-docs/api-test/step12-abuse-audit-latest.md`
@@ -247,6 +249,13 @@
 >   - 목표: 실제 과금 없이도 운영 결제와 유사한 상태/실패 시나리오를 재현 가능한 테스트 환경을 만든다.
 >   - 완료 기준: `PaymentIntent` 상태머신, idempotency key, 서명 검증 가능한 가짜 웹훅, 중복/지연/순서역전 테스트를 통과한다.
 >   - 다음 액션: `PaymentGateway` 인터페이스 + `SandboxGateway` 구현, 시나리오 스크립트(`approve/deny/timeout/retry`) 작성.
+>
+> - [ ] **Architecture Track R1: Service + ServiceImpl 표준화(점진 리팩터링)**
+>   - 목표: Service 계층 의존 방향을 인터페이스 중심으로 통일해 변경 용이성과 배치 안전성을 높인다.
+>   - 완료 기준: 1차 대상(`Auth/Reservation`)의 인터페이스 분리 + 주입 타입 전환 + 테스트/스크립트/문서 동기화가 완료된다.
+>   - 범위 제외: `Payment Track P1`, `UX Track U1`의 기능 추가/변경은 이번 트랙에 포함하지 않는다.
+>   - 진행 메모(2026-02-16 06:26): 회의록 `prj-docs/meeting-notes/2026-02-16-service-interface-split-rollout.md` 생성, 전용 브랜치 `chore/service-interface-split-prep` 생성, 이슈 `#47`(https://github.com/rag-cargoo/2602/issues/47) 등록 완료.
+>   - 다음 액션: `Reservation/Auth`부터 배치 1 적용 후 컴파일/테스트/스크립트/문서 갱신을 동시 검증한다.
 
 ---
 

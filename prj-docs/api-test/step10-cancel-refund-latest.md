@@ -62,7 +62,7 @@ BUILD SUCCESSFUL in 50s
 | --- | --- | --- | --- |
 | 취소/환불 상태 전이 | `CANCELLED` 상태만 존재, 환불 완료 상태 없음 | `CANCELLED -> REFUNDED` 전이 및 타임스탬프 기록 | `src/main/java/com/ticketrush/domain/reservation/entity/Reservation.java` |
 | Step10 API | 없음 | `POST /v6/{id}/cancel`, `POST /v6/{id}/refund` | `src/main/java/com/ticketrush/api/controller/ReservationController.java` |
-| 재판매 대기열 연계 | 취소 시 대기열 승격 로직 없음 | 취소 시 `activateUsers(concertId, 1)` + SSE `ACTIVE` 전송 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java` |
+| 재판매 대기열 연계 | 취소 시 대기열 승격 로직 없음 | 취소 시 `activateUsers(concertId, 1)` + SSE `ACTIVE` 전송 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java` |
 | 운영 회귀 스크립트 | Step9 스크립트까지만 존재 | `v9-cancel-refund-resale.sh` 추가 | `scripts/api/v9-cancel-refund-resale.sh` |
 | Step10 테스트 | 없음 | 상태머신/통합 테스트 케이스 추가 | `src/test/java/com/ticketrush/domain/reservation/entity/ReservationStateMachineTest.java`, `src/test/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceIntegrationTest.java` |
 

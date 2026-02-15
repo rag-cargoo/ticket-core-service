@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 05:03:46`
-> - **Updated At**: `2026-02-11 05:17:10`
+> - **Updated At**: `2026-02-16 06:26:15`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -24,6 +24,7 @@
 
 ## Current Notes
 - 신규 회의록이 생성되면 이 목록을 갱신한다.
+- [2026-02-16 Service Interface Split Rollout](./2026-02-16-service-interface-split-rollout.md)
 - [2026-02-11 Develop-Main Release Readiness](./2026-02-11-develop-main-release-readiness.md)
 
 ## Template

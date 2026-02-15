@@ -44,9 +44,9 @@ import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @Import({
-        ReservationLifecycleService.class,
-        SalesPolicyService.class,
-        AbuseAuditService.class,
+        ReservationLifecycleServiceImpl.class,
+        SalesPolicyServiceImpl.class,
+        AbuseAuditServiceImpl.class,
         AbuseAuditWriter.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
 })

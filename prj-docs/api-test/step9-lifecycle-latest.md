@@ -69,7 +69,7 @@ BUILD SUCCESSFUL in 58s
 | --- | --- | --- | --- |
 | 예약 상태 enum | `PENDING, CONFIRMED, CANCELLED` | `PENDING, HOLD, PAYING, CONFIRMED, EXPIRED, CANCELLED` | `src/main/java/com/ticketrush/domain/reservation/entity/Reservation.java` |
 | Step 9 API(v6) | 없음 | `POST /v6/holds`, `POST /v6/{id}/paying`, `POST /v6/{id}/confirm`, `GET /v6/{id}` | `src/main/java/com/ticketrush/api/controller/ReservationController.java` |
-| TTL 만료 처리 | 없음 | `expireTimedOutHolds()` 구현 + 스케줄러 주기 실행 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`, `src/main/java/com/ticketrush/global/scheduler/ReservationLifecycleScheduler.java` |
+| TTL 만료 처리 | 없음 | `expireTimedOutHolds()` 구현 + 스케줄러 주기 실행 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`, `src/main/java/com/ticketrush/global/scheduler/ReservationLifecycleScheduler.java` |
 | 운영 회귀 스크립트 | 없음 | `v8-reservation-lifecycle.sh` 추가 | `scripts/api/v8-reservation-lifecycle.sh` |
 | Step 9 테스트 | 없음 | 단위/통합/스케줄러 테스트 3종 추가 | `src/test/java/com/ticketrush/domain/reservation/entity/ReservationStateMachineTest.java`, `src/test/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceIntegrationTest.java`, `src/test/java/com/ticketrush/global/scheduler/ReservationLifecycleSchedulerTest.java` |
 

@@ -69,7 +69,7 @@ BUILD SUCCESSFUL in 1m
 | 검증 항목 | Before (Step 10) | After (Step 11) | 근거 |
 | --- | --- | --- | --- |
 | 판매 정책 모델 | 없음 | 공연별 `sales_policies` 엔티티/리포지토리 도입 | `src/main/java/com/ticketrush/domain/reservation/entity/SalesPolicy.java`, `src/main/java/com/ticketrush/domain/reservation/repository/SalesPolicyRepository.java` |
-| HOLD 사전 검증 | 좌석 가용성만 확인 | 정책(기간/등급/1인 제한) 검증 후 HOLD 진행 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleService.java`, `src/main/java/com/ticketrush/domain/reservation/service/SalesPolicyService.java` |
+| HOLD 사전 검증 | 좌석 가용성만 확인 | 정책(기간/등급/1인 제한) 검증 후 HOLD 진행 | `src/main/java/com/ticketrush/domain/reservation/service/ReservationLifecycleServiceImpl.java`, `src/main/java/com/ticketrush/domain/reservation/service/SalesPolicyServiceImpl.java` |
 | 정책 운영 API | 없음 | `PUT/GET /api/concerts/{concertId}/sales-policy` | `src/main/java/com/ticketrush/api/controller/ConcertController.java` |
 | 사용자 등급 | `username`만 관리 | `tier`(`BASIC/SILVER/GOLD/VIP`) 지원 | `src/main/java/com/ticketrush/domain/user/User.java`, `src/main/java/com/ticketrush/domain/user/UserTier.java`, `src/main/java/com/ticketrush/api/dto/UserRequest.java` |
 | 회귀 스크립트 | Step10(`v9`)까지 | Step11 정책 검증 스크립트 추가 | `scripts/api/v10-sales-policy-engine.sh` |
