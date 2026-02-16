@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 18:30:52`
-> - **Updated At**: `2026-02-17 02:50:20`
+> - **Updated At**: `2026-02-17 03:52:10`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -132,4 +132,10 @@
 [result] callback -> index redirect success, status badge shown with HH:MM:SS
 [result] token exposure reduced: UI/console now show stored (len=...)
 [result] syntax validation passed
+[check] 2026-02-17 runtime integration (local+infra): v12-social-auth-contract, a2-auth-track-session-guard, v5-waiting-queue, v8-reservation-lifecycle
+[check] 2026-02-17 api chain: POST /api/concerts/setup -> GET /api/concerts/search -> GET /api/concerts/{id}/options -> GET /api/concerts/options/{optionId}/seats
+[check] 2026-02-17 queue smoke: POST /api/v1/waiting-queue/join -> GET /status -> GET /subscribe(SSE INIT/RANK_UPDATE/KEEPALIVE)
+[result] integration summary: rc_v12=0, rc_a2=0, rc_v5=0, rc_v8=0, setup/search/options/seats/join/status=200, rc_sse=0, overall=PASS
+[artifact] report: prj-docs/api-test/ux-track-u1-integration-latest.md
+[artifact] raw logs: .codex/tmp/ticket-core-service/u1/20260217-035005-u1-integration/
 ```

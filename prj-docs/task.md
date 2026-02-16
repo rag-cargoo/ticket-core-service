@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-17 03:27:31`
+> - **Updated At**: `2026-02-17 03:52:10`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -83,7 +83,7 @@
 > [!WARNING]
 > Step 12 + Auth Track A1 완료 이후 남은 작업 항목입니다.
 >
-> - [ ] 프론트엔드 연동 및 통합 시나리오 검증
+> - [x] 프론트엔드 연동 및 통합 시나리오 검증 (Issue: `#60`, `v12/a2/v5/v8 + concert search + queue SSE` 통합 검증 PASS, 리포트: `prj-docs/api-test/ux-track-u1-integration-latest.md`)
 > - [x] 공연 조회 캐싱 전략 도입 (Issue: `#52`, 배치1: `GET /api/concerts`, `GET /api/concerts/{id}/options` 조회 캐시 적용 / 배치2: `GET /api/concerts/options/{optionId}/seats` 캐시 + 예약 상태전이 무효화 적용)
 > - [x] 아티스트/기획사 엔티티 확장 (Issue: `#53`, Agency(`countryCode/homepageUrl`) + Artist(`displayName/genre/debutDate`) 필드 및 Concert 응답 매핑 확장 완료)
 > - [x] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
@@ -141,6 +141,7 @@
 > - [x] Open TODO 정합성 동기화(2026-02-17): Auth A2/R2 완료 항목의 stale 체크를 정리하고, 결제 제외 잔여 기능을 이슈 `#52`(Concert 캐싱/검색), `#53`(Artist/Agency), `#54`(R1 후속 확장 결정)로 분리
 > - [x] Concert 탐색 고도화 배치2(2026-02-17): Caffeine 기반 read-cache 정책(`list/search/options/available-seats`)과 좌석 상태전이 무효화 경로를 반영하고, U1 Concert Explorer를 `/api/concerts/search` 서버검색 + 페이지 이동 흐름으로 전환했다 (Issue: `#52`)
 > - [x] Artist/Agency 도메인 확장(2026-02-17): `setup/search` API와 Concert 응답을 확장해 아티스트/기획사 메타데이터를 반영하고, U1 setup 폼/필터 및 회귀 테스트를 동기화했다 (Issue: `#53`)
+> - [x] U1 통합 시나리오 검증(2026-02-17): local + infra 환경에서 `v12-social-auth-contract`, `a2-auth-track-session-guard`, `v5-waiting-queue`, `v8-reservation-lifecycle`, Concert setup/search/options/seats, Queue SSE subscribe를 통합 검증했고 결과 `overall=PASS`를 리포트로 고정했다 (Issue: `#60`, `prj-docs/api-test/ux-track-u1-integration-latest.md`)
 
 ---
 
@@ -259,7 +260,8 @@
 >   - 진행 메모(2026-02-16 01:24): 콜백 리다이렉트 경로를 `app.frontend.u1-callback-url` 설정형으로 전환했다(기본 `/ux/u1/callback.html`). 운영에서 백엔드/프론트 도메인이 분리된 경우 `U1_CALLBACK_URL=https://<frontend-domain>/ux/u1/callback.html`로 설정해 OAuth 콜백 후 프론트 도메인으로 안전하게 복귀할 수 있다.
 >   - 진행 메모(2026-02-16 01:30): `SecurityConfig`에 `app.frontend.allowed-origins` 설정형 CORS를 추가했다(기본 `http://localhost:8080,http://127.0.0.1:8080`). 운영 분리 도메인에서는 `FRONTEND_ALLOWED_ORIGINS=https://<frontend-domain>`으로 제한 설정한다.
 >   - 진행 메모(2026-02-17 03:30): Concert Explorer 검색 경로를 `/api/concerts` 클라이언트 필터 방식에서 `/api/concerts/search` 서버 검색 방식으로 전환했다. 검색어 입력은 250ms 디바운스, 페이지 이동은 `Prev/Next` 버튼(`page` 쿼리)으로 처리한다.
->   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
+>   - 진행 메모(2026-02-17 03:50): 이슈 `#60`에서 U1 핵심 통합 시나리오(`v12/a2/v5/v8 + concert search + queue SSE`)를 재검증했고 `overall=PASS`를 확인했다. 실행 리포트는 `prj-docs/api-test/ux-track-u1-integration-latest.md`에 기록했다.
+>   - 다음 액션: Payment Track P1 `HOLD` 해제 후 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 결합하고 예약 상태 전이 버튼 UX를 최종 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증 (HOLD)**
 >   - 목표: 실제 과금 없이도 운영 결제와 유사한 상태/실패 시나리오를 재현 가능한 테스트 환경을 만든다.

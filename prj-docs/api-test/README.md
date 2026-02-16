@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 02:15:34`
+> - **Updated At**: `2026-02-17 03:52:10`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -22,6 +22,7 @@
 > - 10. Auth Track: 소셜 로그인 계약 검증 실행
 > - 11. Auth Track A2 인증 세션/가드 검증 실행
 > - 12. Playwright MCP로 k6 HTML 열기
+> - 13. UX Track U1 통합 시나리오 검증 실행
 <!-- DOC_TOC_END -->
 
 `scripts/api/*.sh`와 `scripts/perf/*` 실행 검증과 결과 기록 규칙입니다.
@@ -258,5 +259,35 @@ http://127.0.0.1:18080/k6-web-dashboard.html
 pkill -f "http.server 18080"
 pkill -f "google-chrome.*remote-debugging-port=9222"
 ```
+
+---
+
+## 13. UX Track U1 통합 시나리오 검증 실행
+
+```bash
+cd workspace/apps/backend/ticket-core-service
+
+# local profile + infra(redis/kafka) 조합에서 OAuth 계약까지 포함해 검증할 때
+KAKAO_CLIENT_ID=dummy-kakao-client \
+KAKAO_CLIENT_SECRET=dummy-kakao-secret \
+KAKAO_REDIRECT_URI=http://localhost:8080/login/oauth2/code/kakao \
+NAVER_CLIENT_ID=dummy-naver-client \
+NAVER_CLIENT_SECRET=dummy-naver-secret \
+NAVER_REDIRECT_URI=http://localhost:8080/login/oauth2/code/naver \
+NAVER_SERVICE_URL=http://localhost:8080 \
+./gradlew bootRun
+
+bash scripts/api/v12-social-auth-contract.sh
+bash scripts/api/a2-auth-track-session-guard.sh
+bash scripts/api/v5-waiting-queue.sh
+bash scripts/api/v8-reservation-lifecycle.sh
+```
+
+- 확장 smoke 체크:
+  - `POST /api/concerts/setup` (artist/agency 확장 필드 포함)
+  - `GET /api/concerts/search` (`keyword`, `agencyName`, `sort=agencyName,asc`)
+  - `GET /api/v1/waiting-queue/subscribe` (SSE `INIT/RANK_UPDATE/KEEPALIVE`)
+- 최신 통합 검증 리포트:
+  - `prj-docs/api-test/ux-track-u1-integration-latest.md`
 
 실패 시 `skills/aki-mcp-playwright/references/troubleshooting.md`의 "`Local HTML Cannot Be Opened Directly by MCP`" 항목을 확인합니다.
