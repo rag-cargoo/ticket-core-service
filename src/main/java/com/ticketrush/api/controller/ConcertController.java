@@ -2,6 +2,7 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.concert.service.ConcertService;
 import com.ticketrush.api.dto.ConcertResponse;
+import com.ticketrush.api.dto.ConcertSearchPageResponse;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.ConcertSetupRequest;
@@ -9,6 +10,8 @@ import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,6 +59,28 @@ public class ConcertController {
     }
 
     /**
+     * 공연 검색/필터/정렬 + 페이징 조회
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ConcertSearchPageResponse> searchConcerts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String artistName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id,asc") String sort
+    ) {
+        String[] sortTokens = sort.split(",");
+        String sortField = resolveSortField(sortTokens.length > 0 ? sortTokens[0] : "id");
+        Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+        var result = concertService.searchConcerts(keyword, artistName, pageable)
+                .map(ConcertResponse::from);
+
+        return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
+    }
+
+    /**
      * 공연의 날짜별 옵션 조회
      */
     @GetMapping("/{id}/options")
@@ -92,5 +117,23 @@ public class ConcertController {
     @GetMapping("/{concertId}/sales-policy")
     public ResponseEntity<SalesPolicyResponse> getSalesPolicy(@PathVariable Long concertId) {
         return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.getByConcertId(concertId)));
+    }
+
+    private String resolveSortField(String candidate) {
+        if ("title".equalsIgnoreCase(candidate)) {
+            return "title";
+        }
+        if ("artistName".equalsIgnoreCase(candidate)) {
+            return "artist.name";
+        }
+        return "id";
+    }
+
+    private Sort.Direction resolveDirection(String candidate) {
+        try {
+            return Sort.Direction.fromString(candidate);
+        } catch (IllegalArgumentException ignored) {
+            return Sort.Direction.ASC;
+        }
     }
 }

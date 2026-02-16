@@ -94,12 +94,12 @@
 > Step 12 + Auth Track A1 완료 이후 남은 작업 항목입니다.
 >
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
-> - [ ] 공연 조회 캐싱 전략 도입 (Issue: `#52`)
+> - [ ] 공연 조회 캐싱 전략 도입 (Issue: `#52`, 배치1: `GET /api/concerts`, `GET /api/concerts/{id}/options` 조회 캐시 적용)
 > - [ ] 아티스트/기획사 엔티티 확장 (Issue: `#53`)
 > - [x] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
 > - [x] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [x] Naver OAuth 서비스 설정 오류 수정 및 재검증 완료 (`disp_stat=207` 해소, 관리자 콘솔 `8080` 콜백 정합성 반영, U1 Playwright 로그인 성공 확인)
-> - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징) (Issue: `#52`)
+> - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징) (Issue: `#52`, 배치1: `GET /api/concerts/search` 서버 검색/페이징 API 추가)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
 > - [x] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
@@ -261,7 +261,8 @@
 >   - 진행 메모(2026-02-16 06:26): 회의록 `prj-docs/meeting-notes/2026-02-16-service-interface-split-rollout.md` 생성, 전용 브랜치 `chore/service-interface-split-prep` 생성, 이슈 `#47`(https://github.com/rag-cargoo/2602/issues/47) 등록 완료.
 >   - 진행 메모(2026-02-16 07:29): Kafka bootstrap 주소를 프로파일별 환경변수 오버라이드로 정리했다(`application-local.yml`: `${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`, `application-docker.yml`: `${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}`). 전체 테스트에서 기존 `kafka:9092` DNS 오류는 해소됐고, 동시성 테스트 4건은 기존 시드데이터 부재(`NoSuchElementException`) 이슈로 분리 확인했다.
 >   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
->   - 다음 액션: 동일 패턴을 `concert/waiting-queue` 등 후속 서비스 도메인에 확장 적용할지 여부를 이슈 `#54`(https://github.com/rag-cargoo/2602/issues/54)에서 결정/추적한다.
+>   - 진행 메모(2026-02-17 02:20): 이슈 `#54` 인벤토리 결과 `concert`/`waiting-queue`는 이미 `Service + ServiceImpl` 분리 + 인터페이스 주입 패턴이 적용되어 있어 추가 분할 배치는 `No-Go`로 결정했다(기능 확장 이슈 `#52`, `#53` 진행 시 재평가).
+>   - 다음 액션: `#52` 배치2(캐시 무효화 정책 보강 + U1 검색 연동)와 `#53` 도메인 확장 설계를 순차 진행한다.
 >
 > - [x] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
 >   - 목표: Reservation 도메인의 외부 경계 의존을 Port 인터페이스로 명시화하여 구현 교체 가능성을 높인다.

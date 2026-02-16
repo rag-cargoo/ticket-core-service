@@ -3,11 +3,14 @@ package com.ticketrush.domain.concert.service;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface ConcertService {
     List<Concert> getConcerts();
+    Page<Concert> searchConcerts(String keyword, String artistName, Pageable pageable);
     List<ConcertOption> getConcertOptions(Long concertId);
     List<Seat> getAvailableSeats(Long concertOptionId);
     

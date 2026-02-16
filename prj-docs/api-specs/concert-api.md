@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-12 18:30:52`
+> - **Updated At**: `2026-02-17 02:10:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -42,6 +42,56 @@
     "artistName": "IU"
   }
 ]
+```
+
+---
+
+### 1.1-1. 공연 검색/필터/정렬 + 페이징 조회
+- **Endpoint**: `GET /api/concerts/search`
+- **Description**: 키워드(제목/아티스트/공연ID) 검색, 아티스트 필터, 정렬, 페이징을 서버에서 수행합니다.
+
+**Parameters**
+
+| Location | Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| Query | `keyword` | String | No | 제목/아티스트/공연 ID 검색 키워드 |
+| Query | `artistName` | String | No | 아티스트명 정확 일치 필터(대소문자 무시) |
+| Query | `page` | Integer | No | 페이지 번호(기본값 `0`) |
+| Query | `size` | Integer | No | 페이지 크기(기본값 `20`) |
+| Query | `sort` | String | No | 정렬 규칙(`id|title|artistName`,`asc|desc`) 예: `title,asc` |
+
+**Request Example**
+
+`GET /api/concerts/search?keyword=iu&artistName=IU&page=0&size=10&sort=title,asc`
+
+**Response Summary (200 OK)**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `items` | Array | 공연 목록(`id`, `title`, `artistName`) |
+| `page` | Integer | 현재 페이지 번호 |
+| `size` | Integer | 페이지 크기 |
+| `totalElements` | Long | 전체 검색 결과 건수 |
+| `totalPages` | Integer | 전체 페이지 수 |
+| `hasNext` | Boolean | 다음 페이지 존재 여부 |
+
+**Response Example**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "The Golden Hour",
+      "artistName": "IU"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "hasNext": false
+}
 ```
 
 ---
@@ -221,7 +271,8 @@
 
 | UI 단계 | Endpoint | 클라이언트 처리 기준 |
 | :--- | :--- | :--- |
-| 콘서트 목록 로드 | `GET /api/concerts` | 검색어(`id/title/artistName`) + 아티스트 필터 + 정렬(`title/artist/id`)을 브라우저에서 처리 |
+| 콘서트 목록 로드 | `GET /api/concerts` | 전체 목록 로드(기본) |
+| 콘서트 검색/필터/정렬 | `GET /api/concerts/search` | `keyword`, `artistName`, `sort`, `page`, `size`로 서버 측 탐색 처리 |
 | 콘서트 선택 | `GET /api/concerts/{id}/options` | `concertDate` 오름차순으로 정렬 후 첫 옵션 자동 선택(최초 진입 시) |
 | 옵션 선택 | `GET /api/concerts/options/{optionId}/seats` | `seatNumber` 오름차순 렌더링, `AVAILABLE`만 표시하는 필터 토글 지원 |
 | 좌석 선택 | (추가 API 없음) | `AVAILABLE` 좌석만 선택 가능, 선택 즉시 Reservation v7 `seatId` 입력값 자동 채움 |
