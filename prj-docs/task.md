@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 08:25:31`
+> - **Updated At**: `2026-02-16 15:00:58`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -104,6 +104,7 @@
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
 > - [x] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
 > - [x] 서비스 계층 인터페이스 전환 동기화 (`src/test`, `scripts/api`, `scripts/http`, `static/ux/u1`, `prj-docs/*`)
+> - [ ] 아키텍처 트랙 R2: Reservation 경계 Port/Adapter 도입 (`User`, `Seat`, `WaitingQueue` 경계 추상화, API 계약 불변)
 
 ---
 
@@ -260,6 +261,14 @@
 >   - 진행 메모(2026-02-16 07:29): Kafka bootstrap 주소를 프로파일별 환경변수 오버라이드로 정리했다(`application-local.yml`: `${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`, `application-docker.yml`: `${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}`). 전체 테스트에서 기존 `kafka:9092` DNS 오류는 해소됐고, 동시성 테스트 4건은 기존 시드데이터 부재(`NoSuchElementException`) 이슈로 분리 확인했다.
 >   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
 >   - 다음 액션: 동일 패턴을 `concert/waiting-queue` 등 후속 서비스 도메인에 확장 적용할지 여부를 별도 이슈로 결정한다.
+>
+> - [ ] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
+>   - 목표: Reservation 도메인의 외부 경계 의존을 Port 인터페이스로 명시화하여 구현 교체 가능성을 높인다.
+>   - 완료 기준: 1차 대상(`User`, `Seat`, `WaitingQueue` 경계)의 포트 정의 + 구현체 연결 + 주입 전환 + 테스트/문서 동기화가 완료된다.
+>   - 범위 제외: `Payment Track P1`, `UX Track U1` 기능 추가/변경, MSA 물리 분리 자체는 이번 트랙에 포함하지 않는다.
+>   - 진행 메모(2026-02-16 15:00): 회의록 `prj-docs/meeting-notes/2026-02-16-service-boundary-port-phase2-kickoff.md` 생성, 전용 브랜치 `chore/service-interface-boundary-phase2`에서 착수.
+>   - 진행 메모(2026-02-16 15:04): 이슈 `#49`(https://github.com/rag-cargoo/2602/issues/49) 생성 및 연결 완료.
+>   - 다음 액션: 이슈 연계 후 배치 1(포트 인터페이스 추가, 동작 불변)을 먼저 적용한다.
 
 ---
 
