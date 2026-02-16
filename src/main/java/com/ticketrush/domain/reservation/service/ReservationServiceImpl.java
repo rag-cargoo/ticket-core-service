@@ -1,15 +1,14 @@
 package com.ticketrush.domain.reservation.service;
 
 import com.ticketrush.domain.concert.entity.Seat;
-import com.ticketrush.domain.concert.service.ConcertService;
+import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
+import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.service.UserService;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,19 +20,19 @@ import java.util.stream.Collectors;
 public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
-    private final ConcertService concertService;
-    private final UserService userService;
+    private final ReservationSeatPort reservationSeatPort;
+    private final ReservationUserPort reservationUserPort;
 
     /**
      * [v1] 낙관적 락(Optimistic Lock)을 사용한 예약 생성
      */
     @Transactional
     public ReservationResponse createReservation(ReservationRequest request) {
-        // 1. 유저 조회 (UserService 위임)
-        User user = userService.getUser(request.getUserId());
+        // 1. 유저 조회 (Reservation boundary port 위임)
+        User user = reservationUserPort.getUser(request.getUserId());
 
-        // 2. 좌석 조회 (ConcertService 위임)
-        Seat seat = concertService.getSeat(request.getSeatId());
+        // 2. 좌석 조회 (Reservation boundary port 위임)
+        Seat seat = reservationSeatPort.getSeat(request.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();
@@ -51,10 +50,10 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional
     public ReservationResponse createReservationWithPessimisticLock(ReservationRequest request) {
         // 1. 유저 조회
-        User user = userService.getUser(request.getUserId());
+        User user = reservationUserPort.getUser(request.getUserId());
 
         // 2. 좌석 조회 (비관적 락 적용)
-        Seat seat = concertService.getSeatWithPessimisticLock(request.getSeatId());
+        Seat seat = reservationSeatPort.getSeatWithPessimisticLock(request.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();

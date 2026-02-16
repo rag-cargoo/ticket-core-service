@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 15:00:58`
+> - **Updated At**: `2026-02-16 19:10:57`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -268,7 +268,8 @@
 >   - 범위 제외: `Payment Track P1`, `UX Track U1` 기능 추가/변경, MSA 물리 분리 자체는 이번 트랙에 포함하지 않는다.
 >   - 진행 메모(2026-02-16 15:00): 회의록 `prj-docs/meeting-notes/2026-02-16-service-boundary-port-phase2-kickoff.md` 생성, 전용 브랜치 `chore/service-interface-boundary-phase2`에서 착수.
 >   - 진행 메모(2026-02-16 15:04): 이슈 `#49`(https://github.com/rag-cargoo/2602/issues/49) 생성 및 연결 완료.
->   - 다음 액션: 이슈 연계 후 배치 1(포트 인터페이스 추가, 동작 불변)을 먼저 적용한다.
+>   - 진행 메모(2026-02-16 19:10): 배치 1로 `ReservationUserPort`/`ReservationSeatPort`/`ReservationWaitingQueuePort` + Adapter를 도입하고 `ReservationServiceImpl`/`ReservationLifecycleServiceImpl` 주입을 포트 기준으로 전환했다. `./gradlew compileJava`, `./gradlew test --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'`, `./gradlew test` 모두 통과했다.
+>   - 다음 액션: 배치 2로 테스트/문서 영향 범위 체크리스트를 정리하고, 경계 포트 도입 규칙을 `knowledge` 문서에 반영한다.
 
 ---
 

@@ -9,6 +9,9 @@ import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.domain.reservation.adapter.outbound.ReservationSeatPortAdapter;
+import com.ticketrush.domain.reservation.adapter.outbound.ReservationUserPortAdapter;
+import com.ticketrush.domain.reservation.adapter.outbound.ReservationWaitingQueuePortAdapter;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
@@ -48,6 +51,9 @@ import static org.mockito.Mockito.when;
         SalesPolicyServiceImpl.class,
         AbuseAuditServiceImpl.class,
         AbuseAuditWriter.class,
+        ReservationSeatPortAdapter.class,
+        ReservationUserPortAdapter.class,
+        ReservationWaitingQueuePortAdapter.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
 })
 class ReservationLifecycleServiceIntegrationTest {

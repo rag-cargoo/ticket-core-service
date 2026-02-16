@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-16 15:00:58`
-> - **Updated At**: `2026-02-16 15:00:58`
+> - **Updated At**: `2026-02-16 19:10:57`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -44,7 +44,7 @@
 
 ## 안건 3: 배치 적용 순서 및 완료 기준 확정
 - Created At: 2026-02-16 15:00:58
-- Updated At: 2026-02-16 15:00:58
+- Updated At: 2026-02-16 19:10:57
 - Status: DOING
 - 결정사항:
   - 배치 1: Port 인터페이스 추가 + 기존 구현 래핑(동작 불변)
@@ -53,5 +53,5 @@
 - 후속작업:
   - 담당: Codex
   - 기한: 2026-02-17
-  - 상태: TODO
-  - 메모: 각 배치 완료 시점마다 근거 커밋과 검증 로그를 이슈 코멘트에 누적한다.
+  - 상태: DOING
+  - 메모: 배치 1 적용 완료(Reservation `User/Seat/WaitingQueue` Port/Adapter 도입 + `ReservationServiceImpl`/`ReservationLifecycleServiceImpl` 주입 전환), `./gradlew test` 통과 확인. 다음은 배치 2 영향 범위(테스트/문서 동기화) 정리 후 이슈 코멘트에 누적한다.
