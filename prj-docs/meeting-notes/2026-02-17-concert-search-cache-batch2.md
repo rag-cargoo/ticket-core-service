@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-17 02:32:49`
-> - **Updated At**: `2026-02-17 02:33:37`
+> - **Updated At**: `2026-02-17 04:01:06`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -45,14 +45,17 @@
 
 ## 안건 3: 잔여 작업/다음 액션
 - Created At: 2026-02-17 02:32:49
-- Updated At: 2026-02-17 02:32:49
+- Updated At: 2026-02-17 04:07:00
 - Status: DONE
 - 결정사항:
   - `#52`는 배치2까지 완료 기준을 충족했으므로 close 대상으로 정리한다.
   - 후속 우선순위는 `#53`(Artist/Agency 도메인 확장) -> `Payment Track P1` 순서로 진행한다.
   - U1의 결제 상태 패널은 P1 구현 시점에 결합한다.
+  - 이슈/PR 링크:
+    - Issue: https://github.com/rag-cargoo/2602/issues/52
+    - PR: https://github.com/rag-cargoo/2602/pull/56
 - 후속작업:
   - 담당: Codex
   - 기한: 2026-02-18
-  - 상태: TODO
-  - 메모: 이슈 `#53`에서 엔티티/마이그레이션/조회 DTO 영향 범위를 먼저 확정한다.
+  - 상태: DONE
+  - 메모: 후속 이슈 `#53`은 PR `#57`로 완료됐고, 결제(P1)는 현재 HOLD 정책으로 관리한다.

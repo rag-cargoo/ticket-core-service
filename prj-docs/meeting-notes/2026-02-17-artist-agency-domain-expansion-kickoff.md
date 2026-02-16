@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-17 02:41:47`
-> - **Updated At**: `2026-02-17 02:50:20`
+> - **Updated At**: `2026-02-17 04:01:06`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -45,13 +45,16 @@
 
 ## 안건 3: 완료 판정 기준
 - Created At: 2026-02-17 02:41:47
-- Updated At: 2026-02-17 02:50:00
-- Status: DOING
+- Updated At: 2026-02-17 04:07:00
+- Status: DONE
 - 결정사항:
   - 구현 + 테스트 + 문서 + 이슈 상태 동기화가 모두 반영되면 `#53` close한다.
   - PR 체크(`verify`, `doc-state-sync`) 통과 후 main merge를 완료 기준으로 본다.
+  - 이슈/PR 링크:
+    - Issue: https://github.com/rag-cargoo/2602/issues/53
+    - PR: https://github.com/rag-cargoo/2602/pull/57
 - 후속작업:
   - 담당: Codex
   - 기한: 2026-02-17
-  - 상태: DOING
-  - 메모: 이슈 코멘트/PR 생성/체크 통과/merge 후 `#53` close와 함께 `DONE`으로 전환한다.
+  - 상태: DONE
+  - 메모: PR `#57` merge 및 이슈 `#53` close 완료로 종료했다.
