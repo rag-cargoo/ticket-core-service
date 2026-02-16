@@ -54,3 +54,13 @@ app:
   frontend:
     u1-callback-url: ${U1_CALLBACK_URL:/ux/u1/callback.html}
     allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080}
+  cache:
+    concert:
+      list-ttl: ${APP_CACHE_CONCERT_LIST_TTL:30s}
+      list-max-size: ${APP_CACHE_CONCERT_LIST_MAX_SIZE:100}
+      search-ttl: ${APP_CACHE_CONCERT_SEARCH_TTL:20s}
+      search-max-size: ${APP_CACHE_CONCERT_SEARCH_MAX_SIZE:500}
+      options-ttl: ${APP_CACHE_CONCERT_OPTIONS_TTL:30s}
+      options-max-size: ${APP_CACHE_CONCERT_OPTIONS_MAX_SIZE:1000}
+      available-seats-ttl: ${APP_CACHE_CONCERT_AVAILABLE_SEATS_TTL:5s}
+      available-seats-max-size: ${APP_CACHE_CONCERT_AVAILABLE_SEATS_MAX_SIZE:2000}

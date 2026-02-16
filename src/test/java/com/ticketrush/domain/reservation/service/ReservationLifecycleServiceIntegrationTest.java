@@ -25,6 +25,7 @@ import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.config.AbuseGuardProperties;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.sse.SseEmitterManager;
@@ -88,6 +89,11 @@ class ReservationLifecycleServiceIntegrationTest {
         @Bean
         SseEmitterManager sseEmitterManager() {
             return mock(SseEmitterManager.class);
+        }
+
+        @Bean
+        ConcertReadCacheEvictor concertReadCacheEvictor() {
+            return mock(ConcertReadCacheEvictor.class);
         }
     }
 

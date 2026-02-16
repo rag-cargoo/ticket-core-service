@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-17 02:10:00`
+> - **Updated At**: `2026-02-17 02:32:01`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -11,7 +11,8 @@
 ---
 > [!TIP]
 > - 1. API 상세 명세 (Endpoint Details)
-> - 2. UX Track U1 연동 계약 메모
+> - 2. 캐싱 정책/무효화 규칙
+> - 3. UX Track U1 연동 계약 메모
 <!-- DOC_TOC_END -->
 
 공연 정보, 예약 가능 일정 및 좌석 현황을 제공하는 API입니다.
@@ -128,7 +129,7 @@
 
 ### 1.3. 실시간 좌석 현황 조회
 - **Endpoint**: `GET /api/concerts/options/{optionId}/seats`
-- **Description**: 선택한 공연 일정의 모든 좌석 상태를 실시간 조회합니다.
+- **Description**: 선택한 공연 일정의 `AVAILABLE` 좌석만 조회합니다.
 
 **Parameters**
 
@@ -263,16 +264,33 @@
 
 - `PUT /api/concerts/{concertId}/sales-policy` 응답과 동일한 필드 구조를 반환합니다.
 
+## 2. 캐싱 정책/무효화 규칙
+
+Concert read-path 캐시는 `concert:list`, `concert:search`, `concert:options`, `concert:available-seats` 4종으로 운영한다.
+
+| Cache Name | 대상 API | 기본 TTL | 무효화 트리거 |
+| :--- | :--- | :--- | :--- |
+| `concert:list` | `GET /api/concerts` | `30s` | 공연/옵션/좌석 생성, 공연 삭제 |
+| `concert:search` | `GET /api/concerts/search` | `20s` | 공연/옵션/좌석 생성, 공연 삭제 |
+| `concert:options` | `GET /api/concerts/{id}/options` | `30s` | 공연/옵션/좌석 생성, 공연 삭제 |
+| `concert:available-seats` | `GET /api/concerts/options/{optionId}/seats` | `5s` | 좌석 생성/공연 삭제 + 예약 상태 전이(`reserve/hold/confirm/cancel/expire`) |
+
+환경별 튜닝은 아래 env로 조정한다.
+
+- `APP_CACHE_CONCERT_LIST_TTL`, `APP_CACHE_CONCERT_LIST_MAX_SIZE`
+- `APP_CACHE_CONCERT_SEARCH_TTL`, `APP_CACHE_CONCERT_SEARCH_MAX_SIZE`
+- `APP_CACHE_CONCERT_OPTIONS_TTL`, `APP_CACHE_CONCERT_OPTIONS_MAX_SIZE`
+- `APP_CACHE_CONCERT_AVAILABLE_SEATS_TTL`, `APP_CACHE_CONCERT_AVAILABLE_SEATS_MAX_SIZE`
+
 ---
 
-## 2. UX Track U1 연동 계약 메모
+## 3. UX Track U1 연동 계약 메모
 
 `src/main/resources/static/ux/u1/index.html` 기준으로 콘서트 탐색 섹션에서 아래 순서로 호출한다.
 
 | UI 단계 | Endpoint | 클라이언트 처리 기준 |
 | :--- | :--- | :--- |
-| 콘서트 목록 로드 | `GET /api/concerts` | 전체 목록 로드(기본) |
-| 콘서트 검색/필터/정렬 | `GET /api/concerts/search` | `keyword`, `artistName`, `sort`, `page`, `size`로 서버 측 탐색 처리 |
+| 콘서트 목록/검색/필터/정렬/페이징 | `GET /api/concerts/search` | `keyword`, `artistName`, `sort`, `page`, `size`를 항상 서버에 전달해 탐색 처리(입력 디바운스 `250ms`) |
 | 콘서트 선택 | `GET /api/concerts/{id}/options` | `concertDate` 오름차순으로 정렬 후 첫 옵션 자동 선택(최초 진입 시) |
 | 옵션 선택 | `GET /api/concerts/options/{optionId}/seats` | `seatNumber` 오름차순 렌더링, `AVAILABLE`만 표시하는 필터 토글 지원 |
 | 좌석 선택 | (추가 API 없음) | `AVAILABLE` 좌석만 선택 가능, 선택 즉시 Reservation v7 `seatId` 입력값 자동 채움 |

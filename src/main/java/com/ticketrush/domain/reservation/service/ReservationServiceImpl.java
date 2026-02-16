@@ -8,6 +8,7 @@ import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
+import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationSeatPort reservationSeatPort;
     private final ReservationUserPort reservationUserPort;
+    private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
     /**
      * [v1] 낙관적 락(Optimistic Lock)을 사용한 예약 생성
@@ -40,6 +42,7 @@ public class ReservationServiceImpl implements ReservationService {
         // 4. 예약 생성
         Reservation reservation = new Reservation(user, seat);
         reservationRepository.save(reservation);
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
         return ReservationResponse.from(reservation);
     }
@@ -61,6 +64,7 @@ public class ReservationServiceImpl implements ReservationService {
         // 4. 예약 생성
         Reservation reservation = new Reservation(user, seat);
         reservationRepository.save(reservation);
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
         return ReservationResponse.from(reservation);
     }
@@ -85,6 +89,7 @@ public class ReservationServiceImpl implements ReservationService {
         
         // 좌석 상태 원복 (AVAILABLE)
         reservation.getSeat().cancel();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
         
         reservationRepository.delete(reservation);
     }

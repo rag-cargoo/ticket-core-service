@@ -40,6 +40,9 @@ const els = {
   concertSearchInput: document.getElementById("concertSearchInput"),
   concertArtistFilter: document.getElementById("concertArtistFilter"),
   concertSortSelect: document.getElementById("concertSortSelect"),
+  concertPrevPageBtn: document.getElementById("concertPrevPageBtn"),
+  concertNextPageBtn: document.getElementById("concertNextPageBtn"),
+  concertPageInfo: document.getElementById("concertPageInfo"),
   refreshConcertsBtn: document.getElementById("refreshConcertsBtn"),
   seatAvailableOnlyCheck: document.getElementById("seatAvailableOnlyCheck"),
   concertResultSummary: document.getElementById("concertResultSummary"),
@@ -71,12 +74,21 @@ const state = {
   refreshToken: localStorage.getItem(STORAGE_KEYS.refreshToken) || "",
   currentUser: loadAuthUser(),
   concerts: [],
-  filteredConcerts: [],
   options: [],
   seats: [],
   selectedConcertId: null,
   selectedOptionId: null,
   selectedSeatId: null,
+  concertSearch: {
+    page: 0,
+    size: 20,
+    totalElements: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasFetched: false,
+    requestSeq: 0
+  },
+  concertSearchDebounceTimer: null,
   queueEventSource: null,
   queueState: {
     userId: null,
@@ -90,6 +102,7 @@ const state = {
 };
 
 const REQUEST_TIMEOUT_MS = 8000;
+const CONCERT_SEARCH_DEBOUNCE_MS = 250;
 
 function loadApiBase() {
   const stored = localStorage.getItem(STORAGE_KEYS.apiBase);
@@ -277,7 +290,7 @@ async function onApplySampleValues() {
   els.reservationIdInput.value = sample.reservationId;
   els.concertSearchInput.value = sample.search;
 
-  await onRefreshConcerts();
+  await onRefreshConcerts({ page: 0 });
   appendLog("SAMPLE_VALUES_APPLIED", sample);
 }
 
@@ -477,7 +490,7 @@ async function onCreateConcertSetup() {
   });
 
   appendLog("CONCERT_SETUP_CREATED", { payload, response });
-  await onRefreshConcerts();
+  await onRefreshConcerts({ page: 0 });
 
   const raw = String(response || "");
   const concertMatch = raw.match(/ConcertID=(\d+)/i);
@@ -916,10 +929,6 @@ function onQueueUnsubscribe() {
   closeQueueSubscription("MANUAL_CLOSE");
 }
 
-function normalizeText(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
 function clearChildren(node) {
   while (node.firstChild) {
     node.removeChild(node.firstChild);
@@ -937,30 +946,52 @@ function seatIsAvailable(seat) {
   return String(seat.status || "").toUpperCase() === "AVAILABLE";
 }
 
-function sortConcerts(list, sortValue) {
-  const next = [...list];
+function resolveConcertSortParam(sortValue) {
   switch (sortValue) {
     case "title_desc":
-      next.sort((a, b) => String(b.title || "").localeCompare(String(a.title || "")));
-      break;
+      return "title,desc";
     case "artist_asc":
-      next.sort((a, b) => String(a.artistName || "").localeCompare(String(b.artistName || "")));
-      break;
+      return "artistName,asc";
     case "artist_desc":
-      next.sort((a, b) => String(b.artistName || "").localeCompare(String(a.artistName || "")));
-      break;
+      return "artistName,desc";
     case "id_desc":
-      next.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
-      break;
+      return "id,desc";
     case "id_asc":
-      next.sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
-      break;
+      return "id,asc";
     case "title_asc":
     default:
-      next.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
-      break;
+      return "title,asc";
   }
-  return next;
+}
+
+function buildConcertSearchParams(page) {
+  const params = new URLSearchParams();
+  const keyword = String(els.concertSearchInput.value || "").trim();
+  const artistName = String(els.concertArtistFilter.value || "all").trim();
+  const sortValue = els.concertSortSelect.value || "title_asc";
+
+  if (keyword) {
+    params.set("keyword", keyword);
+  }
+  if (artistName && artistName !== "all") {
+    params.set("artistName", artistName);
+  }
+
+  params.set("page", String(page));
+  params.set("size", String(state.concertSearch.size || 20));
+  params.set("sort", resolveConcertSortParam(sortValue));
+
+  return params;
+}
+
+function scheduleConcertSearch() {
+  if (state.concertSearchDebounceTimer) {
+    window.clearTimeout(state.concertSearchDebounceTimer);
+  }
+  state.concertSearchDebounceTimer = window.setTimeout(() => {
+    state.concertSearchDebounceTimer = null;
+    runAction("CONCERTS_SEARCH", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
+  }, CONCERT_SEARCH_DEBOUNCE_MS);
 }
 
 function formatDateTime(value) {
@@ -975,14 +1006,17 @@ function formatDateTime(value) {
 }
 
 function renderExplorerSummary() {
-  const allConcerts = state.concerts.length;
-  const filteredConcerts = state.filteredConcerts.length;
+  const loadedConcerts = state.concerts.length;
+  const totalConcerts = state.concertSearch.totalElements;
+  const totalPages = Math.max(state.concertSearch.totalPages, 1);
+  const pageLabel = state.concertSearch.totalElements > 0 ? `${state.concertSearch.page + 1}/${totalPages}` : "0/0";
   const visibleSeats = els.seatAvailableOnlyCheck.checked
     ? state.seats.filter(seatIsAvailable).length
     : state.seats.length;
 
   const summary = [
-    `concerts=${filteredConcerts}/${allConcerts}`,
+    `concerts=${loadedConcerts}/${totalConcerts}`,
+    `page=${pageLabel}`,
     `options=${state.options.length}`,
     `seats=${visibleSeats}/${state.seats.length}`,
     `selected(concert=${state.selectedConcertId || "-"}, option=${state.selectedOptionId || "-"}, seat=${state.selectedSeatId || "-"})`
@@ -1000,6 +1034,9 @@ function populateArtistFilter() {
     if (artistName) {
       artistSet.add(artistName);
     }
+  }
+  if (prevValue !== "all") {
+    artistSet.add(prevValue);
   }
 
   const artists = [...artistSet].sort((a, b) => a.localeCompare(b));
@@ -1024,57 +1061,37 @@ function populateArtistFilter() {
   }
 }
 
-function applyConcertFilters() {
-  const query = normalizeText(els.concertSearchInput.value);
-  const artistFilter = els.concertArtistFilter.value || "all";
-  const sortValue = els.concertSortSelect.value || "title_asc";
-
-  const filtered = state.concerts.filter((concert) => {
-    if (artistFilter !== "all" && String(concert.artistName || "") !== artistFilter) {
-      return false;
-    }
-
-    if (!query) {
-      return true;
-    }
-
-    const idText = String(concert.id || "");
-    const titleText = normalizeText(concert.title);
-    const artistText = normalizeText(concert.artistName);
-
-    return idText.includes(query) || titleText.includes(query) || artistText.includes(query);
-  });
-
-  state.filteredConcerts = sortConcerts(filtered, sortValue);
-
-  if (!state.filteredConcerts.some((concert) => concert.id === state.selectedConcertId)) {
-    state.selectedConcertId = null;
-    state.selectedOptionId = null;
-    state.selectedSeatId = null;
-    state.options = [];
-    state.seats = [];
+function renderConcertPagination() {
+  if (!els.concertPageInfo || !els.concertPrevPageBtn || !els.concertNextPageBtn) {
+    return;
   }
 
-  renderConcertList();
-  renderOptionList();
-  renderSeatList();
-  renderExplorerSummary();
+  const totalElements = state.concertSearch.totalElements;
+  const totalPages = state.concertSearch.totalPages;
+  if (totalElements <= 0) {
+    els.concertPageInfo.textContent = "Page -/-";
+  } else {
+    els.concertPageInfo.textContent = `Page ${state.concertSearch.page + 1}/${Math.max(totalPages, 1)}`;
+  }
+
+  els.concertPrevPageBtn.disabled = state.concertSearch.page <= 0;
+  els.concertNextPageBtn.disabled = !state.concertSearch.hasNext;
 }
 
 function renderConcertList() {
   clearChildren(els.concertList);
 
-  if (state.concerts.length === 0) {
+  if (!state.concertSearch.hasFetched) {
     els.concertList.appendChild(createEmptyRow("No concert data loaded yet."));
     return;
   }
 
-  if (state.filteredConcerts.length === 0) {
+  if (state.concerts.length === 0) {
     els.concertList.appendChild(createEmptyRow("No concerts matched current search/filter."));
     return;
   }
 
-  for (const concert of state.filteredConcerts) {
+  for (const concert of state.concerts) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "u1-item-btn";
@@ -1196,11 +1213,32 @@ function renderSeatList() {
   }
 }
 
-async function onRefreshConcerts() {
-  const response = await callApi("/api/concerts");
-  const concerts = Array.isArray(response) ? response : [];
+async function onRefreshConcerts(options = {}) {
+  const requestedPage = Number.isInteger(options.page)
+    ? Math.max(options.page, 0)
+    : Math.max(state.concertSearch.page, 0);
+  const searchParams = buildConcertSearchParams(requestedPage);
+  const requestSeq = state.concertSearch.requestSeq + 1;
+  state.concertSearch.requestSeq = requestSeq;
+  const response = await callApi(`/api/concerts/search?${searchParams.toString()}`);
+
+  if (requestSeq !== state.concertSearch.requestSeq) {
+    return;
+  }
+
+  const concerts = Array.isArray(response.items) ? response.items : [];
+  const page = Number(response.page);
+  const size = Number(response.size);
+  const totalElements = Number(response.totalElements);
+  const totalPages = Number(response.totalPages);
 
   state.concerts = concerts;
+  state.concertSearch.page = Number.isInteger(page) && page >= 0 ? page : requestedPage;
+  state.concertSearch.size = Number.isInteger(size) && size > 0 ? size : state.concertSearch.size;
+  state.concertSearch.totalElements = Number.isFinite(totalElements) && totalElements >= 0 ? totalElements : concerts.length;
+  state.concertSearch.totalPages = Number.isFinite(totalPages) && totalPages >= 0 ? totalPages : 0;
+  state.concertSearch.hasNext = Boolean(response.hasNext);
+  state.concertSearch.hasFetched = true;
 
   const selectedConcertExists = state.concerts.some((concert) => concert.id === state.selectedConcertId);
   if (!selectedConcertExists) {
@@ -1212,14 +1250,38 @@ async function onRefreshConcerts() {
   }
 
   populateArtistFilter();
-  applyConcertFilters();
+  renderConcertPagination();
+  renderConcertList();
+  renderOptionList();
+  renderSeatList();
+  renderExplorerSummary();
   syncQueueConcertIdInput();
 
-  appendLog("CONCERTS_LOADED", { count: state.concerts.length });
+  appendLog("CONCERTS_LOADED", {
+    page: state.concertSearch.page,
+    size: state.concertSearch.size,
+    loaded: state.concerts.length,
+    total: state.concertSearch.totalElements,
+    hasNext: state.concertSearch.hasNext
+  });
 
   if (state.selectedConcertId) {
     await loadConcertOptions(state.selectedConcertId, { autoSelectFirst: false });
   }
+}
+
+async function onConcertPrevPage() {
+  if (state.concertSearch.page <= 0) {
+    return;
+  }
+  await onRefreshConcerts({ page: state.concertSearch.page - 1 });
+}
+
+async function onConcertNextPage() {
+  if (!state.concertSearch.hasNext) {
+    return;
+  }
+  await onRefreshConcerts({ page: state.concertSearch.page + 1 });
 }
 
 async function onSelectConcert(concertId) {
@@ -1395,7 +1457,7 @@ function bindEvents() {
     runAction("API_BASE_SET", async () => {
       setApiBase(window.location.origin);
       closeQueueSubscription("API_BASE_CHANGED", { silent: true });
-      await onRefreshConcerts();
+      await onRefreshConcerts({ page: 0 });
     });
   });
 
@@ -1403,7 +1465,7 @@ function bindEvents() {
     runAction("API_BASE_INPUT", async () => {
       setApiBase(els.apiBaseInput.value);
       closeQueueSubscription("API_BASE_CHANGED", { silent: true });
-      await onRefreshConcerts();
+      await onRefreshConcerts({ page: 0 });
     });
   });
 
@@ -1427,10 +1489,20 @@ function bindEvents() {
     els.concertSetupResetBtn.addEventListener("click", () => runAction("CONCERT_SETUP_RESET", async () => resetConcertSetupForm()));
   }
 
-  els.refreshConcertsBtn.addEventListener("click", () => runAction("CONCERTS_REFRESH", onRefreshConcerts));
-  els.concertSearchInput.addEventListener("input", applyConcertFilters);
-  els.concertArtistFilter.addEventListener("change", applyConcertFilters);
-  els.concertSortSelect.addEventListener("change", applyConcertFilters);
+  els.refreshConcertsBtn.addEventListener("click", () => runAction("CONCERTS_REFRESH", () => onRefreshConcerts({ page: 0 })));
+  els.concertSearchInput.addEventListener("input", scheduleConcertSearch);
+  els.concertArtistFilter.addEventListener("change", () => {
+    runAction("CONCERTS_FILTER", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
+  });
+  els.concertSortSelect.addEventListener("change", () => {
+    runAction("CONCERTS_SORT", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
+  });
+  if (els.concertPrevPageBtn) {
+    els.concertPrevPageBtn.addEventListener("click", () => runAction("CONCERTS_PAGE_PREV", onConcertPrevPage, { silentStatus: true }));
+  }
+  if (els.concertNextPageBtn) {
+    els.concertNextPageBtn.addEventListener("click", () => runAction("CONCERTS_PAGE_NEXT", onConcertNextPage, { silentStatus: true }));
+  }
   els.seatAvailableOnlyCheck.addEventListener("change", () => {
     renderSeatList();
     renderExplorerSummary();
@@ -1463,6 +1535,7 @@ function init() {
   setSampleDefaults();
   setConcertSetupDefaults();
   renderConcertList();
+  renderConcertPagination();
   renderOptionList();
   renderSeatList();
   renderExplorerSummary();
@@ -1470,7 +1543,7 @@ function init() {
   bindEvents();
   handleCallbackHash();
   runAction("AUTH_BOOTSTRAP", bootstrapAuthSession, { silentStatus: true });
-  runAction("CONCERTS_BOOTSTRAP", onRefreshConcerts, { silentStatus: true });
+  runAction("CONCERTS_BOOTSTRAP", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
 }
 
 init();

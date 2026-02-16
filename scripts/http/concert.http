@@ -4,6 +4,9 @@ GET http://localhost:8080/api/concerts
 ### 1-1. 공연 검색/필터/정렬 + 페이징 조회
 GET http://localhost:8080/api/concerts/search?keyword=iu&artistName=IU&page=0&size=10&sort=title,asc
 
+### 1-2. 다음 페이지 조회 예시
+GET http://localhost:8080/api/concerts/search?keyword=&artistName=&page=1&size=10&sort=id,desc
+
 ### 2. 공연 날짜 옵션 조회 (Concert ID: 1)
 GET http://localhost:8080/api/concerts/1/options
 

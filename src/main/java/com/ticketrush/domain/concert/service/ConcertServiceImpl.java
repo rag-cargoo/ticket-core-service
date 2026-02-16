@@ -10,6 +10,7 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.global.cache.ConcertCacheNames;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,10 +26,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ConcertServiceImpl implements ConcertService {
-    private static final String CACHE_CONCERT_LIST = "concert:list";
-    private static final String CACHE_CONCERT_OPTIONS = "concert:options";
-    private static final String CACHE_CONCERT_SEARCH = "concert:search";
-
     private final ConcertRepository concertRepository;
     private final ConcertOptionRepository concertOptionRepository;
     private final SeatRepository seatRepository;
@@ -37,7 +34,7 @@ public class ConcertServiceImpl implements ConcertService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CACHE_CONCERT_LIST)
+    @Cacheable(cacheNames = ConcertCacheNames.CONCERT_LIST)
     public List<Concert> getConcerts() {
         return concertRepository.findAll();
     }
@@ -45,7 +42,7 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = CACHE_CONCERT_SEARCH,
+            cacheNames = ConcertCacheNames.CONCERT_SEARCH,
             key = "#keyword + '|' + #artistName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
     )
     public Page<Concert> searchConcerts(String keyword, String artistName, Pageable pageable) {
@@ -56,7 +53,7 @@ public class ConcertServiceImpl implements ConcertService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CACHE_CONCERT_OPTIONS, key = "#concertId")
+    @Cacheable(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, key = "#concertId")
     public List<ConcertOption> getConcertOptions(Long concertId) {
         Concert concert = concertRepository.findById(concertId)
                 .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
@@ -65,6 +62,7 @@ public class ConcertServiceImpl implements ConcertService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, key = "#concertOptionId")
     public List<Seat> getAvailableSeats(Long concertOptionId) {
         return seatRepository.findByConcertOptionIdAndStatus(concertOptionId, Seat.SeatStatus.AVAILABLE);
     }
@@ -72,9 +70,10 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CONCERT_LIST, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_OPTIONS, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true)
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public Concert createConcert(String title, String artistName, String agencyName) {
         Agency agency = agencyRepository.findByName(agencyName)
@@ -89,9 +88,10 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CONCERT_LIST, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_OPTIONS, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true)
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertOption addOption(Long concertId, LocalDateTime date) {
         Concert concert = concertRepository.findById(concertId)
@@ -102,9 +102,10 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CONCERT_LIST, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_OPTIONS, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true)
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public void createSeats(Long optionId, int count) {
         ConcertOption option = concertOptionRepository.findById(optionId)
@@ -117,9 +118,10 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CONCERT_LIST, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_OPTIONS, allEntries = true),
-            @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true)
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public void deleteConcert(Long concertId) {
         concertRepository.deleteById(concertId);

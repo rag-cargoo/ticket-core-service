@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 18:30:52`
-> - **Updated At**: `2026-02-16 00:58:00`
+> - **Updated At**: `2026-02-17 02:32:01`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -26,12 +26,12 @@
 - Scope: `src/main/resources/static/ux/u1/*` 기반 정적 페이지 MVP.
 - In Scope:
   - OAuth 시작/콜백 코드 교환/토큰 저장
-  - 콘서트 목록/옵션/좌석 탐색
+  - 콘서트 검색/필터/정렬/페이징 + 옵션/좌석 탐색
   - Waiting Queue `join/status/SSE subscribe` 콘솔 액션
   - `AVAILABLE` 좌석 선택과 Reservation v7 Hold 입력 자동연동
 - Out of Scope:
   - 결제 샌드박스(P1) 화면 통합
-  - 검색 페이징
+  - 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)
 
 ---
 
@@ -71,7 +71,7 @@
 
 | Route/Page | Purpose | API Chain |
 | :--- | :--- | :--- |
-| `/ux/u1/index.html` | 메인 콘솔 (세션 + 탐색 + 대기열 + 예약 액션) | `GET /api/auth/me`, `POST /api/auth/token/refresh`, `POST /api/auth/logout`, `GET /api/concerts`, `GET /api/concerts/{id}/options`, `GET /api/concerts/options/{optionId}/seats`, `POST /api/v1/waiting-queue/join`, `GET /api/v1/waiting-queue/status`, `GET /api/v1/waiting-queue/subscribe`, `POST /api/reservations/v7/*` |
+| `/ux/u1/index.html` | 메인 콘솔 (세션 + 탐색 + 대기열 + 예약 액션) | `GET /api/auth/me`, `POST /api/auth/token/refresh`, `POST /api/auth/logout`, `GET /api/concerts/search`, `GET /api/concerts/{id}/options`, `GET /api/concerts/options/{optionId}/seats`, `POST /api/v1/waiting-queue/join`, `GET /api/v1/waiting-queue/status`, `GET /api/v1/waiting-queue/subscribe`, `POST /api/reservations/v7/*` |
 | `/ux/u1/callback.html` | OAuth code exchange 처리 | `POST /api/auth/social/{provider}/exchange` |
 
 ---
@@ -83,6 +83,7 @@
   - 저장 위치: `localStorage`
 - Explorer State:
   - `concerts`, `options`, `seats`
+  - `concertSearch(page,size,totalElements,totalPages,hasNext,hasFetched)`
   - `selectedConcertId`, `selectedOptionId`, `selectedSeatId`
 - Queue State:
   - `queueUserId`, `queueConcertId`
@@ -93,6 +94,8 @@
   - 단, localStorage state가 없으면 callback `state`의 U1 포맷(`u1_<provider>_<ts>_<nonce>`) 검증 후 제한적으로 진행
   - exchange 이후 `GET /api/auth/me` 성공 시에만 로그인 완료로 간주
   - index 초기 진입 시 access token bootstrap 검증 후, 실패하면 refresh 재시도, 최종 실패 시 세션 정리
+  - 콘서트 탐색은 `/api/concerts/search` 서버 검색으로 수행하고, 검색어 입력은 250ms 디바운스를 적용
+  - `Prev/Next` 페이지 버튼으로 `page`를 변경하며, 현재 페이지 정보는 `Page x/y`로 표시
   - Concert 선택 시 Option 목록 reload
   - Option 선택 시 Seat 목록 reload
   - Seat 선택 시 Reservation `seatId` auto-fill

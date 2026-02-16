@@ -12,6 +12,7 @@ import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePo
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.global.config.ReservationProperties;
+import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.sse.SseEmitterManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -35,6 +38,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
     private final SseEmitterManager sseEmitterManager;
+    private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
     @Transactional
     public ReservationLifecycleResponse createHold(ReservationRequest request) {
@@ -45,6 +49,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         salesPolicyService.validateHoldRequest(user, seat, now);
         abuseAuditService.validateHoldRequest(request, user, seat, now);
         seat.hold();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
         LocalDateTime holdExpiresAt = now.plusSeconds(reservationProperties.getHoldTtlSeconds());
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
@@ -69,6 +74,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         expireIfNeeded(reservation, now);
         reservation.confirmPayment(now);
         reservation.getSeat().confirmHeldSeat();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
         return ReservationLifecycleResponse.from(reservation);
     }
 
@@ -78,6 +84,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         LocalDateTime now = LocalDateTime.now();
         reservation.cancel(now);
         reservation.getSeat().cancel();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
 
         Long concertId = reservation.getSeat().getConcertOption().getConcert().getId();
         List<Long> activatedUsers = reservationWaitingQueuePort.activateUsers(concertId, 1);
@@ -107,9 +114,14 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 now
         );
 
+        Set<Long> changedOptionIds = new HashSet<>();
         for (Reservation reservation : expiredTargets) {
             reservation.expire(now);
             reservation.getSeat().cancel();
+            changedOptionIds.add(reservation.getSeat().getConcertOption().getId());
+        }
+        for (Long optionId : changedOptionIds) {
+            concertReadCacheEvictor.evictAvailableSeatsByOptionId(optionId);
         }
 
         if (!expiredTargets.isEmpty()) {
@@ -131,6 +143,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
         reservation.expire(now);
         reservation.getSeat().cancel();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
     }
 
     private void notifyActivatedUsers(Long concertId, List<Long> activatedUsers) {

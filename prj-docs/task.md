@@ -3,16 +3,14 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 19:20:31`
+> - **Updated At**: `2026-02-17 02:32:01`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
-## 단계/트랙 목차 (Index)
+## 단계 목차 (Step Index)
 ---
-### A) 동시성 제어 Step (0~12)
-
 > [!TIP]
-> - Step 0 (락 없음): Race Condition 발생 확인 (30명 중 10명 중복 예약)
+> - Step 0 (락 없음): Race Condition 발생 확인
 > - Step 1: 낙관적 락(Optimistic Lock) 구현 및 검증
 > - Step 2: 비관적 락(Pessimistic Lock) 구현 및 검증
 > - Step 3: Redis 분산 락(Redisson) 구현 및 검증
@@ -25,14 +23,6 @@
 > - Step 10: 취소/환불/재판매 대기열 연계 구현
 > - Step 11: 판매 정책 엔진(선예매/등급/1인 제한) 구현
 > - Step 12: 부정사용 방지/감사 추적 기능 구현
-
-### B) 후속 기능 Track (Post Step 12)
-
-> [!TIP]
-> - Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
-> - Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
-> - UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
-> - Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
 <!-- DOC_TOC_END -->
 
 > 시스템의 현재 상태와 단계별 목표, 세부 완료 내역을 추적하는 통합 보드입니다.
@@ -94,12 +84,12 @@
 > Step 12 + Auth Track A1 완료 이후 남은 작업 항목입니다.
 >
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
-> - [ ] 공연 조회 캐싱 전략 도입 (Issue: `#52`, 배치1: `GET /api/concerts`, `GET /api/concerts/{id}/options` 조회 캐시 적용)
+> - [x] 공연 조회 캐싱 전략 도입 (Issue: `#52`, 배치1: `GET /api/concerts`, `GET /api/concerts/{id}/options` 조회 캐시 적용 / 배치2: `GET /api/concerts/options/{optionId}/seats` 캐시 + 예약 상태전이 무효화 적용)
 > - [ ] 아티스트/기획사 엔티티 확장 (Issue: `#53`)
 > - [x] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
 > - [x] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [x] Naver OAuth 서비스 설정 오류 수정 및 재검증 완료 (`disp_stat=207` 해소, 관리자 콘솔 `8080` 콜백 정합성 반영, U1 Playwright 로그인 성공 확인)
-> - [ ] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징) (Issue: `#52`, 배치1: `GET /api/concerts/search` 서버 검색/페이징 API 추가)
+> - [x] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징) (Issue: `#52`, 배치1: `GET /api/concerts/search` 서버 검색/페이징 API 추가 / 배치2: U1 `Concert Explorer` 서버검색 전환 + 페이지 버튼 연동)
 > - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
 > - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
 > - [x] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
@@ -130,6 +120,7 @@
 > - [x] Architecture Track R1 1차 완료(2026-02-16): `auth/reservation` 서비스 계층을 `Service + ServiceImpl`로 분리하고, 연관 테스트 주입 타입 동기화 후 `./gradlew test` 전체 통과 확인
 > - [x] Kafka bootstrap 런타임 정합성 보강(2026-02-16): `application-local.yml`/`application-docker.yml`을 `KAFKA_BOOTSTRAP_SERVERS` 오버라이드 구조로 정리해 호스트/컨테이너 실행 기본값을 분리
 > - [x] Open TODO 정합성 동기화(2026-02-17): Auth A2/R2 완료 항목의 stale 체크를 정리하고, 결제 제외 잔여 기능을 이슈 `#52`(Concert 캐싱/검색), `#53`(Artist/Agency), `#54`(R1 후속 확장 결정)로 분리
+> - [x] Concert 탐색 고도화 배치2(2026-02-17): Caffeine 기반 read-cache 정책(`list/search/options/available-seats`)과 좌석 상태전이 무효화 경로를 반영하고, U1 Concert Explorer를 `/api/concerts/search` 서버검색 + 페이지 이동 흐름으로 전환했다 (Issue: `#52`)
 
 ---
 
@@ -247,6 +238,7 @@
 >   - 진행 메모(2026-02-16 00:58): 구경로 호환 엔트리 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html`를 제거하고 `/ux/u1/*` 단일 경로 운영으로 정리했다.
 >   - 진행 메모(2026-02-16 01:24): 콜백 리다이렉트 경로를 `app.frontend.u1-callback-url` 설정형으로 전환했다(기본 `/ux/u1/callback.html`). 운영에서 백엔드/프론트 도메인이 분리된 경우 `U1_CALLBACK_URL=https://<frontend-domain>/ux/u1/callback.html`로 설정해 OAuth 콜백 후 프론트 도메인으로 안전하게 복귀할 수 있다.
 >   - 진행 메모(2026-02-16 01:30): `SecurityConfig`에 `app.frontend.allowed-origins` 설정형 CORS를 추가했다(기본 `http://localhost:8080,http://127.0.0.1:8080`). 운영 분리 도메인에서는 `FRONTEND_ALLOWED_ORIGINS=https://<frontend-domain>`으로 제한 설정한다.
+>   - 진행 메모(2026-02-17 03:30): Concert Explorer 검색 경로를 `/api/concerts` 클라이언트 필터 방식에서 `/api/concerts/search` 서버 검색 방식으로 전환했다. 검색어 입력은 250ms 디바운스, 페이지 이동은 `Prev/Next` 버튼(`page` 쿼리)으로 처리한다.
 >   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
@@ -262,7 +254,7 @@
 >   - 진행 메모(2026-02-16 07:29): Kafka bootstrap 주소를 프로파일별 환경변수 오버라이드로 정리했다(`application-local.yml`: `${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}`, `application-docker.yml`: `${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}`). 전체 테스트에서 기존 `kafka:9092` DNS 오류는 해소됐고, 동시성 테스트 4건은 기존 시드데이터 부재(`NoSuchElementException`) 이슈로 분리 확인했다.
 >   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
 >   - 진행 메모(2026-02-17 02:20): 이슈 `#54` 인벤토리 결과 `concert`/`waiting-queue`는 이미 `Service + ServiceImpl` 분리 + 인터페이스 주입 패턴이 적용되어 있어 추가 분할 배치는 `No-Go`로 결정했다(기능 확장 이슈 `#52`, `#53` 진행 시 재평가).
->   - 다음 액션: `#52` 배치2(캐시 무효화 정책 보강 + U1 검색 연동)와 `#53` 도메인 확장 설계를 순차 진행한다.
+>   - 진행 메모(2026-02-17 03:35): 이슈 `#52` 배치2(캐시 무효화 정책 보강 + U1 검색 연동)를 반영했다. 다음 배치는 이슈 `#53`(Artist/Agency 도메인 확장) 설계/구현이다.
 >
 > - [x] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
 >   - 목표: Reservation 도메인의 외부 경계 의존을 Port 인터페이스로 명시화하여 구현 교체 가능성을 높인다.
