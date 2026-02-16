@@ -1,0 +1,15 @@
+# Local environment files
+.env
+.env.local
+
+# Gradle build outputs
+.gradle/
+build/
+out/
+
+# IDE artifacts
+.idea/
+*.iml
+
+# OS artifacts
+.DS_Store
