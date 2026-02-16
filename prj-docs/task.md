@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-17 02:50:20`
+> - **Updated At**: `2026-02-17 03:27:31`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -74,7 +74,7 @@
 >   - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 >   - [x] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
 >   - [ ] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
->   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증
+>   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증 (HOLD: 외부 결제 연동 의사결정 대기)
 
 ---
 
@@ -90,11 +90,30 @@
 > - [x] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [x] Naver OAuth 서비스 설정 오류 수정 및 재검증 완료 (`disp_stat=207` 해소, 관리자 콘솔 `8080` 콜백 정합성 반영, U1 Playwright 로그인 성공 확인)
 > - [x] 검색 기능 고도화 (공연 검색/필터/정렬 완료, 페이징) (Issue: `#52`, 배치1: `GET /api/concerts/search` 서버 검색/페이징 API 추가 / 배치2: U1 `Concert Explorer` 서버검색 전환 + 페이지 버튼 연동)
-> - [ ] 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
-> - [ ] 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
 > - [x] 서비스 계층 인터페이스 표준화 1차 (`Service + ServiceImpl`, 대상: `auth/reservation`, API 계약 불변)
 > - [x] 서비스 계층 인터페이스 전환 동기화 (`src/test`, `scripts/api`, `scripts/http`, `static/ux/u1`, `prj-docs/*`)
 > - [x] 아키텍처 트랙 R2: Reservation 경계 Port/Adapter 도입 (`User`, `Seat`, `WaitingQueue` 경계 추상화, API 계약 불변)
+
+---
+
+## 보류 항목 (On Hold)
+---
+> [!IMPORTANT]
+> 외부 연동 의사결정이 확정되기 전까지 착수하지 않는 항목입니다.
+>
+> - `HOLD` Payment Track P1: 결제 샌드박스 구축 (실제 과금 없이 `PENDING -> AUTHORIZED -> CAPTURED|CANCELLED|REFUNDED` 라이프사이클 검증)
+>   - 보류 사유: 외부 PG/요금/정산/웹훅 보안 정책이 미확정 상태라 재작업 리스크가 높음.
+>   - 재개 조건:
+>     1. 결제 제공자(외부 서비스) 확정
+>     2. Sandbox 키/리다이렉트/웹훅 서명 검증 규칙 확정
+>     3. 실패/중복/지연/순서역전 처리 정책 확정
+>
+> - `HOLD` Payment Track P1: 결제 웹훅 시뮬레이터 구축 (성공/실패/지연/중복 재전송 시나리오)
+>   - 보류 사유: 상위 결제 계약(`PaymentIntent`, idempotency, 서명 정책) 고정 전에는 시뮬레이터 인터페이스가 변동됨.
+>   - 재개 조건:
+>     1. 결제 상태머신 계약 확정
+>     2. 웹훅 이벤트 스키마/서명 스펙 확정
+>     3. 운영 재시도/중복처리 SLA 기준 확정
 
 ---
 
@@ -242,10 +261,15 @@
 >   - 진행 메모(2026-02-17 03:30): Concert Explorer 검색 경로를 `/api/concerts` 클라이언트 필터 방식에서 `/api/concerts/search` 서버 검색 방식으로 전환했다. 검색어 입력은 250ms 디바운스, 페이지 이동은 `Prev/Next` 버튼(`page` 쿼리)으로 처리한다.
 >   - 다음 액션: 결제 샌드박스(P1)와 이어질 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 추가하고, 예약 상태 전이 버튼과의 연결 UX를 정리한다.
 >
-> - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증**
+> - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증 (HOLD)**
 >   - 목표: 실제 과금 없이도 운영 결제와 유사한 상태/실패 시나리오를 재현 가능한 테스트 환경을 만든다.
 >   - 완료 기준: `PaymentIntent` 상태머신, idempotency key, 서명 검증 가능한 가짜 웹훅, 중복/지연/순서역전 테스트를 통과한다.
->   - 다음 액션: `PaymentGateway` 인터페이스 + `SandboxGateway` 구현, 시나리오 스크립트(`approve/deny/timeout/retry`) 작성.
+>   - 진행 메모(2026-02-17): 외부 결제 서비스 의사결정 대기 상태로 `On Hold` 전환. 상위 계약(제공자/서명/정산/실패정책) 확정 전에는 구현을 시작하지 않는다.
+>   - 보류 해제 조건:
+>     1. 외부 결제 제공자 및 Sandbox 계정 정책 확정
+>     2. 웹훅 서명 검증/재전송 정책 확정
+>     3. `PaymentIntent` 상태머신 + idempotency 키 계약 확정
+>   - 보류 해제 후 다음 액션: `PaymentGateway` 인터페이스 + `SandboxGateway` 구현, 시나리오 스크립트(`approve/deny/timeout/retry`) 작성.
 >
 > - [x] **Architecture Track R1: Service + ServiceImpl 표준화(점진 리팩터링)**
 >   - 목표: Service 계층 의존 방향을 인터페이스 중심으로 통일해 변경 용이성과 배치 안전성을 높인다.
