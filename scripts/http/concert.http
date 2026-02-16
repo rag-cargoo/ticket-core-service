@@ -7,6 +7,9 @@ GET http://localhost:8080/api/concerts/search?keyword=iu&artistName=IU&page=0&si
 ### 1-2. 다음 페이지 조회 예시
 GET http://localhost:8080/api/concerts/search?keyword=&artistName=&page=1&size=10&sort=id,desc
 
+### 1-3. 기획사 필터 + 정렬 예시
+GET http://localhost:8080/api/concerts/search?keyword=&artistName=&agencyName=ADOR&page=0&size=10&sort=agencyName,asc
+
 ### 2. 공연 날짜 옵션 조회 (Concert ID: 1)
 GET http://localhost:8080/api/concerts/1/options
 
@@ -21,7 +24,12 @@ Content-Type: application/json
 {
   "title": "NewJeans Tokyo Dome Special",
   "artistName": "NewJeans",
+  "artistDisplayName": "NewJeans",
+  "artistGenre": "K-POP",
+  "artistDebutDate": "2022-07-22",
   "agencyName": "ADOR",
+  "agencyCountryCode": "KR",
+  "agencyHomepageUrl": "https://ador.world",
   "concertDate": "2026-06-01T18:00:00",
   "seatCount": 50
 }

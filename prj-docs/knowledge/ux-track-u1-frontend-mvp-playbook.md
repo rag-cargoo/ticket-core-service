@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-12 18:30:52`
-> - **Updated At**: `2026-02-17 02:32:01`
+> - **Updated At**: `2026-02-17 02:50:20`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -84,6 +84,8 @@
 - Explorer State:
   - `concerts`, `options`, `seats`
   - `concertSearch(page,size,totalElements,totalPages,hasNext,hasFetched)`
+  - `searchFilters(keyword, artistName, agencyName, sort)`
+  - `setupPayload(artistDisplayName, artistGenre, artistDebutDate, agencyCountryCode, agencyHomepageUrl)` optional
   - `selectedConcertId`, `selectedOptionId`, `selectedSeatId`
 - Queue State:
   - `queueUserId`, `queueConcertId`
@@ -95,6 +97,7 @@
   - exchange 이후 `GET /api/auth/me` 성공 시에만 로그인 완료로 간주
   - index 초기 진입 시 access token bootstrap 검증 후, 실패하면 refresh 재시도, 최종 실패 시 세션 정리
   - 콘서트 탐색은 `/api/concerts/search` 서버 검색으로 수행하고, 검색어 입력은 250ms 디바운스를 적용
+  - `agencyName` 필터 입력값이 있으면 서버 쿼리 파라미터로 전달해 정확 일치 필터를 적용
   - `Prev/Next` 페이지 버튼으로 `page`를 변경하며, 현재 페이지 정보는 `Page x/y`로 표시
   - Concert 선택 시 Option 목록 reload
   - Option 선택 시 Seat 목록 reload

@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-17 02:32:01`
+> - **Updated At**: `2026-02-17 02:50:20`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -85,7 +85,7 @@
 >
 > - [ ] 프론트엔드 연동 및 통합 시나리오 검증
 > - [x] 공연 조회 캐싱 전략 도입 (Issue: `#52`, 배치1: `GET /api/concerts`, `GET /api/concerts/{id}/options` 조회 캐시 적용 / 배치2: `GET /api/concerts/options/{optionId}/seats` 캐시 + 예약 상태전이 무효화 적용)
-> - [ ] 아티스트/기획사 엔티티 확장 (Issue: `#53`)
+> - [x] 아티스트/기획사 엔티티 확장 (Issue: `#53`, Agency(`countryCode/homepageUrl`) + Artist(`displayName/genre/debutDate`) 필드 및 Concert 응답 매핑 확장 완료)
 > - [x] 인증/인가 기반 구축 (`JWT Access/Refresh`, Role 기반 인가, 세션/토큰 정책)
 > - [x] 소셜 로그인 프론트 연동 (`Kakao/Naver OAuth2 callback + UI`)
 > - [x] Naver OAuth 서비스 설정 오류 수정 및 재검증 완료 (`disp_stat=207` 해소, 관리자 콘솔 `8080` 콜백 정합성 반영, U1 Playwright 로그인 성공 확인)
@@ -121,6 +121,7 @@
 > - [x] Kafka bootstrap 런타임 정합성 보강(2026-02-16): `application-local.yml`/`application-docker.yml`을 `KAFKA_BOOTSTRAP_SERVERS` 오버라이드 구조로 정리해 호스트/컨테이너 실행 기본값을 분리
 > - [x] Open TODO 정합성 동기화(2026-02-17): Auth A2/R2 완료 항목의 stale 체크를 정리하고, 결제 제외 잔여 기능을 이슈 `#52`(Concert 캐싱/검색), `#53`(Artist/Agency), `#54`(R1 후속 확장 결정)로 분리
 > - [x] Concert 탐색 고도화 배치2(2026-02-17): Caffeine 기반 read-cache 정책(`list/search/options/available-seats`)과 좌석 상태전이 무효화 경로를 반영하고, U1 Concert Explorer를 `/api/concerts/search` 서버검색 + 페이지 이동 흐름으로 전환했다 (Issue: `#52`)
+> - [x] Artist/Agency 도메인 확장(2026-02-17): `setup/search` API와 Concert 응답을 확장해 아티스트/기획사 메타데이터를 반영하고, U1 setup 폼/필터 및 회귀 테스트를 동기화했다 (Issue: `#53`)
 
 ---
 
@@ -255,6 +256,7 @@
 >   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
 >   - 진행 메모(2026-02-17 02:20): 이슈 `#54` 인벤토리 결과 `concert`/`waiting-queue`는 이미 `Service + ServiceImpl` 분리 + 인터페이스 주입 패턴이 적용되어 있어 추가 분할 배치는 `No-Go`로 결정했다(기능 확장 이슈 `#52`, `#53` 진행 시 재평가).
 >   - 진행 메모(2026-02-17 03:35): 이슈 `#52` 배치2(캐시 무효화 정책 보강 + U1 검색 연동)를 반영했다. 다음 배치는 이슈 `#53`(Artist/Agency 도메인 확장) 설계/구현이다.
+>   - 진행 메모(2026-02-17 02:50): 이슈 `#53`으로 Agency/Artist 확장 필드와 Concert 매핑/검색 필터(`agencyName`)를 반영하고, U1 setup 폼/HTTP/API 문서/테스트를 동기화했다.
 >
 > - [x] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
 >   - 목표: Reservation 도메인의 외부 경계 의존을 Port 인터페이스로 명시화하여 구현 교체 가능성을 높인다.

@@ -31,7 +31,16 @@ public class ConcertController {
      */
     @PostMapping("/setup")
     public ResponseEntity<String> setupConcert(@RequestBody ConcertSetupRequest request) {
-        var concert = concertService.createConcert(request.getTitle(), request.getArtistName(), request.getAgencyName());
+        var concert = concertService.createConcert(
+                request.getTitle(),
+                request.getArtistName(),
+                request.getAgencyName(),
+                request.getArtistDisplayName(),
+                request.getArtistGenre(),
+                request.getArtistDebutDate(),
+                request.getAgencyCountryCode(),
+                request.getAgencyHomepageUrl()
+        );
         var option = concertService.addOption(concert.getId(), request.getConcertDate());
         concertService.createSeats(option.getId(), request.getSeatCount());
         
@@ -65,6 +74,7 @@ public class ConcertController {
     public ResponseEntity<ConcertSearchPageResponse> searchConcerts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String artistName,
+            @RequestParam(required = false) String agencyName,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "id,asc") String sort
@@ -74,7 +84,7 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertService.searchConcerts(keyword, artistName, pageable)
+        var result = concertService.searchConcerts(keyword, artistName, agencyName, pageable)
                 .map(ConcertResponse::from);
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
@@ -125,6 +135,9 @@ public class ConcertController {
         }
         if ("artistName".equalsIgnoreCase(candidate)) {
             return "artist.name";
+        }
+        if ("agencyName".equalsIgnoreCase(candidate)) {
+            return "artist.agency.name";
         }
         return "id";
     }

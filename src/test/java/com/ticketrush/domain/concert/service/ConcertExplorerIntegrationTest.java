@@ -16,6 +16,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -60,6 +61,34 @@ class ConcertExplorerIntegrationTest {
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1))
                 .andExpect(jsonPath("$.items[0].title").value("Alpha Night Tour"));
+    }
+
+    @Test
+    void searchEndpointIncludesArtistAgencyExpandedFields() throws Exception {
+        concertService.createConcert(
+                "Meta Concert",
+                "Artist-Meta",
+                "Agency-Meta",
+                "Artist Meta Display",
+                "K-POP",
+                LocalDate.of(2022, 7, 22),
+                "KR",
+                "https://agency-meta.example.com"
+        );
+
+        mockMvc.perform(get("/api/concerts/search")
+                        .param("artistName", "Artist-Meta")
+                        .param("agencyName", "Agency-Meta")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "agencyName,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].artistName").value("Artist-Meta"))
+                .andExpect(jsonPath("$.items[0].artistDisplayName").value("Artist Meta Display"))
+                .andExpect(jsonPath("$.items[0].artistGenre").value("K-POP"))
+                .andExpect(jsonPath("$.items[0].artistDebutDate").value("2022-07-22"))
+                .andExpect(jsonPath("$.items[0].agencyName").value("Agency-Meta"))
+                .andExpect(jsonPath("$.items[0].agencyCountryCode").value("KR"));
     }
 
     @Test

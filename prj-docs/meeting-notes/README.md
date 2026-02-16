@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 05:03:46`
-> - **Updated At**: `2026-02-17 02:33:37`
+> - **Updated At**: `2026-02-17 02:50:20`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -24,6 +24,7 @@
 
 ## Current Notes
 - 신규 회의록이 생성되면 이 목록을 갱신한다.
+- [2026-02-17 Artist Agency Domain Expansion Kickoff](./2026-02-17-artist-agency-domain-expansion-kickoff.md)
 - [2026-02-17 Concert Search Cache Batch2](./2026-02-17-concert-search-cache-batch2.md)
 - [2026-02-16 Service Boundary Port Phase2 Kickoff](./2026-02-16-service-boundary-port-phase2-kickoff.md)
 - [2026-02-16 Service Interface Split Rollout](./2026-02-16-service-interface-split-rollout.md)

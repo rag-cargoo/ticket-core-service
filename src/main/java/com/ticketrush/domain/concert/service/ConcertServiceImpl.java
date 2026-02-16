@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,12 +44,13 @@ public class ConcertServiceImpl implements ConcertService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = ConcertCacheNames.CONCERT_SEARCH,
-            key = "#keyword + '|' + #artistName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
+            key = "#keyword + '|' + #artistName + '|' + #agencyName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
     )
-    public Page<Concert> searchConcerts(String keyword, String artistName, Pageable pageable) {
+    public Page<Concert> searchConcerts(String keyword, String artistName, String agencyName, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         String normalizedArtistName = normalize(artistName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, pageable);
+        String normalizedAgencyName = normalize(agencyName);
+        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedAgencyName, pageable);
     }
 
     @Override
@@ -76,13 +78,44 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public Concert createConcert(String title, String artistName, String agencyName) {
-        Agency agency = agencyRepository.findByName(agencyName)
-                .orElseGet(() -> agencyRepository.save(new Agency(agencyName)));
-        
-        Artist artist = artistRepository.findByName(artistName)
-                .orElseGet(() -> artistRepository.save(new Artist(artistName, agency)));
-        
-        return concertRepository.save(new Concert(title, artist));
+        return createConcert(title, artistName, agencyName, null, null, null, null, null);
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public Concert createConcert(String title,
+                                 String artistName,
+                                 String agencyName,
+                                 String artistDisplayName,
+                                 String artistGenre,
+                                 LocalDate artistDebutDate,
+                                 String agencyCountryCode,
+                                 String agencyHomepageUrl) {
+        String normalizedTitle = normalizeRequired(title, "title");
+        String normalizedArtistName = normalizeRequired(artistName, "artistName");
+        String normalizedAgencyName = normalizeRequired(agencyName, "agencyName");
+
+        Agency agency = agencyRepository.findByNameIgnoreCase(normalizedAgencyName)
+                .map(existing -> {
+                    existing.updateMetadata(agencyCountryCode, agencyHomepageUrl);
+                    return existing;
+                })
+                .orElseGet(() -> agencyRepository.save(new Agency(normalizedAgencyName, agencyCountryCode, agencyHomepageUrl)));
+
+        Artist artist = artistRepository.findByNameIgnoreCase(normalizedArtistName)
+                .map(existing -> {
+                    existing.updateProfile(agency, artistDisplayName, artistGenre, artistDebutDate);
+                    return existing;
+                })
+                .orElseGet(() -> artistRepository.save(new Artist(normalizedArtistName, agency, artistDisplayName, artistGenre, artistDebutDate)));
+
+        return concertRepository.save(new Concert(normalizedTitle, artist));
     }
 
     @Override
@@ -147,5 +180,13 @@ public class ConcertServiceImpl implements ConcertService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeRequired(String value, String fieldName) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        return normalized;
     }
 }

@@ -24,24 +24,32 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                     WHERE (:keyword IS NULL
                            OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
                            OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
+                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
                            OR str(c.id) = :keyword)
                       AND (:artistName IS NULL
                            OR lower(a.name) = lower(:artistName))
+                      AND (:agencyName IS NULL
+                           OR lower(ag.name) = lower(:agencyName))
                     """,
             countQuery = """
                     SELECT count(c)
                     FROM Concert c
                     JOIN c.artist a
+                    LEFT JOIN a.agency ag
                     WHERE (:keyword IS NULL
                            OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
                            OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
+                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
                            OR str(c.id) = :keyword)
                       AND (:artistName IS NULL
                            OR lower(a.name) = lower(:artistName))
+                      AND (:agencyName IS NULL
+                           OR lower(ag.name) = lower(:agencyName))
                     """
     )
-    @EntityGraph(attributePaths = {"artist"})
+    @EntityGraph(attributePaths = {"artist", "artist.agency"})
     Page<Concert> searchPaged(@Param("keyword") String keyword,
                               @Param("artistName") String artistName,
+                              @Param("agencyName") String agencyName,
                               Pageable pageable);
 }

@@ -32,13 +32,19 @@ const els = {
   tokenPairView: document.getElementById("tokenPairView"),
   concertSetupTitleInput: document.getElementById("concertSetupTitleInput"),
   concertSetupArtistInput: document.getElementById("concertSetupArtistInput"),
+  concertSetupArtistDisplayInput: document.getElementById("concertSetupArtistDisplayInput"),
+  concertSetupArtistGenreInput: document.getElementById("concertSetupArtistGenreInput"),
+  concertSetupArtistDebutDateInput: document.getElementById("concertSetupArtistDebutDateInput"),
   concertSetupAgencyInput: document.getElementById("concertSetupAgencyInput"),
+  concertSetupAgencyCountryCodeInput: document.getElementById("concertSetupAgencyCountryCodeInput"),
+  concertSetupAgencyHomepageInput: document.getElementById("concertSetupAgencyHomepageInput"),
   concertSetupDateInput: document.getElementById("concertSetupDateInput"),
   concertSetupSeatCountInput: document.getElementById("concertSetupSeatCountInput"),
   concertSetupCreateBtn: document.getElementById("concertSetupCreateBtn"),
   concertSetupResetBtn: document.getElementById("concertSetupResetBtn"),
   concertSearchInput: document.getElementById("concertSearchInput"),
   concertArtistFilter: document.getElementById("concertArtistFilter"),
+  concertAgencyFilterInput: document.getElementById("concertAgencyFilterInput"),
   concertSortSelect: document.getElementById("concertSortSelect"),
   concertPrevPageBtn: document.getElementById("concertPrevPageBtn"),
   concertNextPageBtn: document.getElementById("concertNextPageBtn"),
@@ -431,13 +437,44 @@ function normalizeLocalDateTimeForApi(raw) {
   return value;
 }
 
+function normalizeOptionalText(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeOptionalDate(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    throw new Error("artistDebutDate must be yyyy-mm-dd");
+  }
+  return trimmed;
+}
+
 function setConcertSetupDefaults() {
   if (!els.concertSetupTitleInput) {
     return;
   }
   els.concertSetupTitleInput.value = "Test Concert";
   els.concertSetupArtistInput.value = "Test Artist";
+  if (els.concertSetupArtistDisplayInput) {
+    els.concertSetupArtistDisplayInput.value = "";
+  }
+  if (els.concertSetupArtistGenreInput) {
+    els.concertSetupArtistGenreInput.value = "";
+  }
+  if (els.concertSetupArtistDebutDateInput) {
+    els.concertSetupArtistDebutDateInput.value = "";
+  }
   els.concertSetupAgencyInput.value = "Test Agency";
+  if (els.concertSetupAgencyCountryCodeInput) {
+    els.concertSetupAgencyCountryCodeInput.value = "";
+  }
+  if (els.concertSetupAgencyHomepageInput) {
+    els.concertSetupAgencyHomepageInput.value = "";
+  }
   els.concertSetupDateInput.value = buildDefaultConcertDateTimeLocal();
   els.concertSetupSeatCountInput.value = "30";
 }
@@ -447,7 +484,12 @@ function resetConcertSetupForm() {
   appendLog("CONCERT_SETUP_RESET", {
     title: els.concertSetupTitleInput?.value || "",
     artistName: els.concertSetupArtistInput?.value || "",
+    artistDisplayName: els.concertSetupArtistDisplayInput?.value || "",
+    artistGenre: els.concertSetupArtistGenreInput?.value || "",
+    artistDebutDate: els.concertSetupArtistDebutDateInput?.value || "",
     agencyName: els.concertSetupAgencyInput?.value || "",
+    agencyCountryCode: els.concertSetupAgencyCountryCodeInput?.value || "",
+    agencyHomepageUrl: els.concertSetupAgencyHomepageInput?.value || "",
     concertDate: els.concertSetupDateInput?.value || "",
     seatCount: els.concertSetupSeatCountInput?.value || ""
   });
@@ -456,7 +498,12 @@ function resetConcertSetupForm() {
 function readConcertSetupPayload() {
   const title = String(els.concertSetupTitleInput?.value || "").trim();
   const artistName = String(els.concertSetupArtistInput?.value || "").trim();
+  const artistDisplayName = normalizeOptionalText(els.concertSetupArtistDisplayInput?.value || "");
+  const artistGenre = normalizeOptionalText(els.concertSetupArtistGenreInput?.value || "");
+  const artistDebutDate = normalizeOptionalDate(els.concertSetupArtistDebutDateInput?.value || "");
   const agencyName = String(els.concertSetupAgencyInput?.value || "").trim();
+  const agencyCountryCode = normalizeOptionalText(els.concertSetupAgencyCountryCodeInput?.value || "");
+  const agencyHomepageUrl = normalizeOptionalText(els.concertSetupAgencyHomepageInput?.value || "");
   const concertDate = normalizeLocalDateTimeForApi(els.concertSetupDateInput?.value || "");
   const seatCount = parsePositiveInteger(els.concertSetupSeatCountInput?.value || "");
 
@@ -476,7 +523,12 @@ function readConcertSetupPayload() {
   return {
     title,
     artistName,
+    artistDisplayName,
+    artistGenre,
+    artistDebutDate,
     agencyName,
+    agencyCountryCode,
+    agencyHomepageUrl,
     concertDate,
     seatCount
   };
@@ -954,6 +1006,10 @@ function resolveConcertSortParam(sortValue) {
       return "artistName,asc";
     case "artist_desc":
       return "artistName,desc";
+    case "agency_asc":
+      return "agencyName,asc";
+    case "agency_desc":
+      return "agencyName,desc";
     case "id_desc":
       return "id,desc";
     case "id_asc":
@@ -968,6 +1024,7 @@ function buildConcertSearchParams(page) {
   const params = new URLSearchParams();
   const keyword = String(els.concertSearchInput.value || "").trim();
   const artistName = String(els.concertArtistFilter.value || "all").trim();
+  const agencyName = String(els.concertAgencyFilterInput?.value || "").trim();
   const sortValue = els.concertSortSelect.value || "title_asc";
 
   if (keyword) {
@@ -975,6 +1032,9 @@ function buildConcertSearchParams(page) {
   }
   if (artistName && artistName !== "all") {
     params.set("artistName", artistName);
+  }
+  if (agencyName) {
+    params.set("agencyName", agencyName);
   }
 
   params.set("page", String(page));
@@ -1494,6 +1554,9 @@ function bindEvents() {
   els.concertArtistFilter.addEventListener("change", () => {
     runAction("CONCERTS_FILTER", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
   });
+  if (els.concertAgencyFilterInput) {
+    els.concertAgencyFilterInput.addEventListener("input", scheduleConcertSearch);
+  }
   els.concertSortSelect.addEventListener("change", () => {
     runAction("CONCERTS_SORT", () => onRefreshConcerts({ page: 0 }), { silentStatus: true });
   });
