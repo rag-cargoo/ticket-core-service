@@ -187,6 +187,24 @@ policy_validate() {
     done
   fi
 
+  local strict_remote="${CHAIN_STRICT_REMOTE:-false}"
+  local validation_scope="${CHAIN_VALIDATION_SCOPE:-staged}"
+  if [[ "$mode" == "strict" && "$strict_remote" == "true" ]]; then
+    local remote_sync_script="${project_root}/scripts/check-doc-remote-sync.sh"
+    if [[ ! -x "$remote_sync_script" ]]; then
+      echo "[chain-check][${POLICY_ID}] strict-remote failed: missing executable script"
+      echo "  - $remote_sync_script"
+      return 1
+    fi
+    echo "[chain-check][${POLICY_ID}] strict-remote: issue/pr/doc sync check (${validation_scope})"
+    bash "$remote_sync_script" --scope "$validation_scope"
+  fi
+
+  if [[ "$validation_scope" == "all" ]]; then
+    echo "[chain-check][${POLICY_ID}] all-scope audit: skip staged companion/API runtime checks"
+    return 0
+  fi
+
   local project_change_patterns=(
     "^${project_root}/src/main/java/.+\\.java$"
     "^${project_root}/src/main/resources/.+\\.ya?ml$"

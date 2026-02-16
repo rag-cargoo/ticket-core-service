@@ -41,6 +41,7 @@
 12. `strict`에서 `knowledge/*.md`는 Failure-First/Before&After/Execution Log 품질 규칙을, `api-specs/*.md`는 6-Step 표준 토큰을 만족해야 커밋 가능하다.
 13. 임시 산출물(`*.log`, `*.tmp`, k6 대시보드 HTML/스크린샷)은 `.codex/tmp/<tool>/<run-id>/`에 저장하고, 영구 증빙 파일(`*.md`, `*.json`)만 프로젝트 문서 경로에 유지한다.
 14. pre-commit 체인은 `.codex/tmp/` 밖에 임시 산출물이 stage되면 warning을 출력한다(차단 아님).
+15. PR 머지 직전에는 `validate-precommit-chain.sh --mode strict --all --strict-remote`로 Issue/PR 링크 문서(`task.md`, `meeting-notes/*.md`)의 상태 정합성을 추가 확인한다.
 
 ## Done Criteria
 1. 코드, 테스트, 문서(`task.md`, 필요 시 API 명세)가 서로 모순 없이 정합성을 가진다.

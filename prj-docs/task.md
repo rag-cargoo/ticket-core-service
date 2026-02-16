@@ -262,7 +262,7 @@
 >   - 진행 메모(2026-02-16 08:25): 동시성 테스트 4건(`동시성_테스트_1~4`)을 자체 시드 생성 방식으로 보강해 데이터 초기화 의존성을 제거했고, `./gradlew test` 전체 통과로 1차 완료 기준을 충족했다.
 >   - 다음 액션: 동일 패턴을 `concert/waiting-queue` 등 후속 서비스 도메인에 확장 적용할지 여부를 별도 이슈로 결정한다.
 >
-> - [ ] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
+> - [x] **Architecture Track R2: Reservation Boundary Port/Adapter 확장(Phase2)**
 >   - 목표: Reservation 도메인의 외부 경계 의존을 Port 인터페이스로 명시화하여 구현 교체 가능성을 높인다.
 >   - 완료 기준: 1차 대상(`User`, `Seat`, `WaitingQueue` 경계)의 포트 정의 + 구현체 연결 + 주입 전환 + 테스트/문서 동기화가 완료된다.
 >   - 범위 제외: `Payment Track P1`, `UX Track U1` 기능 추가/변경, MSA 물리 분리 자체는 이번 트랙에 포함하지 않는다.
@@ -270,7 +270,7 @@
 >   - 진행 메모(2026-02-16 15:04): 이슈 `#49`(https://github.com/rag-cargoo/2602/issues/49) 생성 및 연결 완료.
 >   - 진행 메모(2026-02-16 19:10): 배치 1로 `ReservationUserPort`/`ReservationSeatPort`/`ReservationWaitingQueuePort` + Adapter를 도입하고 `ReservationServiceImpl`/`ReservationLifecycleServiceImpl` 주입을 포트 기준으로 전환했다. `./gradlew compileJava`, `./gradlew test --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'`, `./gradlew test` 모두 통과했다.
 >   - 진행 메모(2026-02-16 19:20): 배치 2로 아키텍처 규칙(`prj-docs/rules/architecture.md`)과 지식 문서(`prj-docs/knowledge/msa-data-strategy.md`)에 Reservation 경계 Port/Adapter 규칙 및 이행 체크리스트를 반영했다.
->   - 다음 액션: 배치 3로 PR 본문에 체크리스트/검증 로그를 정리하고 리뷰 가능한 상태로 올린다.
+>   - 진행 메모(2026-02-16 16:13): 배치 3(PR 정리/리뷰)까지 완료되어 PR `#50`(https://github.com/rag-cargoo/2602/pull/50) merge, 이슈 `#49` close 상태와 동기화했다.
 
 ---
 

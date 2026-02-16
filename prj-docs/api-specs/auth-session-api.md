@@ -27,6 +27,11 @@
   - 예약(v7): `/api/reservations/v7`
 - 토큰 형식: `Authorization: Bearer {accessToken}`
 
+**Parameters**
+
+- 공통 헤더: `Authorization: Bearer {accessToken}` (`/api/auth/me`, `/api/reservations/v7/**`)
+- 토큰 교환/갱신 요청 본문: JSON (`provider`, `code`, `state`, `refreshToken`)
+
 ---
 
 ## 1. 세션 토큰 API
@@ -54,6 +59,11 @@
   "refreshTokenExpiresInSeconds": 1209600
 }
 ```
+
+**Response Summary**
+
+- `200`: 사용자 매핑 정보 + 세션 토큰 페어(access/refresh) 반환
+- `4xx`: provider/코드/상태값 검증 실패 또는 토큰 교환 실패
 
 ### 1.2 Access Token 재발급
 - **Endpoint**: `POST /api/auth/token/refresh`
