@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:32:34`
+> - **Updated At**: `2026-02-16 19:20:31`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -13,6 +13,7 @@
 > - [CRITICAL] 모듈 간 참조 제한 (Dependency Constraints)
 > - 2. 허용되는 통신 패턴 (Allowed Patterns)
 > - 3. 레이어 및 패키지 구조 (Layered Package Boundaries)
+> - 4. Reservation 경계 Port/Adapter 규칙 (R2)
 <!-- DOC_TOC_END -->
 
 > **Purpose**: MSA 분리 가능성을 유지하기 위해 모듈 간 의존 경계를 강제합니다.
@@ -68,3 +69,30 @@
 ---
 
 **이 규칙을 어기면 MSA 전환 비용이 급증합니다. 특히 DTO는 반드시 `api.dto` 패키지에 위치시켜야 합니다.**
+
+## 4. Reservation 경계 Port/Adapter 규칙 (R2)
+---
+> [!TIP]
+> Reservation 도메인에서 외부 경계 의존(`User`, `Seat`, `WaitingQueue`)은 Port/Adapter로 명시화한다.
+>
+> - Port 인터페이스 위치: `domain/reservation/port/outbound/*Port.java`
+> - Adapter 구현 위치: `domain/reservation/adapter/outbound/*PortAdapter.java`
+> - 서비스 계층(`domain/reservation/service`)은 구현체/외부 서비스 대신 Port 인터페이스만 주입한다.
+>
+> ### 금지 패턴
+>
+> - `ReservationServiceImpl`, `ReservationLifecycleServiceImpl`가 `UserRepository`/`SeatRepository`/`WaitingQueueService`를 직접 주입
+> - Reservation 서비스에서 외부 경계 구현 클래스를 타입으로 직접 의존
+>
+> ### 허용 패턴
+>
+> - `ReservationUserPort`/`ReservationSeatPort`/`ReservationWaitingQueuePort` 인터페이스 주입
+> - 구현 세부사항은 `*PortAdapter`에 캡슐화
+>
+> ### 배치 체크리스트 (R2)
+>
+> - [ ] Port 인터페이스 추가(동작 불변)
+> - [ ] Adapter 구현 추가(기존 컴포넌트 위임)
+> - [ ] Reservation 서비스 주입 타입 전환
+> - [ ] 통합 테스트 wiring 동기화
+> - [ ] `task.md` + 회의록 + 이슈 코멘트 동기화

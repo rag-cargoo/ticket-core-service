@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-16 19:10:57`
+> - **Updated At**: `2026-02-16 19:20:31`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -269,7 +269,8 @@
 >   - 진행 메모(2026-02-16 15:00): 회의록 `prj-docs/meeting-notes/2026-02-16-service-boundary-port-phase2-kickoff.md` 생성, 전용 브랜치 `chore/service-interface-boundary-phase2`에서 착수.
 >   - 진행 메모(2026-02-16 15:04): 이슈 `#49`(https://github.com/rag-cargoo/2602/issues/49) 생성 및 연결 완료.
 >   - 진행 메모(2026-02-16 19:10): 배치 1로 `ReservationUserPort`/`ReservationSeatPort`/`ReservationWaitingQueuePort` + Adapter를 도입하고 `ReservationServiceImpl`/`ReservationLifecycleServiceImpl` 주입을 포트 기준으로 전환했다. `./gradlew compileJava`, `./gradlew test --tests '*ReservationLifecycleServiceIntegrationTest' --tests '*ReservationLifecycleSchedulerTest'`, `./gradlew test` 모두 통과했다.
->   - 다음 액션: 배치 2로 테스트/문서 영향 범위 체크리스트를 정리하고, 경계 포트 도입 규칙을 `knowledge` 문서에 반영한다.
+>   - 진행 메모(2026-02-16 19:20): 배치 2로 아키텍처 규칙(`prj-docs/rules/architecture.md`)과 지식 문서(`prj-docs/knowledge/msa-data-strategy.md`)에 Reservation 경계 Port/Adapter 규칙 및 이행 체크리스트를 반영했다.
+>   - 다음 액션: 배치 3로 PR 본문에 체크리스트/검증 로그를 정리하고 리뷰 가능한 상태로 올린다.
 
 ---
 

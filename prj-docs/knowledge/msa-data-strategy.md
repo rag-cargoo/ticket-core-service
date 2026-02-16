@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-08 23:32:34`
+> - **Updated At**: `2026-02-16 19:20:31`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -17,6 +17,7 @@
 > - 5. Failure-First: 기존 접근의 한계와 함정
 > - 6. Before (Bad Practice) / After (Best Practice)
 > - 7. Execution Log (테스트 결과)
+> - 8. 서비스 경계 Port/Adapter 이행 체크리스트
 <!-- DOC_TOC_END -->
 
 > **Purpose**: MSA 전환 시 데이터 소유권과 동기화 방식의 기준을 명확히 정의합니다.
@@ -119,3 +120,37 @@ public void onConcertUpdated(Concert concert) {
 [sync-check] replica lag: 120ms
 [sync-check] Result: PASS
 ```
+
+## 8. 서비스 경계 Port/Adapter 이행 체크리스트
+---
+> [!TIP]
+> MSA 전환을 염두에 둔 모듈러 모놀리스 단계에서는 "동기화 인프라"와 별개로 "코드 의존 경계"를 먼저 정리해야 한다.
+> Reservation 도메인은 아래 규칙으로 경계 의존을 관리한다.
+>
+> ### 경계 인터페이스 규칙
+>
+> - Service는 외부 경계를 `port/outbound` 인터페이스로만 참조
+> - 실제 조회/호출 세부사항은 `adapter/outbound`에서 캡슐화
+> - API 계약(URI/Request/Response)은 유지하고 내부 의존만 치환
+>
+> ### Before: 경계 구현 직접 주입
+> ```java
+> // ReservationServiceImpl
+> private final UserService userService;
+> private final ConcertService concertService;
+> ```
+>
+> ### After: 경계 포트 주입
+> ```java
+> // ReservationServiceImpl
+> private final ReservationUserPort reservationUserPort;
+> private final ReservationSeatPort reservationSeatPort;
+> ```
+>
+> ### 운영 체크리스트
+>
+> - [ ] Port 인터페이스 추가 (동작 불변)
+> - [ ] Adapter 위임 구현 추가
+> - [ ] 서비스 주입 타입 전환
+> - [ ] 핵심 통합 테스트 + 전체 회귀 테스트 통과
+> - [ ] 회의록/태스크/이슈 코멘트 증빙 동기화
