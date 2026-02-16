@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-17 03:50:05`
-> - **Updated At**: `2026-02-17 03:52:10`
+> - **Updated At**: `2026-02-17 03:57:46`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -46,14 +46,15 @@
 
 ## 안건 3: 문서/상태 동기화
 - Created At: 2026-02-17 03:50:05
-- Updated At: 2026-02-17 03:50:05
-- Status: DOING
+- Updated At: 2026-02-17 03:55:00
+- Status: DONE
 - 결정사항:
   - `task.md`에서 `프론트엔드 연동 및 통합 시나리오 검증` 항목을 완료 처리한다.
+  - `UX Track U1`은 결제 연동 제외 범위 완료 상태로 종료 처리한다.
   - U1 플레이북과 API Test 가이드/리포트를 최신 실행 근거로 갱신한다.
   - PR 체크(`verify`, `doc-state-sync`) 통과 후 이슈 `#60`을 close한다.
 - 후속작업:
   - 담당: Codex
   - 기한: 2026-02-17
-  - 상태: DOING
-  - 메모: 커밋/PR/머지 완료 후 `DONE`으로 전환한다.
+  - 상태: DONE
+  - 메모: PR `#61` merge와 이슈 `#60` close 이후 U1 트랙을 결제 연동 제외 범위 완료로 종료했다.

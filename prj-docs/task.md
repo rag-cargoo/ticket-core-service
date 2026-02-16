@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-08 23:07:03`
-> - **Updated At**: `2026-02-17 03:52:10`
+> - **Updated At**: `2026-02-17 03:57:46`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -73,7 +73,7 @@
 > [!NOTE]
 >   - [x] Auth Track A1: 소셜 로그인 OAuth2 Code 교환 백엔드(카카오/네이버) 선반영
 >   - [x] Auth Track A2: 인증/인가 + 소셜 로그인(카카오/네이버) 통합
->   - [ ] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현
+>   - [x] UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현 (결제 연동 제외 범위 완료)
 >   - [ ] Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증 (HOLD: 외부 결제 연동 의사결정 대기)
 
 ---
@@ -247,7 +247,7 @@
 >   - 진행 메모(네이밍 규칙): Step 검증은 `v*.sh`, Track 검증은 `a*.sh` 접두어를 사용한다.
 >   - 다음 액션: UX Track U1 프론트 콜백/세션 저장/로그인 상태 UI 연결.
 >
-> - [ ] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현**
+> - [x] **UX Track U1: 프론트엔드 연동 + 검색/탐색 UX 구현 (결제 연동 제외 범위 완료)**
 >   - 목표: 사용자 기준의 실사용 흐름(로그인 -> 대기열 -> 예약 -> 결제/취소/환불)을 화면에서 완결한다.
 >   - 완료 기준: 핵심 화면/상태 전이 UI, 공연 검색/필터/정렬, 오류/재시도 UX까지 동작한다.
 >   - 진행 메모(2026-02-12): 프론트 MVP를 `src/main/resources/static/ux/u1`로 영구 배치하고, 기존 redirect URI 호환을 위해 `src/main/resources/static/u1/index.html`, `src/main/resources/static/u1/callback.html` 리다이렉트 엔트리를 추가했다.
@@ -261,6 +261,7 @@
 >   - 진행 메모(2026-02-16 01:30): `SecurityConfig`에 `app.frontend.allowed-origins` 설정형 CORS를 추가했다(기본 `http://localhost:8080,http://127.0.0.1:8080`). 운영 분리 도메인에서는 `FRONTEND_ALLOWED_ORIGINS=https://<frontend-domain>`으로 제한 설정한다.
 >   - 진행 메모(2026-02-17 03:30): Concert Explorer 검색 경로를 `/api/concerts` 클라이언트 필터 방식에서 `/api/concerts/search` 서버 검색 방식으로 전환했다. 검색어 입력은 250ms 디바운스, 페이지 이동은 `Prev/Next` 버튼(`page` 쿼리)으로 처리한다.
 >   - 진행 메모(2026-02-17 03:50): 이슈 `#60`에서 U1 핵심 통합 시나리오(`v12/a2/v5/v8 + concert search + queue SSE`)를 재검증했고 `overall=PASS`를 확인했다. 실행 리포트는 `prj-docs/api-test/ux-track-u1-integration-latest.md`에 기록했다.
+>   - 진행 메모(2026-02-17 03:55): 결제(P1) 연동을 제외한 U1 범위(로그인/탐색/대기열/예약 상태전이)는 완료로 종료한다.
 >   - 다음 액션: Payment Track P1 `HOLD` 해제 후 결제 상태 패널(`PENDING/AUTHORIZED/CAPTURED/CANCELLED/REFUNDED`)을 U1 화면에 결합하고 예약 상태 전이 버튼 UX를 최종 정리한다.
 >
 > - [ ] **Payment Track P1: 결제 샌드박스(무과금) + 웹훅 시뮬레이션 검증 (HOLD)**
