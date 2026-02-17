@@ -9,9 +9,9 @@ run_stamp="${K6_RUN_STAMP:-$(date -u '+%Y%m%dT%H%M%SZ')}"
 run_tmp_dir="${tmp_root}/${run_stamp}"
 
 k6_script="${K6_SCRIPT:-$project_abs/scripts/perf/k6-waiting-queue-join.js}"
-report_file="${K6_REPORT_FILE:-$project_abs/prj-docs/api-test/k6-latest.md}"
+report_file="${K6_REPORT_FILE:-$tmp_root/latest/k6-latest.md}"
 log_file="${K6_LOG_FILE:-$run_tmp_dir/k6-latest.log}"
-summary_json="${K6_SUMMARY_JSON:-$project_abs/prj-docs/api-test/k6-summary.json}"
+summary_json="${K6_SUMMARY_JSON:-$tmp_root/latest/k6-summary.json}"
 
 api_host="${API_HOST:-http://127.0.0.1:8080}"
 concert_id="${CONCERT_ID:-1}"
