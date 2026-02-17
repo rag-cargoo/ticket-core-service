@@ -47,8 +47,8 @@ public interface AbuseAuditLogRepository extends JpaRepository<AbuseAuditLog, Lo
               and (:reason is null or l.reason = :reason)
               and (:userId is null or l.userId = :userId)
               and (:concertId is null or l.concertId = :concertId)
-              and (:fromAt is null or l.occurredAt >= :fromAt)
-              and (:toAt is null or l.occurredAt <= :toAt)
+              and l.occurredAt >= coalesce(:fromAt, l.occurredAt)
+              and l.occurredAt <= coalesce(:toAt, l.occurredAt)
             order by l.occurredAt desc, l.id desc
             """)
     List<AbuseAuditLog> search(

@@ -17,6 +17,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+RUN_ID="$(date +%s%N)"
+
 cleanup_users() {
   for uid in "${USER_A_ID:-}" "${USER_B_ID:-}" "${USER_C_ID:-}" "${USER_D_ID:-}"; do
     [[ -n "${uid}" ]] || continue
@@ -66,14 +68,42 @@ if [[ -z "${S8:-}" ]]; then
 fi
 echo -e "${GREEN}성공 (optionId=${OPTION_ID})${NC}"
 
+echo -ne "${YELLOW}[Step 1.5] 일반 판매 가능 정책 보정... ${NC}"
+CONCERT_ID=$(curl -s "${CONCERT_API}" | grep -oP '"id":\s*\K\d+' | tail -n 1 || true)
+if [[ -z "${CONCERT_ID}" ]]; then
+  echo -e "${RED}실패 (concert 없음)${NC}"
+  exit 1
+fi
+POLICY_RESPONSE=$(curl ${CURL_OPTS} -X PUT "${CONCERT_API}/${CONCERT_ID}/sales-policy" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"presaleStartAt\":\"2000-01-01T00:00:00\",
+    \"presaleEndAt\":\"2000-01-02T00:00:00\",
+    \"presaleMinimumTier\":\"BASIC\",
+    \"generalSaleStartAt\":\"2000-01-03T00:00:00\",
+    \"maxReservationsPerUser\":10
+  }")
+POLICY_BODY=$(echo "${POLICY_RESPONSE}" | sed '$d')
+POLICY_CODE=$(echo "${POLICY_RESPONSE}" | tail -n1)
+if [[ "${POLICY_CODE}" != "200" ]]; then
+  echo -e "${RED}실패 (code=${POLICY_CODE}, body=${POLICY_BODY})${NC}"
+  exit 1
+fi
+echo -e "${GREEN}성공${NC}"
+
+RATE_DEVICE_FP="device-a-${RUN_ID}"
+DUP_DEVICE_FP="device-b-${RUN_ID}"
+SHARED_DEVICE_FP="shared-device-${RUN_ID}"
+DUP_REQUEST_FP="dup-b-${RUN_ID}"
+
 echo -ne "${YELLOW}[Step 2] 유저 A rate-limit 검증 (4번째 차단 기대)... ${NC}"
-R1=$(hold_call "${USER_A_ID}" "${S1}" "rate-a-1" "device-a")
+R1=$(hold_call "${USER_A_ID}" "${S1}" "rate-a-1-${RUN_ID}" "${RATE_DEVICE_FP}")
 R1_BODY=$(echo "${R1}" | sed '$d'); R1_CODE=$(echo "${R1}" | tail -n1)
-R2=$(hold_call "${USER_A_ID}" "${S2}" "rate-a-2" "device-a")
+R2=$(hold_call "${USER_A_ID}" "${S2}" "rate-a-2-${RUN_ID}" "${RATE_DEVICE_FP}")
 R2_BODY=$(echo "${R2}" | sed '$d'); R2_CODE=$(echo "${R2}" | tail -n1)
-R3=$(hold_call "${USER_A_ID}" "${S3}" "rate-a-3" "device-a")
+R3=$(hold_call "${USER_A_ID}" "${S3}" "rate-a-3-${RUN_ID}" "${RATE_DEVICE_FP}")
 R3_BODY=$(echo "${R3}" | sed '$d'); R3_CODE=$(echo "${R3}" | tail -n1)
-R4=$(hold_call "${USER_A_ID}" "${S4}" "rate-a-4" "device-a")
+R4=$(hold_call "${USER_A_ID}" "${S4}" "rate-a-4-${RUN_ID}" "${RATE_DEVICE_FP}")
 R4_BODY=$(echo "${R4}" | sed '$d'); R4_CODE=$(echo "${R4}" | tail -n1)
 if [[ "${R1_CODE}" != "201" || "${R2_CODE}" != "201" || "${R3_CODE}" != "201" || "${R4_CODE}" != "409" || "${R4_BODY}" != *"Rate limit exceeded"* ]]; then
   echo -e "${RED}실패 (codes=${R1_CODE}/${R2_CODE}/${R3_CODE}/${R4_CODE}, body=${R4_BODY})${NC}"
@@ -82,9 +112,9 @@ fi
 echo -e "${GREEN}성공 (4th blocked: ${R4_CODE})${NC}"
 
 echo -ne "${YELLOW}[Step 3] 유저 B duplicate fingerprint 검증... ${NC}"
-D1=$(hold_call "${USER_B_ID}" "${S5}" "dup-b-1" "device-b")
+D1=$(hold_call "${USER_B_ID}" "${S5}" "${DUP_REQUEST_FP}" "${DUP_DEVICE_FP}")
 D1_BODY=$(echo "${D1}" | sed '$d'); D1_CODE=$(echo "${D1}" | tail -n1)
-D2=$(hold_call "${USER_B_ID}" "${S6}" "dup-b-1" "device-b")
+D2=$(hold_call "${USER_B_ID}" "${S6}" "${DUP_REQUEST_FP}" "${DUP_DEVICE_FP}")
 D2_BODY=$(echo "${D2}" | sed '$d'); D2_CODE=$(echo "${D2}" | tail -n1)
 if [[ "${D1_CODE}" != "201" || "${D2_CODE}" != "409" || "${D2_BODY}" != *"Duplicate request fingerprint detected"* ]]; then
   echo -e "${RED}실패 (codes=${D1_CODE}/${D2_CODE}, body=${D2_BODY})${NC}"
@@ -93,9 +123,9 @@ fi
 echo -e "${GREEN}성공 (duplicate blocked: ${D2_CODE})${NC}"
 
 echo -ne "${YELLOW}[Step 4] shared device multi-account 검증... ${NC}"
-M1=$(hold_call "${USER_C_ID}" "${S7}" "multi-c-1" "shared-device-x")
+M1=$(hold_call "${USER_C_ID}" "${S7}" "multi-c-1-${RUN_ID}" "${SHARED_DEVICE_FP}")
 M1_BODY=$(echo "${M1}" | sed '$d'); M1_CODE=$(echo "${M1}" | tail -n1)
-M2=$(hold_call "${USER_D_ID}" "${S8}" "multi-d-1" "shared-device-x")
+M2=$(hold_call "${USER_D_ID}" "${S8}" "multi-d-1-${RUN_ID}" "${SHARED_DEVICE_FP}")
 M2_BODY=$(echo "${M2}" | sed '$d'); M2_CODE=$(echo "${M2}" | tail -n1)
 if [[ "${M1_CODE}" != "201" || "${M2_CODE}" != "409" || "${M2_BODY}" != *"Device fingerprint used by multiple accounts"* ]]; then
   echo -e "${RED}실패 (codes=${M1_CODE}/${M2_CODE}, body=${M2_BODY})${NC}"

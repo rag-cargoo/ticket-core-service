@@ -17,6 +17,14 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+OPEN_PRESALE_START_AT="2000-01-01T00:00:00"
+OPEN_PRESALE_END_AT="2000-01-02T00:00:00"
+OPEN_GENERAL_SALE_START_AT="2000-01-03T00:00:00"
+
+PRESALE_START_AT="2000-01-01T00:00:00"
+PRESALE_END_AT="2099-01-01T00:00:00"
+GENERAL_SALE_START_AT="2099-01-01T00:00:00"
+
 cleanup_users() {
   if [[ -n "${BASIC_USER_ID:-}" ]]; then
     curl -s -X DELETE "${USER_API}/${BASIC_USER_ID}" >/dev/null 2>&1 || true
@@ -25,7 +33,28 @@ cleanup_users() {
     curl -s -X DELETE "${USER_API}/${VIP_USER_ID}" >/dev/null 2>&1 || true
   fi
 }
-trap cleanup_users EXIT
+
+restore_open_policy() {
+  if [[ -z "${CONCERT_ID:-}" ]]; then
+    return 0
+  fi
+
+  curl -s -X PUT "${CONCERT_API}/${CONCERT_ID}/sales-policy" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"presaleStartAt\":\"${OPEN_PRESALE_START_AT}\",
+      \"presaleEndAt\":\"${OPEN_PRESALE_END_AT}\",
+      \"presaleMinimumTier\":\"BASIC\",
+      \"generalSaleStartAt\":\"${OPEN_GENERAL_SALE_START_AT}\",
+      \"maxReservationsPerUser\":10
+    }" >/dev/null 2>&1 || true
+}
+
+cleanup() {
+  cleanup_users
+  restore_open_policy
+}
+trap cleanup EXIT
 
 echo -e "${BLUE}>>>> [v10 Test] Step 11 판매 정책 엔진(선예매/등급/1인 제한) 검증 시작...${NC}"
 
@@ -70,9 +99,6 @@ fi
 echo -e "${GREEN}성공 (concertId=${CONCERT_ID}, optionId=${OPTION_ID}, seats=${FIRST_SEAT_ID},${SECOND_SEAT_ID})${NC}"
 
 echo -ne "${YELLOW}[Step 2] Step11 판매 정책 설정(Presale+Tier+1인 제한)... ${NC}"
-PRESALE_START_AT="$(date -d '-1 minute' +%Y-%m-%dT%H:%M:%S)"
-PRESALE_END_AT="$(date -d '+5 minutes' +%Y-%m-%dT%H:%M:%S)"
-GENERAL_SALE_START_AT="$(date -d '+20 minutes' +%Y-%m-%dT%H:%M:%S)"
 
 POLICY_RESPONSE=$(curl ${CURL_OPTS} -X PUT "${CONCERT_API}/${CONCERT_ID}/sales-policy" \
   -H "Content-Type: application/json" \

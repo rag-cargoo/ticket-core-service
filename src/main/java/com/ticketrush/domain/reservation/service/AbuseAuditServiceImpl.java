@@ -48,14 +48,18 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
             Integer limit
     ) {
         int resolvedLimit = resolveLimit(limit);
+        // PostgreSQL + JPQL optional timestamp filters can fail type inference when null is bound.
+        // Normalize null range params to concrete bounds so the query remains deterministic.
+        LocalDateTime resolvedFromAt = fromAt == null ? LocalDateTime.of(1970, 1, 1, 0, 0, 0) : fromAt;
+        LocalDateTime resolvedToAt = toAt == null ? LocalDateTime.of(9999, 12, 31, 23, 59, 59) : toAt;
         return abuseAuditLogRepository.search(
                 action,
                 result,
                 reason,
                 userId,
                 concertId,
-                fromAt,
-                toAt,
+                resolvedFromAt,
+                resolvedToAt,
                 PageRequest.of(0, resolvedLimit)
         );
     }

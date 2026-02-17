@@ -36,6 +36,29 @@ if [[ -z "${SEAT_ID}" ]]; then
 fi
 echo -e "${GREEN}성공 (seatId=${SEAT_ID})${NC}"
 
+echo -ne "${YELLOW}[Step 1.5] 일반 판매 가능 정책 보정... ${NC}"
+CONCERT_ID=$(curl -s "${CONCERT_API}" | grep -oP '"id":\s*\K\d+' | tail -n 1 || true)
+if [[ -z "${CONCERT_ID}" ]]; then
+  echo -e "${RED}실패 (concert 없음)${NC}"
+  exit 1
+fi
+POLICY_RESPONSE=$(curl ${CURL_OPTS} -X PUT "${CONCERT_API}/${CONCERT_ID}/sales-policy" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"presaleStartAt\":\"2000-01-01T00:00:00\",
+    \"presaleEndAt\":\"2000-01-02T00:00:00\",
+    \"presaleMinimumTier\":\"BASIC\",
+    \"generalSaleStartAt\":\"2000-01-03T00:00:00\",
+    \"maxReservationsPerUser\":10
+  }")
+POLICY_BODY=$(echo "${POLICY_RESPONSE}" | sed '$d')
+POLICY_CODE=$(echo "${POLICY_RESPONSE}" | tail -n1)
+if [[ "${POLICY_CODE}" != "200" ]]; then
+  echo -e "${RED}실패 (code=${POLICY_CODE}, body=${POLICY_BODY})${NC}"
+  exit 1
+fi
+echo -e "${GREEN}성공${NC}"
+
 echo -ne "${YELLOW}[Step 2] HOLD 생성... ${NC}"
 HOLD_RESPONSE=$(curl ${CURL_OPTS} -X POST "${BASE_URL}/holds" \
   -H "Content-Type: application/json" \
@@ -88,4 +111,3 @@ fi
 echo -e "${GREEN}성공 (status=${GET_STATUS})${NC}"
 
 echo -e "${GREEN}>>>> [v8 Test] 검증 종료 (PASS).${NC}"
-

@@ -46,12 +46,30 @@ if [[ -z "${CONCERT_ID}" ]]; then
 fi
 echo -e "${GREEN}성공 (concertId=${CONCERT_ID})${NC}"
 
-echo -ne "${YELLOW}[Step 2] 대기열/활성 키 정리... ${NC}"
+echo -ne "${YELLOW}[Step 2] 일반 판매 가능 정책 보정... ${NC}"
+POLICY_RESPONSE=$(curl ${CURL_OPTS} -X PUT "${CONCERT_API}/${CONCERT_ID}/sales-policy" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"presaleStartAt\":\"2000-01-01T00:00:00\",
+    \"presaleEndAt\":\"2000-01-02T00:00:00\",
+    \"presaleMinimumTier\":\"BASIC\",
+    \"generalSaleStartAt\":\"2000-01-03T00:00:00\",
+    \"maxReservationsPerUser\":10
+  }")
+POLICY_BODY=$(echo "${POLICY_RESPONSE}" | sed '$d')
+POLICY_CODE=$(echo "${POLICY_RESPONSE}" | tail -n1)
+if [[ "${POLICY_CODE}" != "200" ]]; then
+  echo -e "${RED}실패 (code=${POLICY_CODE}, body=${POLICY_BODY})${NC}"
+  exit 1
+fi
+echo -e "${GREEN}성공${NC}"
+
+echo -ne "${YELLOW}[Step 3] 대기열/활성 키 정리... ${NC}"
 docker exec "${REDIS_CONTAINER}" redis-cli ZREM "${QUEUE_KEY_PREFIX}${CONCERT_ID}" "${WAITING_USER_ID}" >/dev/null 2>&1 || true
 docker exec "${REDIS_CONTAINER}" redis-cli DEL "${ACTIVE_KEY_PREFIX}${WAITING_USER_ID}" >/dev/null 2>&1 || true
 echo -e "${GREEN}완료${NC}"
 
-echo -ne "${YELLOW}[Step 3] 대기 유저 큐 진입... ${NC}"
+echo -ne "${YELLOW}[Step 4] 대기 유저 큐 진입... ${NC}"
 JOIN_RESPONSE=$(curl ${CURL_OPTS} -X POST "${WAITING_QUEUE_API}/join" \
   -H "Content-Type: application/json" \
   -d "{\"userId\":${WAITING_USER_ID},\"concertId\":${CONCERT_ID}}")
@@ -64,7 +82,7 @@ if [[ "${JOIN_CODE}" != "200" || "${JOIN_STATUS}" != "WAITING" ]]; then
 fi
 echo -e "${GREEN}성공 (status=${JOIN_STATUS})${NC}"
 
-echo -ne "${YELLOW}[Step 4] 가용 좌석 조회... ${NC}"
+echo -ne "${YELLOW}[Step 5] 가용 좌석 조회... ${NC}"
 SEAT_ID=$(find_available_seat_id "${CONCERT_API}" || true)
 if [[ -z "${SEAT_ID}" ]]; then
   echo -e "${RED}실패 (available seat 없음)${NC}"
@@ -72,7 +90,7 @@ if [[ -z "${SEAT_ID}" ]]; then
 fi
 echo -e "${GREEN}성공 (seatId=${SEAT_ID})${NC}"
 
-echo -ne "${YELLOW}[Step 5] CONFIRMED 예약 생성(HOLD -> PAYING -> CONFIRMED)... ${NC}"
+echo -ne "${YELLOW}[Step 6] CONFIRMED 예약 생성(HOLD -> PAYING -> CONFIRMED)... ${NC}"
 HOLD_RESPONSE=$(curl ${CURL_OPTS} -X POST "${RESERVATION_API}/holds" \
   -H "Content-Type: application/json" \
   -d "{\"userId\":${OWNER_USER_ID},\"seatId\":${SEAT_ID}}")
@@ -108,7 +126,7 @@ if [[ "${CONFIRM_CODE}" != "200" || "${CONFIRM_STATUS}" != "CONFIRMED" ]]; then
 fi
 echo -e "${GREEN}성공 (reservationId=${RESERVATION_ID})${NC}"
 
-echo -ne "${YELLOW}[Step 6] 예약 취소 + 재판매 대기열 연계... ${NC}"
+echo -ne "${YELLOW}[Step 7] 예약 취소 + 재판매 대기열 연계... ${NC}"
 CANCEL_RESPONSE=$(curl ${CURL_OPTS} -X POST "${RESERVATION_API}/${RESERVATION_ID}/cancel" \
   -H "Content-Type: application/json" \
   -d "{\"userId\":${OWNER_USER_ID}}")
@@ -122,7 +140,7 @@ if [[ "${CANCEL_CODE}" != "200" || "${CANCEL_STATUS}" != "CANCELLED" || "${ACTIV
 fi
 echo -e "${GREEN}성공 (cancelled, activatedUser=${ACTIVATED_USER_ID})${NC}"
 
-echo -ne "${YELLOW}[Step 7] 대기 유저 ACTIVE 전환 확인... ${NC}"
+echo -ne "${YELLOW}[Step 8] 대기 유저 ACTIVE 전환 확인... ${NC}"
 QUEUE_STATUS_RESPONSE=$(curl ${CURL_OPTS} "${WAITING_QUEUE_API}/status?userId=${WAITING_USER_ID}&concertId=${CONCERT_ID}")
 QUEUE_STATUS_BODY=$(echo "${QUEUE_STATUS_RESPONSE}" | sed '$d')
 QUEUE_STATUS_CODE=$(echo "${QUEUE_STATUS_RESPONSE}" | tail -n1)
@@ -133,7 +151,7 @@ if [[ "${QUEUE_STATUS_CODE}" != "200" || "${QUEUE_STATUS}" != "ACTIVE" ]]; then
 fi
 echo -e "${GREEN}성공 (status=${QUEUE_STATUS})${NC}"
 
-echo -ne "${YELLOW}[Step 8] 환불 완료 처리... ${NC}"
+echo -ne "${YELLOW}[Step 9] 환불 완료 처리... ${NC}"
 REFUND_RESPONSE=$(curl ${CURL_OPTS} -X POST "${RESERVATION_API}/${RESERVATION_ID}/refund" \
   -H "Content-Type: application/json" \
   -d "{\"userId\":${OWNER_USER_ID}}")
@@ -146,7 +164,7 @@ if [[ "${REFUND_CODE}" != "200" || "${REFUND_STATUS}" != "REFUNDED" ]]; then
 fi
 echo -e "${GREEN}성공 (status=${REFUND_STATUS})${NC}"
 
-echo -ne "${YELLOW}[Step 9] 최종 상태 조회... ${NC}"
+echo -ne "${YELLOW}[Step 10] 최종 상태 조회... ${NC}"
 GET_RESPONSE=$(curl ${CURL_OPTS} "${RESERVATION_API}/${RESERVATION_ID}?userId=${OWNER_USER_ID}")
 GET_BODY=$(echo "${GET_RESPONSE}" | sed '$d')
 GET_CODE=$(echo "${GET_RESPONSE}" | tail -n1)
