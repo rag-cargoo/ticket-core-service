@@ -8,8 +8,8 @@ project_root="${project_abs#$repo_root/}"
 
 scripts_root="${project_root}/scripts/api"
 scripts_abs_root="${project_abs}/scripts/api"
-report_path="${project_root}/prj-docs/api-test/latest.md"
-report_abs_path="${project_abs}/prj-docs/api-test/latest.md"
+report_path="${project_root}/.codex/tmp/ticket-core-service/api-test/latest.md"
+report_abs_path="${project_abs}/.codex/tmp/ticket-core-service/api-test/latest.md"
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 

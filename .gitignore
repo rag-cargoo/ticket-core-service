@@ -11,5 +11,8 @@ out/
 .idea/
 *.iml
 
+# Local Codex runtime artifacts
+.codex/
+
 # OS artifacts
 .DS_Store

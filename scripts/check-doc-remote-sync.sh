@@ -72,6 +72,11 @@ cd "$repo_root"
 task_doc="${project_root}/prj-docs/task.md"
 meeting_notes_dir="${project_root}/prj-docs/meeting-notes"
 
+if [[ ! -f "$task_doc" && ! -d "$meeting_notes_dir" ]]; then
+  echo "[doc-sync] no local task/meeting docs (sidecar-managed), skip"
+  exit 0
+fi
+
 is_target_doc() {
   local path="$1"
   if [[ "$path" == "$task_doc" ]]; then
@@ -116,9 +121,11 @@ if [[ -n "$files_file" ]]; then
 else
   if [[ "$scope" == "all" ]]; then
     add_candidate_file "$task_doc"
-    while IFS= read -r path; do
-      add_candidate_file "$path"
-    done < <(find "$meeting_notes_dir" -maxdepth 1 -type f -name '*.md' | sort)
+    if [[ -d "$meeting_notes_dir" ]]; then
+      while IFS= read -r path; do
+        add_candidate_file "$path"
+      done < <(find "$meeting_notes_dir" -maxdepth 1 -type f -name '*.md' | sort)
+    fi
   else
     while IFS= read -r path; do
       add_candidate_file "$path"
