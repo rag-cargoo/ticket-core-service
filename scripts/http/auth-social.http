@@ -114,6 +114,8 @@ Authorization: Bearer {{accessToken}}
 > {%
 client.test("logout blocks access token reuse", function() {
   client.assert(response.status === 401, "expected 401");
+  client.assert(response.body && response.body.errorCode === "AUTH_ACCESS_TOKEN_REVOKED", "expected AUTH_ACCESS_TOKEN_REVOKED");
+  client.assert(response.body && response.body.message === "unauthorized", "expected unauthorized");
 });
 %}
 
@@ -127,5 +129,30 @@ Content-Type: application/json
 > {%
 client.test("logout blocks refresh token reuse", function() {
   client.assert(response.status === 400, "expected 400");
+  client.assert(response.body && response.body.errorCode === "AUTH_REFRESH_TOKEN_EXPIRED_OR_REVOKED", "expected AUTH_REFRESH_TOKEN_EXPIRED_OR_REVOKED");
+  client.assert(response.body && response.body.message === "refresh token expired or revoked", "expected refresh token expired or revoked");
+});
+%}
+
+### 14) 보호 API 무토큰 접근 차단 확인 (401 + AUTH_ACCESS_TOKEN_REQUIRED)
+GET {{host}}/api/auth/me
+> {%
+client.test("me without token returns AUTH_ACCESS_TOKEN_REQUIRED", function() {
+  client.assert(response.status === 401, "expected 401");
+  client.assert(response.body && response.body.errorCode === "AUTH_ACCESS_TOKEN_REQUIRED", "expected AUTH_ACCESS_TOKEN_REQUIRED");
+  client.assert(response.body && response.body.message === "unauthorized", "expected unauthorized");
+});
+%}
+
+### 15) refresh body 누락 검증 (400 + AUTH_REFRESH_TOKEN_REQUIRED)
+POST {{host}}/api/auth/token/refresh
+Content-Type: application/json
+
+{}
+> {%
+client.test("refresh requires refreshToken field", function() {
+  client.assert(response.status === 400, "expected 400");
+  client.assert(response.body && response.body.errorCode === "AUTH_REFRESH_TOKEN_REQUIRED", "expected AUTH_REFRESH_TOKEN_REQUIRED");
+  client.assert(response.body && response.body.message === "refresh token is required", "expected refresh token is required");
 });
 %}
