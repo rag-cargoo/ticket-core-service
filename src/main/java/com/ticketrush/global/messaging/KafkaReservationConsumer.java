@@ -4,6 +4,7 @@ import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,7 +17,7 @@ public class KafkaReservationConsumer {
 
     private final ReservationService reservationService;
     private final ReservationQueueService queueService;
-    private final com.ticketrush.global.sse.SseEmitterManager sseManager;
+    private final PushNotifier pushNotifier;
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
     public void consume(ReservationEvent event) {
@@ -36,7 +37,7 @@ public class KafkaReservationConsumer {
             }
 
             queueService.setStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
-            sseManager.sendReservationStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
+            pushNotifier.sendReservationStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
             log.info("Reservation SUCCESS - UserId: {}, SeatId: {}", event.getUserId(), event.getSeatId());
 
         } catch (Exception e) {
@@ -53,7 +54,7 @@ public class KafkaReservationConsumer {
             }
             
             queueService.setStatus(event.getUserId(), event.getSeatId(), status);
-            sseManager.sendReservationStatus(event.getUserId(), event.getSeatId(), status);
+            pushNotifier.sendReservationStatus(event.getUserId(), event.getSeatId(), status);
         }
     }
 }

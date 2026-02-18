@@ -3,7 +3,7 @@ package com.ticketrush.global.scheduler;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.config.WaitingQueueProperties;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,7 +29,7 @@ class WaitingQueueSchedulerTest {
     private WaitingQueueProperties properties;
 
     @Mock
-    private SseEmitterManager sseEmitterManager;
+    private PushNotifier pushNotifier;
 
     @InjectMocks
     private WaitingQueueScheduler waitingQueueScheduler;
@@ -41,7 +41,7 @@ class WaitingQueueSchedulerTest {
 
         when(waitingQueueService.activateUsers(1L, 10L)).thenReturn(List.of(101L));
         when(waitingQueueService.getActiveTtlSeconds(101L)).thenReturn(280L);
-        when(sseEmitterManager.getSubscribedQueueUsers(1L)).thenReturn(Set.of(101L, 102L));
+        when(pushNotifier.getSubscribedQueueUsers(1L)).thenReturn(Set.of(101L, 102L));
         when(waitingQueueService.getStatus(102L, 1L)).thenReturn(
                 WaitingQueueResponse.builder()
                         .userId(102L)
@@ -53,14 +53,14 @@ class WaitingQueueSchedulerTest {
 
         waitingQueueScheduler.activateWaitingUsers();
 
-        verify(sseEmitterManager).sendQueueActivated(eq(101L), eq(1L), any());
-        verify(sseEmitterManager).sendQueueRankUpdate(eq(102L), eq(1L), any());
+        verify(pushNotifier).sendQueueActivated(eq(101L), eq(1L), any());
+        verify(pushNotifier).sendQueueRankUpdate(eq(102L), eq(1L), any());
         verify(waitingQueueService, never()).getStatus(101L, 1L);
     }
 
     @Test
-    void sendQueueHeartbeat_delegateToSseEmitterManager() {
+    void sendQueueHeartbeat_delegateToPushNotifier() {
         waitingQueueScheduler.sendQueueHeartbeat();
-        verify(sseEmitterManager).sendQueueHeartbeat();
+        verify(pushNotifier).sendQueueHeartbeat();
     }
 }

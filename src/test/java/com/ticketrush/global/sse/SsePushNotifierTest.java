@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-class SseEmitterManagerTest {
+class SsePushNotifierTest {
 
     @Test
     void subscribeQueue_shouldReplaceEmitterOnReconnect() {
-        SseEmitterManager manager = new SseEmitterManager(waitingQueueProperties());
+        SsePushNotifier manager = new SsePushNotifier(waitingQueueProperties());
 
         manager.subscribeQueue(100L, 1L);
         manager.subscribeQueue(100L, 1L); // reconnect
@@ -20,7 +20,7 @@ class SseEmitterManagerTest {
 
     @Test
     void getSubscribedQueueUsers_shouldFilterByConcertId() {
-        SseEmitterManager manager = new SseEmitterManager(waitingQueueProperties());
+        SsePushNotifier manager = new SsePushNotifier(waitingQueueProperties());
 
         manager.subscribeQueue(100L, 1L);
         manager.subscribeQueue(101L, 1L);
@@ -32,7 +32,7 @@ class SseEmitterManagerTest {
 
     @Test
     void sendQueueHeartbeat_shouldNotThrow() {
-        SseEmitterManager manager = new SseEmitterManager(waitingQueueProperties());
+        SsePushNotifier manager = new SsePushNotifier(waitingQueueProperties());
         manager.subscribeQueue(100L, 1L);
 
         assertThatCode(manager::sendQueueHeartbeat).doesNotThrowAnyException();

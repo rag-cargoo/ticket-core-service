@@ -1,6 +1,7 @@
 package com.ticketrush.global.sse;
 
 import com.ticketrush.global.config.WaitingQueueProperties;
+import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,9 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component
+@Component("ssePushNotifier")
 @RequiredArgsConstructor
-public class SseEmitterManager {
+public class SsePushNotifier implements PushNotifier {
 
     private static final String RESERVATION_KEY_PREFIX = "res:";
     private static final String QUEUE_KEY_PREFIX = "queue:";
@@ -66,21 +67,25 @@ public class SseEmitterManager {
         return emitter;
     }
 
+    @Override
     public void sendReservationStatus(Long userId, Long seatId, String status) {
         String key = RESERVATION_KEY_PREFIX + userId + ":" + seatId;
         sendAndComplete(key, SseEventNames.RESERVATION_STATUS, status);
     }
 
+    @Override
     public void sendQueueRankUpdate(Long userId, Long concertId, Object data) {
         String key = toQueueKey(userId, concertId);
         send(key, SseEventNames.RANK_UPDATE, data);
     }
 
+    @Override
     public void sendQueueActivated(Long userId, Long concertId, Object data) {
         String key = toQueueKey(userId, concertId);
         send(key, SseEventNames.ACTIVE, data);
     }
 
+    @Override
     public void sendQueueHeartbeat() {
         Object heartbeat = Map.of("timestamp", Instant.now().toString());
         emitters.keySet().stream()
@@ -88,6 +93,7 @@ public class SseEmitterManager {
                 .forEach(key -> send(key, SseEventNames.KEEPALIVE, heartbeat));
     }
 
+    @Override
     public Set<Long> getSubscribedQueueUsers(Long concertId) {
         String suffix = ":" + concertId;
         return emitters.keySet().stream()

@@ -8,7 +8,7 @@ import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.global.lock.RedissonLockFacade;
 import com.ticketrush.global.messaging.KafkaReservationProducer;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.sse.SsePushNotifier;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
@@ -39,7 +39,7 @@ public class ReservationController {
     private final ReservationQueueService queueService;
     private final ReservationLifecycleService reservationLifecycleService;
     private final AbuseAuditService abuseAuditService;
-    private final SseEmitterManager sseManager;
+    private final SsePushNotifier ssePushNotifier;
 
     /**
      * [v1] 낙관적 락 버전
@@ -99,7 +99,7 @@ public class ReservationController {
     public SseEmitter subscribe(
             @RequestParam Long userId,
             @RequestParam Long seatId) {
-        return sseManager.subscribeReservation(userId, seatId);
+        return ssePushNotifier.subscribeReservation(userId, seatId);
     }
 
     /**

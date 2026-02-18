@@ -52,8 +52,20 @@ GET {{host}}/api/v1/waiting-queue/status?userId={{waitingUserId}}&concertId={{wa
 GET {{host}}/api/v1/waiting-queue/subscribe?userId={{waitingUserId}}&concertId={{waitingConcertId}}
 Accept: text/event-stream
 
-### 6) 정리 - 테스트 유저 삭제
+### 6) WebSocket 순번 구독 등록 (Step 7, mode=websocket)
+POST {{host}}/api/push/websocket/waiting-queue/subscriptions
+Content-Type: application/json
+
+{
+  "userId": {{waitingUserId}},
+  "concertId": {{waitingConcertId}}
+}
+
+### 7) WebSocket 순번 구독 해제
+DELETE {{host}}/api/push/websocket/waiting-queue/subscriptions?userId={{waitingUserId}}&concertId={{waitingConcertId}}
+
+### 8) 정리 - 테스트 유저 삭제
 DELETE {{host}}/api/users/{{waitingUserId}}
 
-### 7) 정리 - 테스트 공연 삭제
+### 9) 정리 - 테스트 공연 삭제
 DELETE {{host}}/api/concerts/cleanup/{{waitingConcertId}}
