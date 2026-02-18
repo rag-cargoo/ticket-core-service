@@ -3,6 +3,7 @@ package com.ticketrush.domain.auth.service;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.global.config.AuthJwtProperties;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -38,11 +40,16 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(User user) {
+        return createAccessToken(user, UUID.randomUUID().toString());
+    }
+
+    public String createAccessToken(User user, String tokenId) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(authJwtProperties.getAccessTokenSeconds(), ChronoUnit.SECONDS);
 
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
+                .id(tokenId)
                 .issuer(authJwtProperties.getIssuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
@@ -76,6 +83,8 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw new IllegalArgumentException("expired jwt token");
         } catch (JwtException | IllegalArgumentException e) {
             throw new IllegalArgumentException("invalid jwt token");
         }
@@ -107,6 +116,22 @@ public class JwtTokenProvider {
             throw new IllegalArgumentException("invalid jwt token type");
         }
         return type;
+    }
+
+    public String extractTokenId(Claims claims) {
+        String tokenId = claims.getId();
+        if (tokenId == null || tokenId.isBlank()) {
+            throw new IllegalArgumentException("invalid jwt token id");
+        }
+        return tokenId;
+    }
+
+    public Instant extractExpiration(Claims claims) {
+        Date expiresAt = claims.getExpiration();
+        if (expiresAt == null) {
+            throw new IllegalArgumentException("invalid jwt token expiration");
+        }
+        return expiresAt.toInstant();
     }
 
     private byte[] normalizeKeyLength(byte[] keyBytes) {

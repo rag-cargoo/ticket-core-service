@@ -101,6 +101,19 @@ GET {{host}}/login/oauth2/code/naver?code=sample-code&state={{naverState}}
 
 ### 11) 로그아웃
 POST {{host}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 12) 로그아웃 이후 access 재사용 차단 확인 (401 예상)
+GET {{host}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 13) 로그아웃 이후 refresh 재사용 차단 확인 (400 예상)
+POST {{host}}/api/auth/token/refresh
 Content-Type: application/json
 
 {

@@ -71,6 +71,9 @@ make test-k6
 - 예약 결제 연동:
   - `v6/v7 confirm`에서 기본 티켓 금액(`app.payment.default-ticket-price-amount`) 차감
   - `v6/v7 refund`에서 해당 예약 결제 금액 환불
+- 인증 세션 무효화:
+  - `POST /api/auth/logout` 호출 시 `Authorization: Bearer <accessToken>` + body `refreshToken` 동시 전달 필요
+  - 로그아웃 처리 시 refresh 토큰 즉시 revoke + access 토큰은 만료 시각까지 denylist 처리
 
 ---
 

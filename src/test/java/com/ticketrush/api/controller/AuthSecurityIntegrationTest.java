@@ -1,6 +1,7 @@
 package com.ticketrush.api.controller;
 
 import com.ticketrush.domain.auth.security.JwtAuthenticationFilter;
+import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.domain.auth.service.AuthSessionService;
 import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.User;
@@ -43,6 +44,9 @@ class AuthSecurityIntegrationTest {
 
     @MockBean
     private AuthSessionService authSessionService;
+
+    @MockBean
+    private AccessTokenDenylistService accessTokenDenylistService;
 
     @MockBean
     private UserRepository userRepository;

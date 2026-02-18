@@ -19,18 +19,20 @@ import java.util.UUID;
 public class AuthSessionServiceImpl implements AuthSessionService {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AccessTokenDenylistService accessTokenDenylistService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
     @Transactional
     public AuthTokenPair issueFor(User user) {
-        String tokenId = UUID.randomUUID().toString();
-        String accessToken = jwtTokenProvider.createAccessToken(user);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user, tokenId);
+        String accessTokenId = UUID.randomUUID().toString();
+        String refreshTokenId = UUID.randomUUID().toString();
+        String accessToken = jwtTokenProvider.createAccessToken(user, accessTokenId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user, refreshTokenId);
 
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         LocalDateTime refreshExpiresAt = now.plusSeconds(jwtTokenProvider.refreshTokenExpiresInSeconds());
-        refreshTokenRepository.save(new RefreshToken(user, tokenId, refreshExpiresAt, now));
+        refreshTokenRepository.save(new RefreshToken(user, refreshTokenId, refreshExpiresAt, now));
 
         return new AuthTokenPair(
                 accessToken,
@@ -42,19 +44,8 @@ public class AuthSessionServiceImpl implements AuthSessionService {
 
     @Transactional
     public AuthTokenPair refresh(String refreshTokenValue) {
-        if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
-            throw new IllegalArgumentException("refresh token is required");
-        }
-
-        Claims claims = jwtTokenProvider.parseClaims(refreshTokenValue.trim());
-        if (!JwtTokenProvider.TOKEN_TYPE_REFRESH.equals(jwtTokenProvider.extractTokenType(claims))) {
-            throw new IllegalArgumentException("invalid refresh token type");
-        }
-
-        String tokenId = claims.getId();
-        if (tokenId == null || tokenId.isBlank()) {
-            throw new IllegalArgumentException("invalid refresh token id");
-        }
+        Claims claims = parseRefreshClaims(refreshTokenValue);
+        String tokenId = jwtTokenProvider.extractTokenId(claims);
 
         RefreshToken refreshToken = refreshTokenRepository.findByTokenId(tokenId)
                 .orElseThrow(() -> new IllegalArgumentException("refresh token not found"));
@@ -77,23 +68,49 @@ public class AuthSessionServiceImpl implements AuthSessionService {
     }
 
     @Transactional
-    public void logout(String refreshTokenValue) {
+    public void logout(String refreshTokenValue, String accessTokenValue) {
+        Claims refreshClaims = parseRefreshClaims(refreshTokenValue);
+        Claims accessClaims = parseAccessClaims(accessTokenValue);
+
+        Long refreshUserId = jwtTokenProvider.extractUserId(refreshClaims);
+        Long accessUserId = jwtTokenProvider.extractUserId(accessClaims);
+        if (!refreshUserId.equals(accessUserId)) {
+            throw new IllegalArgumentException("logout token user mismatch");
+        }
+
+        String tokenId = jwtTokenProvider.extractTokenId(refreshClaims);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenId(tokenId)
+                .orElseThrow(() -> new IllegalArgumentException("refresh token not found"));
+        if (!refreshToken.getUser().getId().equals(refreshUserId)) {
+            throw new IllegalArgumentException("refresh token user mismatch");
+        }
+
+        refreshToken.revoke(LocalDateTime.now(ZoneOffset.UTC));
+
+        String accessTokenId = jwtTokenProvider.extractTokenId(accessClaims);
+        accessTokenDenylistService.revoke(accessTokenId, jwtTokenProvider.extractExpiration(accessClaims));
+    }
+
+    private Claims parseRefreshClaims(String refreshTokenValue) {
         if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
             throw new IllegalArgumentException("refresh token is required");
         }
-
         Claims claims = jwtTokenProvider.parseClaims(refreshTokenValue.trim());
         if (!JwtTokenProvider.TOKEN_TYPE_REFRESH.equals(jwtTokenProvider.extractTokenType(claims))) {
             throw new IllegalArgumentException("invalid refresh token type");
         }
+        return claims;
+    }
 
-        String tokenId = claims.getId();
-        if (tokenId == null || tokenId.isBlank()) {
-            throw new IllegalArgumentException("invalid refresh token id");
+    private Claims parseAccessClaims(String accessTokenValue) {
+        if (accessTokenValue == null || accessTokenValue.isBlank()) {
+            throw new IllegalArgumentException("access token is required");
         }
-
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenId(tokenId)
-                .orElseThrow(() -> new IllegalArgumentException("refresh token not found"));
-        refreshToken.revoke(LocalDateTime.now(ZoneOffset.UTC));
+        Claims claims = jwtTokenProvider.parseClaims(accessTokenValue.trim());
+        if (!JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(jwtTokenProvider.extractTokenType(claims))) {
+            throw new IllegalArgumentException("invalid access token type");
+        }
+        return claims;
     }
 }

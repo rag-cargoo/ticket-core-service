@@ -14,4 +14,5 @@ public class AuthJwtProperties {
     private String secret;
     private long accessTokenSeconds = 1800;
     private long refreshTokenSeconds = 1209600;
+    private String accessTokenBlocklistKeyPrefix = "auth:access-blocklist:";
 }
