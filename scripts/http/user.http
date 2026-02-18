@@ -37,5 +37,21 @@ Content-Type: application/json
 ### 5) 수정 결과 재조회
 GET {{host}}/api/users/{{userId}}
 
-### 6) 유저 삭제
+### 6) 지갑 잔액 조회
+GET {{host}}/api/users/{{userId}}/wallet
+
+### 7) 지갑 충전
+POST {{host}}/api/users/{{userId}}/wallet/charges
+Content-Type: application/json
+
+{
+  "amount": 50000,
+  "idempotencyKey": "manual-charge-{{ts}}",
+  "description": "MANUAL_TEST_CHARGE"
+}
+
+### 8) 지갑 거래내역 조회
+GET {{host}}/api/users/{{userId}}/wallet/transactions?limit=20
+
+### 9) 유저 삭제
 DELETE {{host}}/api/users/{{userId}}

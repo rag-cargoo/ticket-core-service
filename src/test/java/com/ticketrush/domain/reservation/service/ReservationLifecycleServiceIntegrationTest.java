@@ -15,6 +15,8 @@ import com.ticketrush.domain.reservation.adapter.outbound.ReservationWaitingQueu
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.domain.payment.service.PaymentService;
+import com.ticketrush.domain.payment.service.PaymentServiceImpl;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
@@ -27,6 +29,7 @@ import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.config.AbuseGuardProperties;
+import com.ticketrush.global.config.PaymentProperties;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,7 @@ import static org.mockito.Mockito.when;
         SalesPolicyServiceImpl.class,
         AbuseAuditServiceImpl.class,
         AbuseAuditWriter.class,
+        PaymentServiceImpl.class,
         ReservationSeatPortAdapter.class,
         ReservationUserPortAdapter.class,
         ReservationWaitingQueuePortAdapter.class,
@@ -66,6 +70,13 @@ class ReservationLifecycleServiceIntegrationTest {
             ReservationProperties properties = new ReservationProperties();
             properties.setHoldTtlSeconds(1);
             properties.setExpireCheckDelayMillis(1000);
+            return properties;
+        }
+
+        @Bean
+        PaymentProperties paymentProperties() {
+            PaymentProperties properties = new PaymentProperties();
+            properties.setDefaultTicketPriceAmount(100_000L);
             return properties;
         }
 
@@ -136,6 +147,9 @@ class ReservationLifecycleServiceIntegrationTest {
     @jakarta.annotation.Resource
     private PushNotifier pushNotifier;
 
+    @jakarta.annotation.Resource
+    private PaymentService paymentService;
+
     @Test
     void holdToPayingToConfirmed_shouldReserveSeat() {
         User user = userRepository.save(new User("step9-integration-user-" + System.nanoTime()));
@@ -156,6 +170,7 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(confirmed.getConfirmedAt()).isNotNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.RESERVED);
+        assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(100_000L);
     }
 
     @Test
@@ -223,6 +238,7 @@ class ReservationLifecycleServiceIntegrationTest {
 
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
+        assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
     }
 
     @Test

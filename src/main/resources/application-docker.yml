@@ -39,6 +39,8 @@ app:
   reservation:
     hold-ttl-seconds: 300
     expire-check-delay-millis: 5000
+  payment:
+    default-ticket-price-amount: 100000
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"

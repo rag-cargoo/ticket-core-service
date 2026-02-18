@@ -6,12 +6,14 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.Reservation;
+import com.ticketrush.domain.payment.service.PaymentService;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.global.config.ReservationProperties;
+import com.ticketrush.global.config.PaymentProperties;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +37,10 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ReservationUserPort reservationUserPort;
     private final ReservationWaitingQueuePort reservationWaitingQueuePort;
     private final ReservationProperties reservationProperties;
+    private final PaymentProperties paymentProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
+    private final PaymentService paymentService;
     private final PushNotifier pushNotifier;
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
@@ -72,6 +76,12 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
+        paymentService.payForReservation(
+                userId,
+                reservationId,
+                paymentProperties.getDefaultTicketPriceAmount(),
+                "reservation-payment-" + reservationId
+        );
         reservation.confirmPayment(now);
         reservation.getSeat().confirmHeldSeat();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
@@ -96,6 +106,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     @Transactional
     public ReservationLifecycleResponse refund(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
+        paymentService.refundReservation(userId, reservationId, "reservation-refund-" + reservationId);
         reservation.refund(LocalDateTime.now());
         return ReservationLifecycleResponse.from(reservation);
     }
