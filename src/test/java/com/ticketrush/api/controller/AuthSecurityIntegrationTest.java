@@ -59,7 +59,10 @@ class AuthSecurityIntegrationTest {
     @Test
     void me_shouldReturnUnauthorizedWithoutAccessToken() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_ACCESS_TOKEN_REQUIRED"))
+                .andExpect(jsonPath("$.message").value("unauthorized"));
     }
 
     @Test
@@ -88,6 +91,7 @@ class AuthSecurityIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_ACCESS_TOKEN_REVOKED"))
                 .andExpect(jsonPath("$.message").value("unauthorized"));
     }
 
@@ -98,6 +102,20 @@ class AuthSecurityIntegrationTest {
                         .content("{\"refreshToken\":\"dummy\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_ACCESS_TOKEN_REQUIRED"))
                 .andExpect(jsonPath("$.message").value("unauthorized"));
+    }
+
+    @Test
+    void refresh_shouldReturnBadRequestWithAuthErrorCodeWhenRefreshTokenMissing() throws Exception {
+        when(authSessionService.refresh(null)).thenThrow(new IllegalArgumentException("refresh token is required"));
+
+        mockMvc.perform(post("/api/auth/token/refresh")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value("AUTH_REFRESH_TOKEN_REQUIRED"))
+                .andExpect(jsonPath("$.message").value("refresh token is required"));
     }
 }

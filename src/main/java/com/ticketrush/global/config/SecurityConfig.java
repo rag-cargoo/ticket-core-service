@@ -1,11 +1,15 @@
 package com.ticketrush.global.config;
 
 import com.ticketrush.domain.auth.security.JwtAuthenticationFilter;
+import com.ticketrush.global.auth.AuthErrorClassifier;
+import com.ticketrush.global.auth.AuthErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,6 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+@Slf4j
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -46,14 +51,30 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"status\":401,\"message\":\"unauthorized\"}");
+                            String detail = (String) request.getAttribute(JwtAuthenticationFilter.AUTH_ERROR_MESSAGE_ATTR);
+                            AuthErrorCode errorCode = AuthErrorClassifier.classifyUnauthorized(
+                                    detail,
+                                    request.getHeader(HttpHeaders.AUTHORIZATION)
+                            );
+                            log.warn(
+                                    "AUTH_MONITOR code={} status=401 method={} path={} detail={}",
+                                    errorCode.name(),
+                                    request.getMethod(),
+                                    request.getRequestURI(),
+                                    detail == null ? "none" : detail
+                            );
+                            writeAuthError(response, HttpServletResponse.SC_UNAUTHORIZED, errorCode, "unauthorized");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"status\":403,\"message\":\"forbidden\"}");
+                            AuthErrorCode errorCode = AuthErrorCode.AUTH_FORBIDDEN;
+                            log.warn(
+                                    "AUTH_MONITOR code={} status=403 method={} path={} detail={}",
+                                    errorCode.name(),
+                                    request.getMethod(),
+                                    request.getRequestURI(),
+                                    "access denied"
+                            );
+                            writeAuthError(response, HttpServletResponse.SC_FORBIDDEN, errorCode, "forbidden");
                         })
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -81,5 +102,18 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private void writeAuthError(HttpServletResponse response, int status, AuthErrorCode errorCode, String message) throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+                String.format(
+                        "{\"status\":%d,\"errorCode\":\"%s\",\"message\":\"%s\"}",
+                        status,
+                        errorCode.name(),
+                        message
+                )
+        );
     }
 }

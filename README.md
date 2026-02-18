@@ -80,6 +80,9 @@ make test-auth-social-pipeline
 - 인증 세션 무효화:
   - `POST /api/auth/logout` 호출 시 `Authorization: Bearer <accessToken>` + body `refreshToken` 동시 전달 필요
   - 로그아웃 처리 시 refresh 토큰 즉시 revoke + access 토큰은 만료 시각까지 denylist 처리
+- 인증 오류 운영 집계:
+  - 인증 실패 응답은 `errorCode` 필드를 포함(`AUTH_*`)
+  - 운영 로그 집계 키워드: `AUTH_MONITOR code=<AUTH_...>`
 
 ---
 
