@@ -23,6 +23,8 @@ import java.util.List;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    public static final String AUTH_ERROR_MESSAGE_ATTR = "auth.error.message";
+
     private final JwtTokenProvider jwtTokenProvider;
     private final AccessTokenDenylistService accessTokenDenylistService;
 
@@ -45,7 +47,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtTokenProvider.parseClaims(bearerToken);
                 String tokenType = jwtTokenProvider.extractTokenType(claims);
-                if (JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(tokenType)) {
+                if (!JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(tokenType)) {
+                    request.setAttribute(AUTH_ERROR_MESSAGE_ATTR, "invalid access token type");
+                } else {
                     String tokenId = jwtTokenProvider.extractTokenId(claims);
                     if (accessTokenDenylistService.isRevoked(tokenId)) {
                         throw new IllegalArgumentException("revoked access token");
@@ -64,7 +68,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-            } catch (IllegalArgumentException ignored) {
+            } catch (IllegalArgumentException e) {
+                request.setAttribute(AUTH_ERROR_MESSAGE_ATTR, e.getMessage());
                 // invalid token: leave context empty and let security entry point handle protected paths
             }
         }

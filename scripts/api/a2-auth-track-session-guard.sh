@@ -16,7 +16,7 @@ echo -ne "${YELLOW}[Step 1] /api/auth/me 무토큰 접근 차단 확인... ${NC}
 ME_RESPONSE=$(curl ${CURL_OPTS} "${API_HOST}/api/auth/me")
 ME_BODY=$(echo "${ME_RESPONSE}" | sed '$d')
 ME_CODE=$(echo "${ME_RESPONSE}" | tail -n1)
-if [[ "${ME_CODE}" != "401" ]] || ! echo "${ME_BODY}" | grep -q '"message":"unauthorized"'; then
+if [[ "${ME_CODE}" != "401" ]] || ! echo "${ME_BODY}" | grep -q '"message":"unauthorized"' || ! echo "${ME_BODY}" | grep -q '"errorCode":"AUTH_ACCESS_TOKEN_REQUIRED"'; then
   echo -e "${RED}실패 (code=${ME_CODE}, body=${ME_BODY})${NC}"
   exit 1
 fi
@@ -28,7 +28,7 @@ REFRESH_RESPONSE=$(curl ${CURL_OPTS} -X POST "${API_HOST}/api/auth/token/refresh
   -d '{}')
 REFRESH_BODY=$(echo "${REFRESH_RESPONSE}" | sed '$d')
 REFRESH_CODE=$(echo "${REFRESH_RESPONSE}" | tail -n1)
-if [[ "${REFRESH_CODE}" != "400" ]] || ! echo "${REFRESH_BODY}" | grep -q 'refresh token is required'; then
+if [[ "${REFRESH_CODE}" != "400" ]] || ! echo "${REFRESH_BODY}" | grep -q '"message":"refresh token is required"' || ! echo "${REFRESH_BODY}" | grep -q '"errorCode":"AUTH_REFRESH_TOKEN_REQUIRED"'; then
   echo -e "${RED}실패 (code=${REFRESH_CODE}, body=${REFRESH_BODY})${NC}"
   exit 1
 fi
@@ -40,7 +40,7 @@ HOLD_RESPONSE=$(curl ${CURL_OPTS} -X POST "${API_HOST}/api/reservations/v7/holds
   -d '{"seatId":1}')
 HOLD_BODY=$(echo "${HOLD_RESPONSE}" | sed '$d')
 HOLD_CODE=$(echo "${HOLD_RESPONSE}" | tail -n1)
-if [[ "${HOLD_CODE}" != "401" ]] || ! echo "${HOLD_BODY}" | grep -q '"message":"unauthorized"'; then
+if [[ "${HOLD_CODE}" != "401" ]] || ! echo "${HOLD_BODY}" | grep -q '"message":"unauthorized"' || ! echo "${HOLD_BODY}" | grep -q '"errorCode":"AUTH_ACCESS_TOKEN_REQUIRED"'; then
   echo -e "${RED}실패 (code=${HOLD_CODE}, body=${HOLD_BODY})${NC}"
   exit 1
 fi
