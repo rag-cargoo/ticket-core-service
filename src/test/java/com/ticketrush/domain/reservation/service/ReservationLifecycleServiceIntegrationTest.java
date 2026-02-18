@@ -28,7 +28,7 @@ import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.config.AbuseGuardProperties;
 import com.ticketrush.global.config.ReservationProperties;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -87,8 +87,8 @@ class ReservationLifecycleServiceIntegrationTest {
         }
 
         @Bean
-        SseEmitterManager sseEmitterManager() {
-            return mock(SseEmitterManager.class);
+        PushNotifier pushNotifier() {
+            return mock(PushNotifier.class);
         }
 
         @Bean
@@ -134,7 +134,7 @@ class ReservationLifecycleServiceIntegrationTest {
     private WaitingQueueService waitingQueueService;
 
     @jakarta.annotation.Resource
-    private SseEmitterManager sseEmitterManager;
+    private PushNotifier pushNotifier;
 
     @Test
     void holdToPayingToConfirmed_shouldReserveSeat() {
@@ -202,7 +202,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
 
         verify(waitingQueueService).activateUsers(concertId, 1);
-        verify(sseEmitterManager).sendQueueActivated(eq(999L), eq(concertId), any());
+        verify(pushNotifier).sendQueueActivated(eq(999L), eq(concertId), any());
     }
 
     @Test

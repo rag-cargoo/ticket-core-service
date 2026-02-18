@@ -5,7 +5,7 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueRequest;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.sse.SsePushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -22,7 +22,7 @@ import java.time.Instant;
 public class WaitingQueueController {
 
     private final WaitingQueueService waitingQueueService;
-    private final SseEmitterManager sseEmitterManager;
+    private final SsePushNotifier ssePushNotifier;
 
     @PostMapping("/join")
     public ResponseEntity<WaitingQueueResponse> join(@RequestBody WaitingQueueRequest request) {
@@ -44,7 +44,7 @@ public class WaitingQueueController {
             @RequestParam Long concertId) {
         log.debug(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
 
-        SseEmitter emitter = sseEmitterManager.subscribeQueue(userId, concertId);
+        SseEmitter emitter = ssePushNotifier.subscribeQueue(userId, concertId);
         WaitingQueueResponse currentStatus = waitingQueueService.getStatus(userId, concertId);
         Long activeTtlSeconds = WaitingQueueStatus.ACTIVE.name().equals(currentStatus.getStatus())
                 ? waitingQueueService.getActiveTtlSeconds(userId)
@@ -60,9 +60,9 @@ public class WaitingQueueController {
                 .build();
 
         if (WaitingQueueStatus.ACTIVE.name().equals(currentStatus.getStatus())) {
-            sseEmitterManager.sendQueueActivated(userId, concertId, payload);
+            ssePushNotifier.sendQueueActivated(userId, concertId, payload);
         } else {
-            sseEmitterManager.sendQueueRankUpdate(userId, concertId, payload);
+            ssePushNotifier.sendQueueRankUpdate(userId, concertId, payload);
         }
 
         return emitter;

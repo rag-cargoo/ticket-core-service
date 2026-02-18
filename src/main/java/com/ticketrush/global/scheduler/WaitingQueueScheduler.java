@@ -4,7 +4,7 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +22,7 @@ public class WaitingQueueScheduler {
 
     private final WaitingQueueService waitingQueueService;
     private final com.ticketrush.global.config.WaitingQueueProperties properties;
-    private final SseEmitterManager sseEmitterManager;
+    private final PushNotifier pushNotifier;
 
     // 대기열 상위 유저를 주기적으로 활성화
     @Scheduled(fixedDelayString = "${app.waiting-queue.activation-delay-millis}")
@@ -40,7 +40,7 @@ public class WaitingQueueScheduler {
 
         for (Long userId : activatedUsers) {
             Long activeTtlSeconds = waitingQueueService.getActiveTtlSeconds(userId);
-            sseEmitterManager.sendQueueActivated(
+            pushNotifier.sendQueueActivated(
                     userId,
                     concertId,
                     buildPayload(userId, concertId, WaitingQueueStatus.ACTIVE.name(), 0L, activeTtlSeconds)
@@ -52,11 +52,11 @@ public class WaitingQueueScheduler {
 
     @Scheduled(fixedDelayString = "${app.waiting-queue.sse-heartbeat-delay-millis}")
     public void sendQueueHeartbeat() {
-        sseEmitterManager.sendQueueHeartbeat();
+        pushNotifier.sendQueueHeartbeat();
     }
 
     private void publishRankUpdates(Long concertId, Set<Long> activatedUsers) {
-        Set<Long> subscribedUsers = sseEmitterManager.getSubscribedQueueUsers(concertId);
+        Set<Long> subscribedUsers = pushNotifier.getSubscribedQueueUsers(concertId);
         for (Long userId : subscribedUsers) {
             if (activatedUsers.contains(userId)) {
                 continue;
@@ -75,9 +75,9 @@ public class WaitingQueueScheduler {
             );
 
             if (WaitingQueueStatus.ACTIVE.name().equals(status.getStatus())) {
-                sseEmitterManager.sendQueueActivated(userId, concertId, payload);
+                pushNotifier.sendQueueActivated(userId, concertId, payload);
             } else {
-                sseEmitterManager.sendQueueRankUpdate(userId, concertId, payload);
+                pushNotifier.sendQueueRankUpdate(userId, concertId, payload);
             }
         }
     }

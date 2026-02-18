@@ -13,7 +13,7 @@ import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
-import com.ticketrush.global.sse.SseEmitterManager;
+import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,7 +37,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ReservationProperties reservationProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
-    private final SseEmitterManager sseEmitterManager;
+    private final PushNotifier pushNotifier;
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
     @Transactional
@@ -157,7 +157,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     .activeTtlSeconds(activeTtlSeconds)
                     .timestamp(Instant.now().toString())
                     .build();
-            sseEmitterManager.sendQueueActivated(activatedUserId, concertId, payload);
+            pushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
         }
     }
 }
