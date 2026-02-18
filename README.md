@@ -50,6 +50,11 @@ make test-suite
 make test-k6
 ```
 
+### 5. Auth-Social CI-safe 파이프라인 테스트
+```bash
+make test-auth-social-pipeline
+```
+
 - 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행됩니다.
 - 웹 대시보드 포함 실행: `make test-k6-dashboard` (기본 URL: `http://127.0.0.1:5665`)
 
@@ -58,6 +63,7 @@ make test-k6
 ## 검증/운영 포인트
 
 - API 스크립트 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/latest.md`
+- auth-social 파이프라인 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `sse`)
 - WebSocket STOMP 엔드포인트: `/ws` (`/topic/waiting-queue/{concertId}/{userId}`, `/topic/reservations/{seatId}/{userId}`)
