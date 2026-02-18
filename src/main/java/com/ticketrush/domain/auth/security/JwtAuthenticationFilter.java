@@ -1,5 +1,6 @@
 package com.ticketrush.domain.auth.security;
 
+import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.UserRole;
 import io.jsonwebtoken.Claims;
@@ -23,9 +24,14 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AccessTokenDenylistService accessTokenDenylistService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+    public JwtAuthenticationFilter(
+            JwtTokenProvider jwtTokenProvider,
+            AccessTokenDenylistService accessTokenDenylistService
+    ) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.accessTokenDenylistService = accessTokenDenylistService;
     }
 
     @Override
@@ -40,6 +46,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtTokenProvider.parseClaims(bearerToken);
                 String tokenType = jwtTokenProvider.extractTokenType(claims);
                 if (JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(tokenType)) {
+                    String tokenId = jwtTokenProvider.extractTokenId(claims);
+                    if (accessTokenDenylistService.isRevoked(tokenId)) {
+                        throw new IllegalArgumentException("revoked access token");
+                    }
+
                     Long userId = jwtTokenProvider.extractUserId(claims);
                     String username = claims.get("username", String.class);
                     UserRole role = jwtTokenProvider.extractRole(claims);

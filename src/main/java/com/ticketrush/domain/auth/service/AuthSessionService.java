@@ -8,5 +8,5 @@ public interface AuthSessionService {
 
     AuthTokenPair refresh(String refreshTokenValue);
 
-    void logout(String refreshTokenValue);
+    void logout(String refreshTokenValue, String accessTokenValue);
 }

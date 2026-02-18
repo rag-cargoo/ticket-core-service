@@ -11,12 +11,15 @@ import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
@@ -35,8 +38,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(@RequestBody TokenLogoutRequest request) {
-        authSessionService.logout(request.getRefreshToken());
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestBody TokenLogoutRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
+    ) {
+        authSessionService.logout(request.getRefreshToken(), resolveBearerToken(authorizationHeader));
         return ResponseEntity.ok(Map.of("message", "logged out"));
     }
 
@@ -48,5 +54,12 @@ public class AuthController {
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + principal.getUserId()));
         return ResponseEntity.ok(AuthMeResponse.from(user));
+    }
+
+    private String resolveBearerToken(String authorizationHeader) {
+        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        return authorizationHeader.substring(7).trim();
     }
 }
