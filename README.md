@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-18 23:00:33`
+> - **Updated At**: `2026-02-18 23:52:32`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -64,6 +64,13 @@ make test-k6
 - WebSocket 구독 등록 API:
   - `POST /api/push/websocket/waiting-queue/subscriptions`
   - `POST /api/push/websocket/reservations/subscriptions`
+- 지갑/결제 API:
+  - `GET /api/users/{userId}/wallet`
+  - `POST /api/users/{userId}/wallet/charges`
+  - `GET /api/users/{userId}/wallet/transactions`
+- 예약 결제 연동:
+  - `v6/v7 confirm`에서 기본 티켓 금액(`app.payment.default-ticket-price-amount`) 차감
+  - `v6/v7 refund`에서 해당 예약 결제 금액 환불
 
 ---
 

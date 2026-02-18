@@ -52,6 +52,9 @@ public class User {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    @Column(name = "wallet_balance_amount", nullable = false)
+    private Long walletBalanceAmount;
+
     public User(String username) {
         this(username, UserTier.BASIC);
     }
@@ -64,6 +67,7 @@ public class User {
         this.username = username;
         this.tier = tier == null ? UserTier.BASIC : tier;
         this.role = role == null ? UserRole.USER : role;
+        this.walletBalanceAmount = 200_000L;
     }
 
     public static User socialUser(
@@ -112,6 +116,30 @@ public class User {
     public void updateSocialProfile(String email, String displayName) {
         this.email = normalizeNullable(email);
         this.displayName = normalizeNullable(displayName);
+    }
+
+    public long getWalletBalanceAmountSafe() {
+        return walletBalanceAmount == null ? 0L : walletBalanceAmount;
+    }
+
+    public void chargeWallet(long amount) {
+        validatePositiveAmount(amount);
+        this.walletBalanceAmount = getWalletBalanceAmountSafe() + amount;
+    }
+
+    public void payFromWallet(long amount) {
+        validatePositiveAmount(amount);
+        long currentBalance = getWalletBalanceAmountSafe();
+        if (currentBalance < amount) {
+            throw new IllegalStateException("Insufficient wallet balance.");
+        }
+        this.walletBalanceAmount = currentBalance - amount;
+    }
+
+    private void validatePositiveAmount(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("amount must be positive");
+        }
     }
 
     private String normalizeNullable(String value) {

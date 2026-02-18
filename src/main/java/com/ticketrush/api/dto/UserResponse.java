@@ -20,6 +20,7 @@ public class UserResponse {
     private String socialId;
     private String email;
     private String displayName;
+    private Long walletBalanceAmount;
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -30,7 +31,8 @@ public class UserResponse {
                 user.getSocialProvider(),
                 user.getSocialId(),
                 user.getEmail(),
-                user.getDisplayName()
+                user.getDisplayName(),
+                user.getWalletBalanceAmountSafe()
         );
     }
 }
