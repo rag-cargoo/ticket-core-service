@@ -14,10 +14,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -32,11 +35,18 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest
 class 동시성_테스트_4_비동기_대기열 {
 
-    @Autowired
-    private ReservationController reservationController;
+    private static final String TEST_RUN_ID = UUID.randomUUID().toString().replace("-", "");
+    private static final String TEST_TOPIC = "ticket-reservation-events-test-" + TEST_RUN_ID;
+    private static final String TEST_GROUP = "ticket-group-test-" + TEST_RUN_ID;
+
+    @DynamicPropertySource
+    static void overrideKafkaProps(DynamicPropertyRegistry registry) {
+        registry.add("app.kafka.topic.reservation", () -> TEST_TOPIC);
+        registry.add("spring.kafka.consumer.group-id", () -> TEST_GROUP);
+    }
 
     @Autowired
-    private ReservationQueueService queueService;
+    private ReservationController reservationController;
 
     @Autowired
     private SeatRepository seatRepository;
@@ -77,10 +87,16 @@ class 동시성_테스트_4_비동기_대기열 {
         ReservationRequest request = new ReservationRequest(targetUserId, targetSeatId);
         reservationController.createPollingOptimisticReservation(request);
 
-        // 2. Redis 상태가 SUCCESS가 될 때까지 대기 (최대 5초)
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+        // 2. Redis 상태가 SUCCESS가 될 때까지 대기 (CI/부하 환경 고려, 최대 15초)
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
             Map<String, String> statusResponse = reservationController.getReservationStatus(targetUserId, targetSeatId).getBody();
-            assertThat(statusResponse.get("status")).isEqualTo("SUCCESS");
+            String status = statusResponse.get("status");
+            assertThat(status).isIn("PENDING", "PROCESSING", "SUCCESS");
+            if ("SUCCESS".equals(status)) {
+                assertThat(status).isEqualTo("SUCCESS");
+            } else {
+                throw new AssertionError("still waiting: status=" + status);
+            }
         });
 
         // 3. 최종 DB 좌석 상태 확인

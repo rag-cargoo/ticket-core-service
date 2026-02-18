@@ -41,6 +41,14 @@ public class Agency {
         this.homepageUrl = trimToNull(homepageUrl);
     }
 
+    public void rename(String name) {
+        String normalized = trimToNull(name);
+        if (normalized == null) {
+            throw new IllegalArgumentException("name is required");
+        }
+        this.name = normalized;
+    }
+
     public void updateMetadata(String countryCode, String homepageUrl) {
         if (countryCode != null) {
             this.countryCode = normalizeCountryCode(countryCode);

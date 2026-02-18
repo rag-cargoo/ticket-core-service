@@ -94,8 +94,31 @@ public class User {
         return user;
     }
 
+    public void updateProfile(String username, UserTier tier, String email, String displayName) {
+        if (username != null && !username.isBlank()) {
+            this.username = username.trim();
+        }
+        if (tier != null) {
+            this.tier = tier;
+        }
+        if (email != null) {
+            this.email = normalizeNullable(email);
+        }
+        if (displayName != null) {
+            this.displayName = normalizeNullable(displayName);
+        }
+    }
+
     public void updateSocialProfile(String email, String displayName) {
-        this.email = email;
-        this.displayName = displayName;
+        this.email = normalizeNullable(email);
+        this.displayName = normalizeNullable(displayName);
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

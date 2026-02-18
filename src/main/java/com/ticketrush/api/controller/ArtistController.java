@@ -1,0 +1,63 @@
+package com.ticketrush.api.controller;
+
+import com.ticketrush.api.dto.ArtistResponse;
+import com.ticketrush.api.dto.ArtistUpsertRequest;
+import com.ticketrush.domain.artist.service.ArtistService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/artists")
+@RequiredArgsConstructor
+public class ArtistController {
+
+    private final ArtistService artistService;
+
+    @PostMapping
+    public ResponseEntity<ArtistResponse> create(@RequestBody ArtistUpsertRequest request) {
+        return ResponseEntity.status(201).body(ArtistResponse.from(
+                artistService.create(
+                        request.getName(),
+                        request.getAgencyId(),
+                        request.getDisplayName(),
+                        request.getGenre(),
+                        request.getDebutDate()
+                )
+        ));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ArtistResponse>> getAll() {
+        return ResponseEntity.ok(artistService.getAll().stream()
+                .map(ArtistResponse::from)
+                .toList());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ArtistResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(ArtistResponse.from(artistService.getById(id)));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ArtistResponse> update(@PathVariable Long id, @RequestBody ArtistUpsertRequest request) {
+        return ResponseEntity.ok(ArtistResponse.from(
+                artistService.update(
+                        id,
+                        request.getName(),
+                        request.getAgencyId(),
+                        request.getDisplayName(),
+                        request.getGenre(),
+                        request.getDebutDate()
+                )
+        ));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        artistService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}

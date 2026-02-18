@@ -55,6 +55,14 @@ public class Artist {
         this.debutDate = debutDate;
     }
 
+    public void rename(String name) {
+        String normalized = trimToNull(name);
+        if (normalized == null) {
+            throw new IllegalArgumentException("name is required");
+        }
+        this.name = normalized;
+    }
+
     public void updateProfile(Agency agency, String displayName, String genre, LocalDate debutDate) {
         if (agency != null) {
             this.agency = agency;

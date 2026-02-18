@@ -1,49 +1,108 @@
-### 1. 카카오 인가 URL 조회
-GET http://localhost:8080/api/auth/social/kakao/authorize-url
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+@naverState = naver-state-{{ts}}
+@kakaoCode = CHANGE_ME_KAKAO_AUTH_CODE
+@naverCode = CHANGE_ME_NAVER_AUTH_CODE
 
-### 2. 네이버 인가 URL 조회 (state 지정)
-GET http://localhost:8080/api/auth/social/naver/authorize-url?state=u1_naver_1770963678337_d4xmuaov06
-
-### 3. 카카오 code 교환
-POST http://localhost:8080/api/auth/social/kakao/exchange
+### 1) 테스트 공연/좌석 셋업 (v7 hold용 seat 준비)
+POST {{host}}/api/concerts/setup
 Content-Type: application/json
 
 {
-  "code": "KAKAO_AUTH_CODE",
-  "state": "dev-state-001"
+  "title": "Auth-Social-{{ts}}",
+  "artistName": "Auth-Artist-{{ts}}",
+  "agencyName": "Auth-Agency-{{ts}}",
+  "concertDate": "2026-06-01T18:00:00",
+  "seatCount": 50
 }
+> {%
+const body = typeof response.body === "string" ? response.body : String(response.body);
+const concertMatch = body.match(/ConcertID=(\d+)/);
+const optionMatch = body.match(/OptionID=(\d+)/);
+if (concertMatch) client.global.set("authConcertId", concertMatch[1]);
+if (optionMatch) client.global.set("authOptionId", optionMatch[1]);
+%}
 
-### 4. 네이버 code 교환
-POST http://localhost:8080/api/auth/social/naver/exchange
+### 2) 좌석 조회 및 authSeatId 저장
+GET {{host}}/api/concerts/options/{{authOptionId}}/seats
+> {%
+if (Array.isArray(response.body) && response.body.length > 0) {
+  client.global.set("authSeatId", String(response.body[0].id));
+}
+%}
+
+### 3) 카카오 인가 URL 조회
+GET {{host}}/api/auth/social/kakao/authorize-url
+
+### 4) 네이버 인가 URL 조회 (state 지정)
+GET {{host}}/api/auth/social/naver/authorize-url?state={{naverState}}
+
+### 5) 카카오 code 교환 (수동 code 입력 필요)
+POST {{host}}/api/auth/social/kakao/exchange
 Content-Type: application/json
 
 {
-  "code": "NAVER_AUTH_CODE",
-  "state": "u1_naver_1770963678337_d4xmuaov06"
+  "code": "{{kakaoCode}}",
+  "state": "dev-state-{{ts}}"
 }
+> {%
+if (response.status === 200 && response.body) {
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+}
+%}
 
-### 5. Access/Refresh 토큰 재발급 (A2)
-POST http://localhost:8080/api/auth/token/refresh
+### 6) 네이버 code 교환 (수동 code 입력 필요)
+POST {{host}}/api/auth/social/naver/exchange
 Content-Type: application/json
 
 {
-  "refreshToken": "REFRESH_TOKEN_FROM_EXCHANGE_RESPONSE"
+  "code": "{{naverCode}}",
+  "state": "{{naverState}}"
 }
+> {%
+if (response.status === 200 && response.body) {
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+}
+%}
 
-### 6. 내 인증 프로필 조회 (A2)
-GET http://localhost:8080/api/auth/me
-Authorization: Bearer ACCESS_TOKEN_FROM_EXCHANGE_RESPONSE
-
-### 7. 인증 사용자 기반 HOLD 생성 (A2, v7)
-POST http://localhost:8080/api/reservations/v7/holds
-Authorization: Bearer ACCESS_TOKEN_FROM_EXCHANGE_RESPONSE
+### 7) Access/Refresh 토큰 재발급 (A2)
+POST {{host}}/api/auth/token/refresh
 Content-Type: application/json
 
 {
-  "seatId": 1,
-  "requestFingerprint": "fp-http-sample-001",
-  "deviceFingerprint": "device-http-sample-001"
+  "refreshToken": "{{refreshToken}}"
+}
+> {%
+if (response.status === 200 && response.body) {
+  client.global.set("accessToken", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+}
+%}
+
+### 8) 내 인증 프로필 조회 (A2)
+GET {{host}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 9) 인증 사용자 기반 HOLD 생성 (A2, v7)
+POST {{host}}/api/reservations/v7/holds
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "seatId": {{authSeatId}},
+  "requestFingerprint": "fp-http-sample-{{ts}}",
+  "deviceFingerprint": "device-http-sample-{{ts}}"
 }
 
-### 8. Provider callback -> U1 callback redirect 확인
-GET http://localhost:8080/login/oauth2/code/naver?code=sample-code&state=u1_naver_1770963678337_d4xmuaov06
+### 10) Provider callback -> U1 callback redirect 확인
+GET {{host}}/login/oauth2/code/naver?code=sample-code&state={{naverState}}
+
+### 11) 로그아웃
+POST {{host}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

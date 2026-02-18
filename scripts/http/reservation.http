@@ -1,158 +1,232 @@
-### 1. 예약 생성 (v1 - 낙관적 락)
-POST http://localhost:8080/api/reservations/v1/optimistic
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+
+### 1) 테스트 유저 생성 (owner)
+POST {{host}}/api/users
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "seatId": 1
+  "username": "owner-{{ts}}",
+  "tier": "BASIC"
 }
+> {%
+client.test("owner user created", function() {
+  client.assert(response.status === 200, "expected 200");
+  client.assert(response.body && response.body.id, "owner user id missing");
+});
+client.global.set("ownerUserId", String(response.body.id));
+%}
 
-### 2. 예약 생성 (v2 - 비관적 락)
-POST http://localhost:8080/api/reservations/v2/pessimistic
+### 2) 테스트 유저 생성 (vip)
+POST {{host}}/api/users
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "seatId": 2
+  "username": "vip-{{ts}}",
+  "tier": "VIP"
 }
+> {%
+client.test("vip user created", function() {
+  client.assert(response.status === 200, "expected 200");
+  client.assert(response.body && response.body.id, "vip user id missing");
+});
+client.global.set("vipUserId", String(response.body.id));
+%}
 
-### 3. 예약 생성 (v3 - Redis 분산 락)
-POST http://localhost:8080/api/reservations/v3/distributed-lock
+### 3) 테스트 공연/옵션/좌석 셋업
+POST {{host}}/api/concerts/setup
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "seatId": 3
+  "title": "Reservation-Test-{{ts}}",
+  "artistName": "Reservation-Artist-{{ts}}",
+  "agencyName": "Reservation-Agency-{{ts}}",
+  "concertDate": "2026-06-01T18:00:00",
+  "seatCount": 50
 }
+> {%
+client.test("concert setup success", function() {
+  client.assert(response.status === 200, "expected 200");
+});
+const body = typeof response.body === "string" ? response.body : String(response.body);
+const concertMatch = body.match(/ConcertID=(\d+)/);
+const optionMatch = body.match(/OptionID=(\d+)/);
+if (concertMatch) client.global.set("concertId", concertMatch[1]);
+if (optionMatch) client.global.set("optionId", optionMatch[1]);
+%}
 
-### 4. 비동기 예약 요청 (v4 - Queue/Polling)
-# 응답: 202 Accepted. Redis 상태가 PENDING으로 설정됨.
-POST http://localhost:8080/api/reservations/v4-opt/queue-polling
+### 4) 옵션 재조회 (optionId 보정)
+GET {{host}}/api/concerts/{{concertId}}/options
+> {%
+if (Array.isArray(response.body) && response.body.length > 0) {
+  client.global.set("optionId", String(response.body[0].id));
+}
+%}
+
+### 5) 좌석 조회 및 seatId1..seatId8 자동 세팅
+GET {{host}}/api/concerts/options/{{optionId}}/seats
+> {%
+client.test("enough seats", function() {
+  client.assert(Array.isArray(response.body), "seats should be array");
+  client.assert(response.body.length >= 8, "need at least 8 seats");
+});
+for (let i = 0; i < 8; i++) {
+  client.global.set("seatId" + (i + 1), String(response.body[i].id));
+}
+%}
+
+### 6) 예약 생성 (v1 - 낙관적 락)
+POST {{host}}/api/reservations/v1/optimistic
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "seatId": 10
+  "userId": {{ownerUserId}},
+  "seatId": {{seatId1}}
 }
 
-### 5. 예약 상태 조회 (v4 - Polling)
-# PENDING -> PROCESSING -> SUCCESS/FAIL 상태 변화 확인
-GET http://localhost:8080/api/reservations/v4/status?userId=1&seatId=10
+### 7) 예약 생성 (v2 - 비관적 락)
+POST {{host}}/api/reservations/v2/pessimistic
+Content-Type: application/json
 
-### 6. 실시간 알림 구독 (v5 - SSE)
-# 호출 시 연결이 유지되며, 처리가 끝나면 RESERVATION_STATUS 이벤트 수신
-GET http://localhost:8080/api/reservations/v5/subscribe?userId=1&seatId=10
+{
+  "userId": {{ownerUserId}},
+  "seatId": {{seatId2}}
+}
+
+### 8) 예약 생성 (v3 - Redis 분산 락)
+POST {{host}}/api/reservations/v3/distributed-lock
+Content-Type: application/json
+
+{
+  "userId": {{ownerUserId}},
+  "seatId": {{seatId3}}
+}
+
+### 9) 비동기 예약 요청 (v4 - Queue/Polling)
+POST {{host}}/api/reservations/v4-opt/queue-polling
+Content-Type: application/json
+
+{
+  "userId": {{ownerUserId}},
+  "seatId": {{seatId4}}
+}
+
+### 10) 예약 상태 조회 (v4 - Polling)
+GET {{host}}/api/reservations/v4/status?userId={{ownerUserId}}&seatId={{seatId4}}
+
+### 11) 실시간 알림 구독 (v5 - SSE, 선택)
+GET {{host}}/api/reservations/v5/subscribe?userId={{ownerUserId}}&seatId={{seatId4}}
 Accept: text/event-stream
 
-### 7. 내 예약 목록 조회 (User ID: 1)
-GET http://localhost:8080/api/reservations/users/1
-
-### 8. 예약 취소
-DELETE http://localhost:8080/api/reservations/1
-
-### 9. Step 9 - 좌석 홀드 생성 (HOLD)
-POST http://localhost:8080/api/reservations/v6/holds
+### 12) Step 9 - 좌석 홀드 생성 (HOLD)
+POST {{host}}/api/reservations/v6/holds
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "seatId": 11,
-  "requestFingerprint": "hold-req-001",
-  "deviceFingerprint": "device-001"
+  "userId": {{vipUserId}},
+  "seatId": {{seatId5}},
+  "requestFingerprint": "hold-req-{{ts}}",
+  "deviceFingerprint": "device-{{ts}}"
+}
+> {%
+client.test("v6 hold created", function() {
+  client.assert(response.status === 201, "expected 201");
+  client.assert(response.body && response.body.id, "reservation id missing");
+});
+client.global.set("reservationId", String(response.body.id));
+%}
+
+### 13) Step 9 - 결제 진행 전이 (HOLD -> PAYING)
+POST {{host}}/api/reservations/v6/{{reservationId}}/paying
+Content-Type: application/json
+
+{
+  "userId": {{vipUserId}}
 }
 
-### 10. Step 9 - 결제 진행 전이 (HOLD -> PAYING)
-POST http://localhost:8080/api/reservations/v6/{{reservationId}}/paying
+### 14) Step 9 - 결제 확정 전이 (PAYING -> CONFIRMED)
+POST {{host}}/api/reservations/v6/{{reservationId}}/confirm
 Content-Type: application/json
 
 {
-  "userId": 1
+  "userId": {{vipUserId}}
 }
 
-### 11. Step 9 - 결제 확정 전이 (PAYING -> CONFIRMED)
-POST http://localhost:8080/api/reservations/v6/{{reservationId}}/confirm
+### 15) Step 9 - 상태 조회
+GET {{host}}/api/reservations/v6/{{reservationId}}?userId={{vipUserId}}
+
+### 16) Step 10 - 예약 취소 (CONFIRMED -> CANCELLED)
+POST {{host}}/api/reservations/v6/{{reservationId}}/cancel
 Content-Type: application/json
 
 {
-  "userId": 1
+  "userId": {{vipUserId}}
 }
 
-### 12. Step 9 - 상태 조회
-GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1
-
-### 13. Step 10 - 예약 취소 (CONFIRMED -> CANCELLED)
-POST http://localhost:8080/api/reservations/v6/{{reservationId}}/cancel
+### 17) Step 10 - 환불 완료 (CANCELLED -> REFUNDED)
+POST {{host}}/api/reservations/v6/{{reservationId}}/refund
 Content-Type: application/json
 
 {
-  "userId": 1
+  "userId": {{vipUserId}}
 }
 
-### 14. Step 10 - 환불 완료 (CANCELLED -> REFUNDED)
-POST http://localhost:8080/api/reservations/v6/{{reservationId}}/refund
+### 18) Step 10 - 최종 상태 조회
+GET {{host}}/api/reservations/v6/{{reservationId}}?userId={{vipUserId}}
+
+### 19) Step 11 - 판매 정책 생성/수정
+PUT {{host}}/api/concerts/{{concertId}}/sales-policy
 Content-Type: application/json
 
 {
-  "userId": 1
-}
-
-### 15. Step 10 - 최종 상태 조회
-GET http://localhost:8080/api/reservations/v6/{{reservationId}}?userId=1
-
-### 16. Step 11 - 판매 정책 생성/수정 (선예매/등급/1인 제한)
-PUT http://localhost:8080/api/concerts/{{concertId}}/sales-policy
-Content-Type: application/json
-
-{
-  "presaleStartAt": "2026-02-11T13:00:00",
-  "presaleEndAt": "2026-02-11T13:30:00",
+  "presaleStartAt": "2024-12-31T23:00:00",
+  "presaleEndAt": "2025-01-01T00:00:00",
   "presaleMinimumTier": "VIP",
-  "generalSaleStartAt": "2026-02-11T13:30:00",
+  "generalSaleStartAt": "2025-01-01T00:00:00",
   "maxReservationsPerUser": 1
 }
 
-### 17. Step 11 - 판매 정책 조회
-GET http://localhost:8080/api/concerts/{{concertId}}/sales-policy
+### 20) Step 11 - 판매 정책 조회
+GET {{host}}/api/concerts/{{concertId}}/sales-policy
 
-### 18. Step 11 - 등급 지정 유저 생성 (BASIC/VIP)
-POST http://localhost:8080/api/users
+### 21) Step 11 - 정책 적용 HOLD 1건 (성공 예상)
+POST {{host}}/api/reservations/v6/holds
 Content-Type: application/json
 
 {
-  "username": "step11-basic-user",
-  "tier": "BASIC"
+  "userId": {{vipUserId}},
+  "seatId": {{seatId6}},
+  "requestFingerprint": "policy-hold-1-{{ts}}",
+  "deviceFingerprint": "policy-device-{{ts}}"
 }
+> {%
+if (response.status === 201 && response.body && response.body.id) {
+  client.global.set("policyReservationId", String(response.body.id));
+}
+%}
 
-### 19. Step 11 - VIP 유저 생성
-POST http://localhost:8080/api/users
+### 22) Step 11 - 정책 적용 HOLD 2건 (limit=1, 실패 예상)
+POST {{host}}/api/reservations/v6/holds
 Content-Type: application/json
 
 {
-  "username": "step11-vip-user",
-  "tier": "VIP"
+  "userId": {{vipUserId}},
+  "seatId": {{seatId7}},
+  "requestFingerprint": "policy-hold-2-{{ts}}",
+  "deviceFingerprint": "policy-device-{{ts}}"
 }
 
-### 20. Step 11 - 홀드 생성 시 정책 검증 적용
-POST http://localhost:8080/api/reservations/v6/holds
-Content-Type: application/json
+### 23) Step 12 - 감사 로그 조회
+GET {{host}}/api/reservations/v6/audit/abuse?result=BLOCKED&limit=20
 
-{
-  "userId": 1,
-  "seatId": 11,
-  "requestFingerprint": "policy-req-001",
-  "deviceFingerprint": "device-policy-001"
-}
+### 24) 정리 - 유저 예약 목록 조회
+GET {{host}}/api/reservations/users/{{vipUserId}}
 
-### 21. Step 12 - 부정사용 방지 검증 (rate/duplicate/device)
-POST http://localhost:8080/api/reservations/v6/holds
-Content-Type: application/json
+### 25) 정리 - 테스트 유저 삭제 (owner)
+DELETE {{host}}/api/users/{{ownerUserId}}
 
-{
-  "userId": 1,
-  "seatId": 12,
-  "requestFingerprint": "abuse-req-001",
-  "deviceFingerprint": "device-abuse-001"
-}
+### 26) 정리 - 테스트 유저 삭제 (vip)
+DELETE {{host}}/api/users/{{vipUserId}}
 
-### 22. Step 12 - 감사 로그 조회
-GET http://localhost:8080/api/reservations/v6/audit/abuse?result=BLOCKED&limit=20
+### 27) 정리 - 테스트 공연 삭제
+DELETE {{host}}/api/concerts/cleanup/{{concertId}}

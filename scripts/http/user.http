@@ -1,13 +1,41 @@
-### 1. 유저 생성 (회원가입)
-POST http://localhost:8080/api/users
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+
+### 1) 유저 생성 (순차 실행 시작점)
+POST {{host}}/api/users
 Content-Type: application/json
 
 {
-  "username": "tester1"
+  "username": "tester-{{ts}}",
+  "tier": "BASIC"
+}
+> {%
+client.test("user created", function() {
+  client.assert(response.status === 200, "expected 200");
+  client.assert(response.body && response.body.id, "id missing");
+});
+client.global.set("userId", String(response.body.id));
+%}
+
+### 2) 유저 목록 조회
+GET {{host}}/api/users
+
+### 3) 유저 단건 조회
+GET {{host}}/api/users/{{userId}}
+
+### 4) 유저 수정
+PUT {{host}}/api/users/{{userId}}
+Content-Type: application/json
+
+{
+  "username": "tester-updated-{{ts}}",
+  "tier": "VIP",
+  "email": "tester-{{ts}}@example.com",
+  "displayName": "Tester One"
 }
 
-### 2. 유저 조회
-GET http://localhost:8080/api/users/1
+### 5) 수정 결과 재조회
+GET {{host}}/api/users/{{userId}}
 
-### 3. 유저 삭제
-DELETE http://localhost:8080/api/users/1
+### 6) 유저 삭제
+DELETE {{host}}/api/users/{{userId}}

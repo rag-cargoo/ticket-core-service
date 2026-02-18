@@ -1,35 +1,57 @@
-### 1. 전체 공연 목록 조회
-GET http://localhost:8080/api/concerts
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+@concertTitle = Concert-{{ts}}
+@artistName = Artist-{{ts}}
+@agencyName = Agency-{{ts}}
 
-### 1-1. 공연 검색/필터/정렬 + 페이징 조회
-GET http://localhost:8080/api/concerts/search?keyword=iu&artistName=IU&page=0&size=10&sort=title,asc
-
-### 1-2. 다음 페이지 조회 예시
-GET http://localhost:8080/api/concerts/search?keyword=&artistName=&page=1&size=10&sort=id,desc
-
-### 1-3. 기획사 필터 + 정렬 예시
-GET http://localhost:8080/api/concerts/search?keyword=&artistName=&agencyName=ADOR&page=0&size=10&sort=agencyName,asc
-
-### 2. 공연 날짜 옵션 조회 (Concert ID: 1)
-GET http://localhost:8080/api/concerts/1/options
-
-### 3. 특정 날짜의 예약 가능 좌석 조회 (Option ID: 1)
-GET http://localhost:8080/api/concerts/options/1/seats
-
-### 4. [Admin] 테스트용 공연 및 좌석 일괄 셋업
-# 이 요청 한 번으로 아티스트, 공연, 옵션, 좌석(50개)이 생성됩니다.
-POST http://localhost:8080/api/concerts/setup
+### 1) [Admin] 테스트용 공연/옵션/좌석 셋업 (순차 실행 시작점)
+POST {{host}}/api/concerts/setup
 Content-Type: application/json
 
 {
-  "title": "NewJeans Tokyo Dome Special",
-  "artistName": "NewJeans",
-  "artistDisplayName": "NewJeans",
+  "title": "{{concertTitle}}",
+  "artistName": "{{artistName}}",
+  "artistDisplayName": "{{artistName}}",
   "artistGenre": "K-POP",
   "artistDebutDate": "2022-07-22",
-  "agencyName": "ADOR",
+  "agencyName": "{{agencyName}}",
   "agencyCountryCode": "KR",
-  "agencyHomepageUrl": "https://ador.world",
+  "agencyHomepageUrl": "https://example.com/{{agencyName}}",
   "concertDate": "2026-06-01T18:00:00",
   "seatCount": 50
 }
+> {%
+client.test("setup success", function() {
+  client.assert(response.status === 200, "expected 200");
+});
+const body = typeof response.body === "string" ? response.body : String(response.body);
+const concertMatch = body.match(/ConcertID=(\d+)/);
+const optionMatch = body.match(/OptionID=(\d+)/);
+if (concertMatch) client.global.set("concertId", concertMatch[1]);
+if (optionMatch) client.global.set("optionId", optionMatch[1]);
+%}
+
+### 2) 전체 공연 목록 조회
+GET {{host}}/api/concerts
+
+### 3) 공연 검색/필터/정렬 + 페이징 조회
+GET {{host}}/api/concerts/search?keyword={{concertTitle}}&artistName={{artistName}}&agencyName={{agencyName}}&page=0&size=10&sort=title,asc
+
+### 4) 공연 날짜 옵션 조회
+GET {{host}}/api/concerts/{{concertId}}/options
+> {%
+if (Array.isArray(response.body) && response.body.length > 0 && response.body[0].id) {
+  client.global.set("optionId", String(response.body[0].id));
+}
+%}
+
+### 5) 특정 옵션의 예약 가능 좌석 조회
+GET {{host}}/api/concerts/options/{{optionId}}/seats
+> {%
+if (Array.isArray(response.body) && response.body.length > 0 && response.body[0].id) {
+  client.global.set("seatId", String(response.body[0].id));
+}
+%}
+
+### 6) 셋업 데이터 정리 (선택)
+DELETE {{host}}/api/concerts/cleanup/{{concertId}}

@@ -1,0 +1,78 @@
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+
+### 1) 기획사 생성 (순차 실행 시작점)
+POST {{host}}/api/agencies
+Content-Type: application/json
+
+{
+  "name": "ADOR-{{ts}}",
+  "countryCode": "KR",
+  "homepageUrl": "https://ador.world"
+}
+> {%
+client.test("agency created", function() {
+  client.assert(response.status === 201, "expected 201");
+  client.assert(response.body && response.body.id, "agency id missing");
+});
+client.global.set("agencyId", String(response.body.id));
+%}
+
+### 2) 기획사 목록 조회
+GET {{host}}/api/agencies
+
+### 3) 기획사 단건 조회
+GET {{host}}/api/agencies/{{agencyId}}
+
+### 4) 기획사 수정
+PUT {{host}}/api/agencies/{{agencyId}}
+Content-Type: application/json
+
+{
+  "name": "ADOR-ENT-{{ts}}",
+  "countryCode": "KR",
+  "homepageUrl": "https://ador.world/company/{{ts}}"
+}
+
+### 5) 아티스트 생성
+POST {{host}}/api/artists
+Content-Type: application/json
+
+{
+  "name": "NewJeans-{{ts}}",
+  "agencyId": {{agencyId}},
+  "displayName": "NewJeans",
+  "genre": "K-POP",
+  "debutDate": "2022-07-22"
+}
+> {%
+client.test("artist created", function() {
+  client.assert(response.status === 201, "expected 201");
+  client.assert(response.body && response.body.id, "artist id missing");
+});
+client.global.set("artistId", String(response.body.id));
+%}
+
+### 6) 아티스트 목록 조회
+GET {{host}}/api/artists
+
+### 7) 아티스트 단건 조회
+GET {{host}}/api/artists/{{artistId}}
+
+### 8) 아티스트 수정
+PUT {{host}}/api/artists/{{artistId}}
+Content-Type: application/json
+
+{
+  "name": "NewJeans-{{ts}}",
+  "agencyId": {{agencyId}},
+  "displayName": "NJ",
+  "genre": "Pop",
+  "debutDate": "2022-07-22"
+}
+
+### 9) 아티스트 삭제
+DELETE {{host}}/api/artists/{{artistId}}
+
+### 10) 기획사 삭제
+DELETE {{host}}/api/agencies/{{agencyId}}

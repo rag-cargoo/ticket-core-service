@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ConcertRepository extends JpaRepository<Concert, Long> {
+    boolean existsByArtistId(Long artistId);
 
     @Query("SELECT c FROM Concert c JOIN FETCH c.options")
     List<Concert> findAllWithOptions();
