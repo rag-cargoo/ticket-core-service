@@ -13,6 +13,7 @@ public class SocialLoginProperties {
 
     private Provider kakao = new Provider();
     private Provider naver = new Provider();
+    private RealE2e realE2e = new RealE2e();
 
     @Getter
     @Setter
@@ -21,5 +22,11 @@ public class SocialLoginProperties {
         private String clientSecret;
         private String redirectUri;
         private String serviceUrl;
+    }
+
+    @Getter
+    @Setter
+    public static class RealE2e {
+        private boolean enabled = false;
     }
 }

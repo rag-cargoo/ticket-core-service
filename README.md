@@ -55,6 +55,16 @@ make test-k6
 make test-auth-social-pipeline
 ```
 
+### 6. Auth-Social Real Provider E2E 테스트 (선택)
+```bash
+APP_AUTH_SOCIAL_REAL_E2E_ENABLED=true \
+AUTH_REAL_E2E_PROVIDER=kakao \
+AUTH_REAL_E2E_PREPARE_ONLY=true \
+make test-auth-social-real-provider
+```
+
+- 준비 단계(`AUTH_REAL_E2E_PREPARE_ONLY=true`)에서 authorize URL을 발급하고 브라우저 로그인 후 callback `code`를 획득한다.
+- 실제 검증 단계는 `AUTH_REAL_E2E_CODE=<callback-code>`(네이버는 `AUTH_REAL_E2E_STATE` 포함)로 재실행한다.
 - 로컬 `k6`가 없으면 Docker(`grafana/k6`) fallback으로 자동 실행됩니다.
 - 웹 대시보드 포함 실행: `make test-k6-dashboard` (기본 URL: `http://127.0.0.1:5665`)
 
@@ -64,6 +74,7 @@ make test-auth-social-pipeline
 
 - API 스크립트 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/latest.md`
 - auth-social 파이프라인 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-e2e-latest.md`
+- auth-social real provider e2e 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-real-provider-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `sse`)
 - WebSocket STOMP 엔드포인트: `/ws` (`/topic/waiting-queue/{concertId}/{userId}`, `/topic/reservations/{seatId}/{userId}`)
