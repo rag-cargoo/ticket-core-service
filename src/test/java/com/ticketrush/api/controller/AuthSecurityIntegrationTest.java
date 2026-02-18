@@ -22,8 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -73,5 +75,29 @@ class AuthSecurityIntegrationTest {
                 .andExpect(jsonPath("$.userId").value(101L))
                 .andExpect(jsonPath("$.username").value("token-user"))
                 .andExpect(jsonPath("$.role").value("USER"));
+    }
+
+    @Test
+    void me_shouldReturnUnauthorizedWhenAccessTokenIsRevoked() throws Exception {
+        User user = new User("revoked-user", UserTier.BASIC, UserRole.USER);
+        ReflectionTestUtils.setField(user, "id", 102L);
+        String accessToken = jwtTokenProvider.createAccessToken(user);
+        when(accessTokenDenylistService.isRevoked(anyString())).thenReturn(true);
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("unauthorized"));
+    }
+
+    @Test
+    void logout_shouldReturnUnauthorizedWithoutAccessToken() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType("application/json")
+                        .content("{\"refreshToken\":\"dummy\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("unauthorized"));
     }
 }

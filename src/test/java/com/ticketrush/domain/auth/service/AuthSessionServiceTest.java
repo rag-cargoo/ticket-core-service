@@ -109,4 +109,24 @@ class AuthSessionServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("mismatch");
     }
+
+    @Test
+    void logout_shouldFailWhenRefreshTokenMissing() {
+        User user = userRepository.save(new User("auth-user-6", UserTier.BASIC, UserRole.USER));
+        AuthTokenPair pair = authSessionService.issueFor(user);
+
+        assertThatThrownBy(() -> authSessionService.logout(null, pair.getAccessToken()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("refresh token is required");
+    }
+
+    @Test
+    void logout_shouldFailWhenAccessTokenMissing() {
+        User user = userRepository.save(new User("auth-user-7", UserTier.BASIC, UserRole.USER));
+        AuthTokenPair pair = authSessionService.issueFor(user);
+
+        assertThatThrownBy(() -> authSessionService.logout(pair.getRefreshToken(), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("access token is required");
+    }
 }

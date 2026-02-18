@@ -111,6 +111,11 @@ Content-Type: application/json
 ### 12) 로그아웃 이후 access 재사용 차단 확인 (401 예상)
 GET {{host}}/api/auth/me
 Authorization: Bearer {{accessToken}}
+> {%
+client.test("logout blocks access token reuse", function() {
+  client.assert(response.status === 401, "expected 401");
+});
+%}
 
 ### 13) 로그아웃 이후 refresh 재사용 차단 확인 (400 예상)
 POST {{host}}/api/auth/token/refresh
@@ -119,3 +124,8 @@ Content-Type: application/json
 {
   "refreshToken": "{{refreshToken}}"
 }
+> {%
+client.test("logout blocks refresh token reuse", function() {
+  client.assert(response.status === 400, "expected 400");
+});
+%}
