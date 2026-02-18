@@ -56,6 +56,9 @@ app:
       access-token-seconds: ${AUTH_ACCESS_TOKEN_SECONDS:1800}
       refresh-token-seconds: ${AUTH_REFRESH_TOKEN_SECONDS:1209600}
       access-token-blocklist-key-prefix: ${AUTH_ACCESS_TOKEN_BLOCKLIST_KEY_PREFIX:auth:access-blocklist:}
+  social:
+    real-e2e:
+      enabled: ${APP_AUTH_SOCIAL_REAL_E2E_ENABLED:false}
   frontend:
     u1-callback-url: ${U1_CALLBACK_URL:/ux/u1/callback.html}
     allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080}

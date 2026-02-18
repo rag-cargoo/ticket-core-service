@@ -1,6 +1,6 @@
 # Makefile for TicketRush API Testing
 
-.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-suite test-auth-social-pipeline test-all setup-perms
+.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
 
 # 기본 명령어 (도움말)
 help:
@@ -18,6 +18,7 @@ help:
 	@echo " make test-k6-dashboard : [perf] k6 + 웹 대시보드(5665) 실행"
 	@echo " make test-suite : 변경된 API 스크립트 실행 + 리포트 생성"
 	@echo " make test-auth-social-pipeline : auth-social CI-safe 파이프라인 테스트"
+	@echo " make test-auth-social-real-provider : auth-social real provider E2E (선택 실행)"
 	@echo " make test-all   : 모든 버전 순차 테스트"
 	@echo " make setup      : 스크립트 실행 권한 부여"
 	@echo "========================================================================"
@@ -62,6 +63,9 @@ test-suite:
 
 test-auth-social-pipeline:
 	bash ./scripts/api/run-auth-social-e2e-pipeline.sh
+
+test-auth-social-real-provider:
+	bash ./scripts/api/run-auth-social-real-provider-e2e.sh
 
 # 실행 권한 부여
 setup:
