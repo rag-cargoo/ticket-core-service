@@ -40,4 +40,8 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
             """)
     java.util.List<ConcertSeatCountProjection> countSeatTotalsByConcertIdsAndStatus(@Param("concertIds") Collection<Long> concertIds,
                                                                                      @Param("status") Seat.SeatStatus status);
+
+    long countByConcertOptionId(Long concertOptionId);
+
+    void deleteByConcertOptionId(Long concertOptionId);
 }

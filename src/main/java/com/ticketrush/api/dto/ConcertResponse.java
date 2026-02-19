@@ -24,6 +24,8 @@ public class ConcertResponse {
     private String agencyName;
     private String agencyCountryCode;
     private String agencyHomepageUrl;
+    private String youtubeVideoUrl;
+    private String thumbnailUrl;
     private ConcertSaleStatus saleStatus;
     private LocalDateTime saleOpensAt;
     private Long saleOpensInSeconds;
@@ -55,6 +57,8 @@ public class ConcertResponse {
                 agency != null ? agency.getName() : null,
                 agency != null ? agency.getCountryCode() : null,
                 agency != null ? agency.getHomepageUrl() : null,
+                concert.getYoutubeVideoUrl(),
+                concert.hasThumbnail() ? "/api/concerts/" + concert.getId() + "/thumbnail" : null,
                 resolved.getSaleStatus(),
                 resolved.getSaleOpensAt(),
                 resolved.getSaleOpensInSeconds(),

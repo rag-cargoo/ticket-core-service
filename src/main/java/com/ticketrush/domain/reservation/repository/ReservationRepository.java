@@ -36,4 +36,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("concertId") Long concertId,
             @Param("statuses") Collection<Reservation.ReservationStatus> statuses
     );
+
+    boolean existsBySeatConcertOptionId(Long concertOptionId);
 }

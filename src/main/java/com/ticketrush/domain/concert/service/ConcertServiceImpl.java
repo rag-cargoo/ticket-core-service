@@ -10,7 +10,9 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
+import com.ticketrush.global.config.PaymentProperties;
 import com.ticketrush.global.cache.ConcertCacheNames;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -39,8 +41,10 @@ public class ConcertServiceImpl implements ConcertService {
     private final ConcertOptionRepository concertOptionRepository;
     private final SeatRepository seatRepository;
     private final SalesPolicyRepository salesPolicyRepository;
+    private final ReservationRepository reservationRepository;
     private final AgencyRepository agencyRepository;
     private final ArtistRepository artistRepository;
+    private final PaymentProperties paymentProperties;
 
     @Override
     @Transactional(readOnly = true)
@@ -66,9 +70,10 @@ public class ConcertServiceImpl implements ConcertService {
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, key = "#concertId")
     public List<ConcertOption> getConcertOptions(Long concertId) {
-        Concert concert = concertRepository.findById(concertId)
-                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
-        return concert.getOptions();
+        if (!concertRepository.existsById(concertId)) {
+            throw new IllegalArgumentException("Concert not found");
+        }
+        return concertOptionRepository.findByConcertIdOrderByConcertDateAsc(concertId);
     }
 
     @Override
@@ -140,25 +145,44 @@ public class ConcertServiceImpl implements ConcertService {
                                  LocalDate artistDebutDate,
                                  String agencyCountryCode,
                                  String agencyHomepageUrl) {
+        return createConcert(
+                title,
+                artistName,
+                agencyName,
+                artistDisplayName,
+                artistGenre,
+                artistDebutDate,
+                agencyCountryCode,
+                agencyHomepageUrl,
+                null
+        );
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public Concert createConcert(String title,
+                                 String artistName,
+                                 String agencyName,
+                                 String artistDisplayName,
+                                 String artistGenre,
+                                 LocalDate artistDebutDate,
+                                 String agencyCountryCode,
+                                 String agencyHomepageUrl,
+                                 String youtubeVideoUrl) {
         String normalizedTitle = normalizeRequired(title, "title");
         String normalizedArtistName = normalizeRequired(artistName, "artistName");
         String normalizedAgencyName = normalizeRequired(agencyName, "agencyName");
 
-        Agency agency = agencyRepository.findByNameIgnoreCase(normalizedAgencyName)
-                .map(existing -> {
-                    existing.updateMetadata(agencyCountryCode, agencyHomepageUrl);
-                    return existing;
-                })
-                .orElseGet(() -> agencyRepository.save(new Agency(normalizedAgencyName, agencyCountryCode, agencyHomepageUrl)));
+        Agency agency = upsertAgency(normalizedAgencyName, agencyCountryCode, agencyHomepageUrl);
+        Artist artist = upsertArtist(normalizedArtistName, agency, artistDisplayName, artistGenre, artistDebutDate);
 
-        Artist artist = artistRepository.findByNameIgnoreCase(normalizedArtistName)
-                .map(existing -> {
-                    existing.updateProfile(agency, artistDisplayName, artistGenre, artistDebutDate);
-                    return existing;
-                })
-                .orElseGet(() -> artistRepository.save(new Artist(normalizedArtistName, agency, artistDisplayName, artistGenre, artistDebutDate)));
-
-        return concertRepository.save(new Concert(normalizedTitle, artist));
+        return concertRepository.save(new Concert(normalizedTitle, artist, normalize(youtubeVideoUrl)));
     }
 
     @Override
@@ -170,9 +194,56 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertOption addOption(Long concertId, LocalDateTime date) {
+        return addOption(concertId, date, null);
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public ConcertOption addOption(Long concertId, LocalDateTime date, Long ticketPriceAmount) {
         Concert concert = concertRepository.findById(concertId)
                 .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
-        return concertOptionRepository.save(new ConcertOption(concert, date));
+        return concertOptionRepository.save(
+                new ConcertOption(concert, requireDate(date), normalizeTicketPrice(ticketPriceAmount))
+        );
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public ConcertOption updateOption(Long optionId, LocalDateTime date, Long ticketPriceAmount) {
+        ConcertOption option = concertOptionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert option not found"));
+        option.update(requireDate(date), normalizeTicketPrice(ticketPriceAmount));
+        return option;
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public void deleteOption(Long optionId) {
+        ConcertOption option = concertOptionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert option not found"));
+        if (reservationRepository.existsBySeatConcertOptionId(optionId)) {
+            throw new IllegalStateException("Cannot delete concert option with reservations.");
+        }
+        seatRepository.deleteByConcertOptionId(optionId);
+        concertOptionRepository.delete(option);
     }
 
     @Override
@@ -189,6 +260,102 @@ public class ConcertServiceImpl implements ConcertService {
         for (int i = 1; i <= count; i++) {
             seatRepository.save(new Seat(option, "A-" + i));
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Concert getConcert(Long concertId) {
+        return concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public Concert updateConcert(Long concertId,
+                                 String title,
+                                 String artistName,
+                                 String agencyName,
+                                 String artistDisplayName,
+                                 String artistGenre,
+                                 LocalDate artistDebutDate,
+                                 String agencyCountryCode,
+                                 String agencyHomepageUrl,
+                                 String youtubeVideoUrl) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+
+        String normalizedTitle = normalizeRequired(title, "title");
+        String normalizedArtistName = normalizeRequired(artistName, "artistName");
+        String normalizedAgencyName = normalizeRequired(agencyName, "agencyName");
+
+        Agency agency = upsertAgency(normalizedAgencyName, agencyCountryCode, agencyHomepageUrl);
+        Artist artist = upsertArtist(normalizedArtistName, agency, artistDisplayName, artistGenre, artistDebutDate);
+        concert.updateInfo(normalizedTitle, artist, normalize(youtubeVideoUrl));
+
+        return concert;
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public Concert updateConcertThumbnail(Long concertId,
+                                          String originalFilename,
+                                          String originalContentType,
+                                          byte[] originalBytes,
+                                          String thumbnailContentType,
+                                          byte[] thumbnailBytes) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+        concert.updateThumbnail(originalFilename, originalContentType, originalBytes, thumbnailContentType, thumbnailBytes);
+        return concert;
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public void clearConcertThumbnail(Long concertId) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+        concert.clearThumbnail();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] getConcertThumbnailBytes(Long concertId) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+        if (!concert.hasThumbnail()) {
+            return null;
+        }
+        byte[] bytes = concert.getThumbnailBytes();
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
+        return bytes.clone();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getConcertThumbnailContentType(Long concertId) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new IllegalArgumentException("Concert not found"));
+        return normalize(concert.getThumbnailContentType());
     }
 
     @Override
@@ -299,6 +466,43 @@ public class ConcertServiceImpl implements ConcertService {
                 availableSeatCount,
                 totalSeatCount
         );
+    }
+
+    private Agency upsertAgency(String agencyName, String agencyCountryCode, String agencyHomepageUrl) {
+        return agencyRepository.findByNameIgnoreCase(agencyName)
+                .map(existing -> {
+                    existing.updateMetadata(agencyCountryCode, agencyHomepageUrl);
+                    return existing;
+                })
+                .orElseGet(() -> agencyRepository.save(new Agency(agencyName, agencyCountryCode, agencyHomepageUrl)));
+    }
+
+    private Artist upsertArtist(String artistName,
+                                Agency agency,
+                                String artistDisplayName,
+                                String artistGenre,
+                                LocalDate artistDebutDate) {
+        return artistRepository.findByNameIgnoreCase(artistName)
+                .map(existing -> {
+                    existing.updateProfile(agency, artistDisplayName, artistGenre, artistDebutDate);
+                    return existing;
+                })
+                .orElseGet(() -> artistRepository.save(new Artist(artistName, agency, artistDisplayName, artistGenre, artistDebutDate)));
+    }
+
+    private LocalDateTime requireDate(LocalDateTime date) {
+        if (date == null) {
+            throw new IllegalArgumentException("concertDate is required");
+        }
+        return date;
+    }
+
+    private Long normalizeTicketPrice(Long ticketPriceAmount) {
+        long resolved = ticketPriceAmount != null ? ticketPriceAmount : paymentProperties.getDefaultTicketPriceAmount();
+        if (resolved <= 0) {
+            throw new IllegalArgumentException("ticketPriceAmount must be positive");
+        }
+        return resolved;
     }
 
     private String normalize(String value) {

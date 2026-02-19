@@ -12,6 +12,7 @@ import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -118,6 +119,29 @@ public class ConcertController {
         return ResponseEntity.ok(concertService.getAvailableSeats(optionId).stream()
                 .map(SeatResponse::from)
                 .collect(Collectors.toList()));
+    }
+
+    /**
+     * 공연 썸네일 이미지 조회
+     */
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<byte[]> getConcertThumbnail(@PathVariable Long id) {
+        byte[] thumbnailBytes = concertService.getConcertThumbnailBytes(id);
+        if (thumbnailBytes == null || thumbnailBytes.length == 0) {
+            return ResponseEntity.notFound().build();
+        }
+        String contentType = concertService.getConcertThumbnailContentType(id);
+        MediaType mediaType = MediaType.IMAGE_JPEG;
+        if (contentType != null) {
+            try {
+                mediaType = MediaType.parseMediaType(contentType);
+            } catch (IllegalArgumentException ignored) {
+                mediaType = MediaType.IMAGE_JPEG;
+            }
+        }
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .body(thumbnailBytes);
     }
 
     /**

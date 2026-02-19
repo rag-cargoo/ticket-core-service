@@ -24,8 +24,21 @@ public class ConcertOption {
     @Column(nullable = false)
     private LocalDateTime concertDate;
 
+    @Column(name = "ticket_price_amount")
+    private Long ticketPriceAmount;
+
     public ConcertOption(Concert concert, LocalDateTime concertDate) {
+        this(concert, concertDate, null);
+    }
+
+    public ConcertOption(Concert concert, LocalDateTime concertDate, Long ticketPriceAmount) {
         this.concert = concert;
         this.concertDate = concertDate;
+        this.ticketPriceAmount = ticketPriceAmount;
+    }
+
+    public void update(LocalDateTime concertDate, Long ticketPriceAmount) {
+        this.concertDate = concertDate;
+        this.ticketPriceAmount = ticketPriceAmount;
     }
 }

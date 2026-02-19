@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/concerts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/concerts/setup").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/concerts/cleanup/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/v1/**", "/api/v2/**", "/api/v3/**", "/api/v4/**").permitAll()
                         .requestMatchers("/api/reservations/v1/**", "/api/reservations/v2/**", "/api/reservations/v3/**",

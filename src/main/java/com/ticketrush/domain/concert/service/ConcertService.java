@@ -33,8 +33,54 @@ public interface ConcertService {
                           LocalDate artistDebutDate,
                           String agencyCountryCode,
                           String agencyHomepageUrl);
-    ConcertOption addOption(Long concertId, java.time.LocalDateTime date);
+    default Concert createConcert(String title,
+                                  String artistName,
+                                  String agencyName,
+                                  String artistDisplayName,
+                                  String artistGenre,
+                                  LocalDate artistDebutDate,
+                                  String agencyCountryCode,
+                                  String agencyHomepageUrl,
+                                  String youtubeVideoUrl) {
+        return createConcert(
+                title,
+                artistName,
+                agencyName,
+                artistDisplayName,
+                artistGenre,
+                artistDebutDate,
+                agencyCountryCode,
+                agencyHomepageUrl
+        );
+    }
+    default ConcertOption addOption(Long concertId, LocalDateTime date) {
+        return addOption(concertId, date, null);
+    }
+    ConcertOption addOption(Long concertId, LocalDateTime date, Long ticketPriceAmount);
+    ConcertOption updateOption(Long optionId, LocalDateTime date, Long ticketPriceAmount);
+    void deleteOption(Long optionId);
     void createSeats(Long optionId, int count);
+
+    Concert getConcert(Long concertId);
+    Concert updateConcert(Long concertId,
+                          String title,
+                          String artistName,
+                          String agencyName,
+                          String artistDisplayName,
+                          String artistGenre,
+                          LocalDate artistDebutDate,
+                          String agencyCountryCode,
+                          String agencyHomepageUrl,
+                          String youtubeVideoUrl);
+    Concert updateConcertThumbnail(Long concertId,
+                                   String originalFilename,
+                                   String originalContentType,
+                                   byte[] originalBytes,
+                                   String thumbnailContentType,
+                                   byte[] thumbnailBytes);
+    void clearConcertThumbnail(Long concertId);
+    byte[] getConcertThumbnailBytes(Long concertId);
+    String getConcertThumbnailContentType(Long concertId);
 
     void deleteConcert(Long concertId);
 

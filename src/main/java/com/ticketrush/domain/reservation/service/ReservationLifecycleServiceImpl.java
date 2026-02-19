@@ -76,10 +76,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
+        long resolvedTicketPriceAmount = resolveTicketPriceAmount(reservation);
         paymentService.payForReservation(
                 userId,
                 reservationId,
-                paymentProperties.getDefaultTicketPriceAmount(),
+                resolvedTicketPriceAmount,
                 "reservation-payment-" + reservationId
         );
         reservation.confirmPayment(now);
@@ -170,5 +171,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     .build();
             pushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
         }
+    }
+
+    private long resolveTicketPriceAmount(Reservation reservation) {
+        Long optionPrice = reservation.getSeat().getConcertOption().getTicketPriceAmount();
+        if (optionPrice != null && optionPrice > 0) {
+            return optionPrice;
+        }
+        return paymentProperties.getDefaultTicketPriceAmount();
     }
 }

@@ -46,20 +46,20 @@ public class DataInitializer implements CommandLineRunner {
         ensureAdminUser();
 
         if (!portfolioSeedEnabled) {
-            log.info(">>>> Portfolio seed skipped (app.portfolio-seed.enabled=false).");
+            log.info(">>>> Sample seed skipped (app.portfolio-seed.enabled=false).");
             log.info(">>>> System is ready. Use APIs for further data setup.");
             return;
         }
 
         if (userRepository.existsByUsername(PORTFOLIO_SEED_MARKER_USERNAME)) {
-            log.info(">>>> Portfolio seed skipped (already applied marker={}).", PORTFOLIO_SEED_MARKER_USERNAME);
+            log.info(">>>> Sample seed skipped (already applied marker={}).", PORTFOLIO_SEED_MARKER_USERNAME);
             log.info(">>>> System is ready. Use APIs for further data setup.");
             return;
         }
 
         seedPortfolioCatalog();
         userRepository.save(new User(PORTFOLIO_SEED_MARKER_USERNAME, UserTier.VIP, UserRole.ADMIN));
-        log.info(">>>> Portfolio seed completed.");
+        log.info(">>>> Sample seed completed.");
         log.info(">>>> System is ready. Use APIs for further data setup.");
     }
 
@@ -76,10 +76,10 @@ public class DataInitializer implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         seedConcert(
-                "Portfolio Countdown Arena",
-                "Portfolio Star A",
-                "Portfolio Entertainment",
-                "PORTFOLIO STAR A",
+                "Sample Countdown Arena",
+                "Sample Star A",
+                "Sample Entertainment",
+                "SAMPLE STAR A",
                 LocalDate.of(2020, 1, 15),
                 LocalDateTime.now().plusDays(14).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.plusHours(3),
@@ -88,10 +88,10 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         seedConcert(
-                "Portfolio Prime Time Stage",
-                "Portfolio Star B",
-                "Portfolio Entertainment",
-                "PORTFOLIO STAR B",
+                "Sample Prime Time Stage",
+                "Sample Star B",
+                "Sample Entertainment",
+                "SAMPLE STAR B",
                 LocalDate.of(2018, 6, 21),
                 LocalDateTime.now().plusDays(10).withHour(19).withMinute(30).withSecond(0).withNano(0),
                 now.plusMinutes(40),
@@ -100,10 +100,10 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         seedConcert(
-                "Portfolio Rush Hour Live",
-                "Portfolio Star C",
-                "Portfolio Entertainment",
-                "PORTFOLIO STAR C",
+                "Sample Rush Hour Live",
+                "Sample Star C",
+                "Sample Entertainment",
+                "SAMPLE STAR C",
                 LocalDate.of(2021, 9, 1),
                 LocalDateTime.now().plusDays(7).withHour(18).withMinute(0).withSecond(0).withNano(0),
                 now.plusMinutes(4),
@@ -112,10 +112,10 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         seedConcert(
-                "Portfolio Open Floor",
-                "Portfolio Star D",
-                "Portfolio Entertainment",
-                "PORTFOLIO STAR D",
+                "Sample Open Floor",
+                "Sample Star D",
+                "Sample Entertainment",
+                "SAMPLE STAR D",
                 LocalDate.of(2017, 3, 10),
                 LocalDateTime.now().plusDays(5).withHour(21).withMinute(0).withSecond(0).withNano(0),
                 now.minusMinutes(5),
@@ -124,10 +124,10 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         seedConcert(
-                "Portfolio Soldout Memorial",
-                "Portfolio Star E",
-                "Portfolio Entertainment",
-                "PORTFOLIO STAR E",
+                "Sample Soldout Memorial",
+                "Sample Star E",
+                "Sample Entertainment",
+                "SAMPLE STAR E",
                 LocalDate.of(2015, 11, 4),
                 LocalDateTime.now().plusDays(20).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.minusHours(1),
@@ -153,7 +153,7 @@ public class DataInitializer implements CommandLineRunner {
                 "K-POP",
                 artistDebutDate,
                 "KR",
-                "https://portfolio.example.com"
+                "https://sample.example.com"
         );
         var option = concertService.addOption(concert.getId(), concertDate);
         concertService.createSeats(option.getId(), seatCount);
