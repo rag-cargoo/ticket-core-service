@@ -4,9 +4,14 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_abs="$(cd "$script_dir/../.." && pwd)"
 repo_root="$(git -C "$project_abs" rev-parse --show-toplevel)"
-project_root="${project_abs#$repo_root/}"
+if [[ "$project_abs" == "$repo_root" ]]; then
+  project_root="."
+  scripts_root="scripts/api"
+else
+  project_root="${project_abs#$repo_root/}"
+  scripts_root="${project_root}/scripts/api"
+fi
 
-scripts_root="${project_root}/scripts/api"
 scripts_abs_root="${project_abs}/scripts/api"
 report_path="${project_root}/.codex/tmp/ticket-core-service/api-test/latest.md"
 report_abs_path="${project_abs}/.codex/tmp/ticket-core-service/api-test/latest.md"
@@ -16,6 +21,10 @@ trap 'rm -rf "$tmp_root"' EXIT
 # Default health probe keeps script-side dependency minimal.
 # OAuth callback redirect(`/login/oauth2/code/{provider}`)와 같은 브라우저 라우트 검증은 Playwright/U1 시나리오에서 다룬다.
 health_url="${API_SCRIPT_HEALTH_URL:-${TICKETRUSH_HEALTH_URL:-http://127.0.0.1:8080/api/concerts}}"
+push_mode="$(printf '%s' "${APP_PUSH_MODE:-${STEP7_PUSH_MODE:-websocket}}" | tr '[:upper:]' '[:lower:]')"
+if [[ "$push_mode" != "sse" && "$push_mode" != "websocket" ]]; then
+  push_mode="websocket"
+fi
 
 declare -a scripts_to_run=()
 
@@ -86,12 +95,33 @@ mkdir -p "$(dirname "$report_abs_path")"
 
 pass_count=0
 fail_count=0
+skip_count=0
 table_rows=""
 failure_blocks=""
+skip_blocks=""
 
 for script_abs in "${scripts_to_run[@]}"; do
   script_name="$(basename "$script_abs")"
   log_path="${tmp_root}/${script_name%.sh}.log"
+
+  skip_reason=""
+  if [[ "$script_name" == "v7-sse-rank-push.sh" && "$push_mode" != "sse" ]]; then
+    skip_reason="requires APP_PUSH_MODE=sse"
+  elif [[ "$script_name" == "v13-websocket-switching.sh" && "$push_mode" != "websocket" ]]; then
+    skip_reason="requires APP_PUSH_MODE=websocket"
+  fi
+
+  if [[ -n "$skip_reason" ]]; then
+    result="SKIP"
+    rc="-"
+    skip_count=$((skip_count + 1))
+    skip_blocks+=$'\n'
+    skip_blocks+="### ${script_name}"$'\n\n'
+    skip_blocks+="- reason: ${skip_reason}"$'\n'
+    skip_blocks+="- current push mode: ${push_mode}"$'\n'
+    table_rows+="| \`${script_name}\` | ${result} | ${rc} |"$'\n'
+    continue
+  fi
 
   set +e
   bash "$script_abs" >"$log_path" 2>&1
@@ -124,8 +154,10 @@ cat >"$report_abs_path" <<EOF
 
 - Result: ${overall}
 - Health URL: \`${health_url}\`
+- Push Mode: \`${push_mode}\`
 - Passed: ${pass_count}
 - Failed: ${fail_count}
+- Skipped: ${skip_count}
 
 ## Execution Matrix
 
@@ -133,6 +165,14 @@ cat >"$report_abs_path" <<EOF
 | --- | --- | --- |
 ${table_rows}
 EOF
+
+if [[ "$skip_count" -gt 0 ]]; then
+  cat >>"$report_abs_path" <<EOF
+
+## Skip Notes
+${skip_blocks}
+EOF
+fi
 
 if [[ "$fail_count" -gt 0 ]]; then
   cat >>"$report_abs_path" <<EOF
@@ -148,5 +188,5 @@ if [[ "$fail_count" -gt 0 ]]; then
   exit 1
 fi
 
-echo "[script-test] all passed (${pass_count})"
+echo "[script-test] all passed (${pass_count}), skipped (${skip_count})"
 echo "[script-test] report: ${report_path}"

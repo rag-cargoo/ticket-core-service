@@ -75,6 +75,8 @@ echo "[step7-regression] running step7 regression script"
 (
   cd "$project_abs"
   REDIS_CONTAINER=redis \
+  APP_PUSH_MODE="$step7_push_mode" \
+  STEP7_PUSH_MODE="$step7_push_mode" \
   API_SCRIPT_HEALTH_URL="$health_url" \
   bash ./scripts/api/run-api-script-tests.sh v7-sse-rank-push.sh
 )

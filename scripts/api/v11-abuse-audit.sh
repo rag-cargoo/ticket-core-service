@@ -60,10 +60,23 @@ if [[ -z "${OPTION_ID}" ]]; then
   echo -e "${RED}실패 (option 없음)${NC}"
   exit 1
 fi
-SEAT_IDS=$(curl -s "${CONCERT_API}/options/${OPTION_ID}/seats" | grep -oP '"id":\s*\K\d+' | head -n 8 | tr '\n' ' ')
+collect_seat_ids() {
+  local option_id="$1"
+  curl -s "${CONCERT_API}/options/${option_id}/seats" | grep -oP '"id":\s*\K\d+' | head -n 8 | tr '\n' ' '
+}
+
+SEAT_IDS=$(collect_seat_ids "${OPTION_ID}")
 read -r S1 S2 S3 S4 S5 S6 S7 S8 <<< "${SEAT_IDS}"
 if [[ -z "${S8:-}" ]]; then
-  echo -e "${RED}실패 (available seat 8개 미만)${NC}"
+  ensure_test_data || true
+  OPTION_ID=$(resolve_latest_option_id "${CONCERT_API}" || true)
+  if [[ -n "${OPTION_ID}" ]]; then
+    SEAT_IDS=$(collect_seat_ids "${OPTION_ID}")
+    read -r S1 S2 S3 S4 S5 S6 S7 S8 <<< "${SEAT_IDS}"
+  fi
+fi
+if [[ -z "${S8:-}" ]]; then
+  echo -e "${RED}실패 (seat 8개 미만)${NC}"
   exit 1
 fi
 echo -e "${GREEN}성공 (optionId=${OPTION_ID})${NC}"
