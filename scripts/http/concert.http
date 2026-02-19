@@ -37,6 +37,66 @@ GET {{host}}/api/concerts
 ### 3) 공연 검색/필터/정렬 + 페이징 조회
 GET {{host}}/api/concerts/search?keyword={{concertTitle}}&artistName={{artistName}}&agencyName={{agencyName}}&page=0&size=10&sort=title,asc
 
+### 3-1) [Admin/Test] 판매 정책 설정 (PREOPEN 예시)
+PUT {{host}}/api/concerts/{{concertId}}/sales-policy
+Content-Type: application/json
+
+{
+  "presaleStartAt": "2000-01-01T00:00:00",
+  "presaleEndAt": "2000-01-02T00:00:00",
+  "presaleMinimumTier": "BASIC",
+  "generalSaleStartAt": "2099-01-01T00:00:00",
+  "maxReservationsPerUser": 10
+}
+> {%
+client.test("sales-policy preopen success", function() {
+  client.assert(response.status === 200, "expected 200");
+});
+%}
+
+### 3-2) 검색 응답 판매상태(PREOPEN) 확인
+GET {{host}}/api/concerts/search?keyword={{concertTitle}}&page=0&size=10&sort=id,desc
+> {%
+client.test("sale status preopen", function() {
+  client.assert(response.status === 200, "expected 200");
+  client.assert(Array.isArray(response.body.items), "items should be array");
+  client.assert(response.body.items.length > 0, "items should not be empty");
+  client.assert(response.body.items[0].saleStatus === "PREOPEN", "expected PREOPEN");
+  client.assert(response.body.items[0].reservationButtonVisible === false, "expected hidden CTA");
+  client.assert(response.body.items[0].reservationButtonEnabled === false, "expected disabled CTA");
+});
+%}
+
+### 3-3) [Admin/Test] 판매 정책 설정 (OPEN 예시)
+PUT {{host}}/api/concerts/{{concertId}}/sales-policy
+Content-Type: application/json
+
+{
+  "presaleStartAt": "2000-01-01T00:00:00",
+  "presaleEndAt": "2000-01-02T00:00:00",
+  "presaleMinimumTier": "BASIC",
+  "generalSaleStartAt": "2000-01-03T00:00:00",
+  "maxReservationsPerUser": 10
+}
+> {%
+client.test("sales-policy open success", function() {
+  client.assert(response.status === 200, "expected 200");
+});
+%}
+
+### 3-4) 검색 응답 판매상태(OPEN) 확인
+GET {{host}}/api/concerts/search?keyword={{concertTitle}}&page=0&size=10&sort=id,desc
+> {%
+client.test("sale status open", function() {
+  client.assert(response.status === 200, "expected 200");
+  client.assert(Array.isArray(response.body.items), "items should be array");
+  client.assert(response.body.items.length > 0, "items should not be empty");
+  client.assert(response.body.items[0].saleStatus === "OPEN", "expected OPEN");
+  client.assert(response.body.items[0].reservationButtonVisible === true, "expected visible CTA");
+  client.assert(response.body.items[0].reservationButtonEnabled === true, "expected enabled CTA");
+});
+%}
+
 ### 4) 공연 날짜 옵션 조회
 GET {{host}}/api/concerts/{{concertId}}/options
 > {%

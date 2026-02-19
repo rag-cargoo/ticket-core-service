@@ -23,14 +23,14 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                     JOIN c.artist a
                     LEFT JOIN a.agency ag
                     WHERE (:keyword IS NULL
-                           OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR str(c.id) = :keyword)
+                           OR lower(c.title) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR lower(a.name) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR lower(ag.name) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR cast(c.id as string) = cast(:keyword as string))
                       AND (:artistName IS NULL
-                           OR lower(a.name) = lower(:artistName))
+                           OR lower(a.name) = lower(cast(:artistName as string)))
                       AND (:agencyName IS NULL
-                           OR lower(ag.name) = lower(:agencyName))
+                           OR lower(ag.name) = lower(cast(:agencyName as string)))
                     """,
             countQuery = """
                     SELECT count(c)
@@ -38,14 +38,14 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                     JOIN c.artist a
                     LEFT JOIN a.agency ag
                     WHERE (:keyword IS NULL
-                           OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR str(c.id) = :keyword)
+                           OR lower(c.title) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR lower(a.name) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR lower(ag.name) LIKE lower(concat('%', cast(:keyword as string), '%'))
+                           OR cast(c.id as string) = cast(:keyword as string))
                       AND (:artistName IS NULL
-                           OR lower(a.name) = lower(:artistName))
+                           OR lower(a.name) = lower(cast(:artistName as string)))
                       AND (:agencyName IS NULL
-                           OR lower(ag.name) = lower(:agencyName))
+                           OR lower(ag.name) = lower(cast(:agencyName as string)))
                     """
     )
     @EntityGraph(attributePaths = {"artist", "artist.agency"})

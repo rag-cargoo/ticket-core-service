@@ -48,6 +48,11 @@ docker-compose --profile frontend up -d
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
+- 포트폴리오 기본 더미 데이터가 필요하면 아래처럼 실행:
+```bash
+APP_PORTFOLIO_SEED_ENABLED=true ./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
 ### 3. API 스크립트 회귀 실행
 ```bash
 make test-suite
@@ -85,6 +90,8 @@ make test-auth-social-real-provider
 - auth-social real provider e2e 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-real-provider-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `websocket`)
+- 포트폴리오 더미 시드 토글: `APP_PORTFOLIO_SEED_ENABLED=true|false` (기본값 `false`)
+- 기본 CORS 허용 오리진: `localhost/127.0.0.1`의 `5173`, `4173`, `8080`
 - WebSocket STOMP 엔드포인트: `/ws` (`/topic/waiting-queue/{concertId}/{userId}`, `/topic/reservations/{seatId}/{userId}`)
 - WebSocket 구독 등록 API:
   - `POST /api/push/websocket/waiting-queue/subscriptions`

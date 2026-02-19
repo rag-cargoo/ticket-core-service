@@ -87,6 +87,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - APP_PUSH_MODE=${APP_PUSH_MODE:-websocket}
+      - APP_PORTFOLIO_SEED_ENABLED=${APP_PORTFOLIO_SEED_ENABLED:-true}
+      - FRONTEND_ALLOWED_ORIGINS=${FRONTEND_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8080,http://127.0.0.1:8080}
     depends_on:
       postgres-db:
         condition: service_healthy

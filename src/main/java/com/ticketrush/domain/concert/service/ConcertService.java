@@ -7,7 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface ConcertService {
     List<Concert> getConcerts();
@@ -17,6 +19,7 @@ public interface ConcertService {
     Page<Concert> searchConcerts(String keyword, String artistName, String agencyName, Pageable pageable);
     List<ConcertOption> getConcertOptions(Long concertId);
     List<Seat> getAvailableSeats(Long concertOptionId);
+    Map<Long, ConcertSaleSnapshot> getConcertSaleSnapshots(List<Long> concertIds, LocalDateTime now);
     
     // Admin & Test Setup
     default Concert createConcert(String title, String artistName, String agencyName) {

@@ -17,7 +17,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final List<String> normalizedAllowedOrigins;
 
     public WebSocketConfig(
-            @Value("${app.frontend.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}")
+            @Value("${app.frontend.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8080,http://127.0.0.1:8080}")
             List<String> allowedOrigins
     ) {
         this.normalizedAllowedOrigins = allowedOrigins.stream()

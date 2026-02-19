@@ -10,6 +10,7 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.global.cache.ConcertCacheNames;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -20,16 +21,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ConcertServiceImpl implements ConcertService {
+    private static final long OPEN_SOON_ONE_HOUR_SECONDS = 60L * 60L;
+    private static final long OPEN_SOON_FIVE_MINUTES_SECONDS = 5L * 60L;
+
     private final ConcertRepository concertRepository;
     private final ConcertOptionRepository concertOptionRepository;
     private final SeatRepository seatRepository;
+    private final SalesPolicyRepository salesPolicyRepository;
     private final AgencyRepository agencyRepository;
     private final ArtistRepository artistRepository;
 
@@ -67,6 +76,40 @@ public class ConcertServiceImpl implements ConcertService {
     @Cacheable(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, key = "#concertOptionId")
     public List<Seat> getAvailableSeats(Long concertOptionId) {
         return seatRepository.findByConcertOptionIdAndStatus(concertOptionId, Seat.SeatStatus.AVAILABLE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, ConcertSaleSnapshot> getConcertSaleSnapshots(List<Long> concertIds, LocalDateTime now) {
+        if (concertIds == null || concertIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Long> totalSeatCountByConcert = toSeatCountMap(
+                seatRepository.countSeatTotalsByConcertIds(concertIds)
+        );
+        Map<Long, Long> availableSeatCountByConcert = toSeatCountMap(
+                seatRepository.countSeatTotalsByConcertIdsAndStatus(concertIds, Seat.SeatStatus.AVAILABLE)
+        );
+        Map<Long, LocalDateTime> generalSaleOpenAtByConcert = salesPolicyRepository.findByConcertIdIn(concertIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        policy -> policy.getConcert().getId(),
+                        policy -> policy.getGeneralSaleStartAt()
+                ));
+
+        Map<Long, ConcertSaleSnapshot> result = new HashMap<>();
+        for (Long concertId : concertIds) {
+            long totalSeatCount = totalSeatCountByConcert.getOrDefault(concertId, 0L);
+            long availableSeatCount = availableSeatCountByConcert.getOrDefault(concertId, 0L);
+            LocalDateTime generalSaleStartAt = generalSaleOpenAtByConcert.get(concertId);
+
+            result.put(
+                    concertId,
+                    deriveSaleSnapshot(generalSaleStartAt, now, totalSeatCount, availableSeatCount)
+            );
+        }
+        return result;
     }
 
     @Override
@@ -172,6 +215,90 @@ public class ConcertServiceImpl implements ConcertService {
     public Seat getSeatWithPessimisticLock(Long seatId) {
         return seatRepository.findByIdWithPessimisticLock(seatId)
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found"));
+    }
+
+    private Map<Long, Long> toSeatCountMap(List<SeatRepository.ConcertSeatCountProjection> rows) {
+        return rows.stream().collect(Collectors.toMap(
+                SeatRepository.ConcertSeatCountProjection::getConcertId,
+                row -> row.getSeatCount() == null ? 0L : row.getSeatCount()
+        ));
+    }
+
+    private ConcertSaleSnapshot deriveSaleSnapshot(LocalDateTime generalSaleStartAt,
+                                                   LocalDateTime now,
+                                                   long totalSeatCount,
+                                                   long availableSeatCount) {
+        boolean hasSeats = totalSeatCount > 0;
+        boolean soldOut = hasSeats && availableSeatCount == 0;
+        if (soldOut) {
+            return new ConcertSaleSnapshot(
+                    ConcertSaleStatus.SOLD_OUT,
+                    generalSaleStartAt,
+                    null,
+                    true,
+                    false,
+                    availableSeatCount,
+                    totalSeatCount
+            );
+        }
+
+        if (generalSaleStartAt == null) {
+            return new ConcertSaleSnapshot(
+                    ConcertSaleStatus.UNSCHEDULED,
+                    null,
+                    null,
+                    false,
+                    false,
+                    availableSeatCount,
+                    totalSeatCount
+            );
+        }
+
+        if (!now.isBefore(generalSaleStartAt)) {
+            return new ConcertSaleSnapshot(
+                    ConcertSaleStatus.OPEN,
+                    generalSaleStartAt,
+                    0L,
+                    true,
+                    true,
+                    availableSeatCount,
+                    totalSeatCount
+            );
+        }
+
+        long opensInSeconds = Math.max(0L, Duration.between(now, generalSaleStartAt).getSeconds());
+        if (opensInSeconds <= OPEN_SOON_FIVE_MINUTES_SECONDS) {
+            return new ConcertSaleSnapshot(
+                    ConcertSaleStatus.OPEN_SOON_5M,
+                    generalSaleStartAt,
+                    opensInSeconds,
+                    true,
+                    false,
+                    availableSeatCount,
+                    totalSeatCount
+            );
+        }
+        if (opensInSeconds <= OPEN_SOON_ONE_HOUR_SECONDS) {
+            return new ConcertSaleSnapshot(
+                    ConcertSaleStatus.OPEN_SOON_1H,
+                    generalSaleStartAt,
+                    opensInSeconds,
+                    true,
+                    false,
+                    availableSeatCount,
+                    totalSeatCount
+            );
+        }
+
+        return new ConcertSaleSnapshot(
+                ConcertSaleStatus.PREOPEN,
+                generalSaleStartAt,
+                opensInSeconds,
+                false,
+                false,
+                availableSeatCount,
+                totalSeatCount
+        );
     }
 
     private String normalize(String value) {

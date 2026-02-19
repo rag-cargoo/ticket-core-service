@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,8 +63,13 @@ public class ConcertController {
      */
     @GetMapping
     public ResponseEntity<List<ConcertResponse>> getConcerts() {
-        return ResponseEntity.ok(concertService.getConcerts().stream()
-                .map(ConcertResponse::from)
+        var concerts = concertService.getConcerts();
+        var snapshots = concertService.getConcertSaleSnapshots(
+                concerts.stream().map(concert -> concert.getId()).collect(Collectors.toList()),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.ok(concerts.stream()
+                .map(concert -> ConcertResponse.from(concert, snapshots.get(concert.getId())))
                 .collect(Collectors.toList()));
     }
 
@@ -84,8 +90,12 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertService.searchConcerts(keyword, artistName, agencyName, pageable)
-                .map(ConcertResponse::from);
+        var concertPage = concertService.searchConcerts(keyword, artistName, agencyName, pageable);
+        var snapshots = concertService.getConcertSaleSnapshots(
+                concertPage.getContent().stream().map(concert -> concert.getId()).collect(Collectors.toList()),
+                LocalDateTime.now()
+        );
+        var result = concertPage.map(concert -> ConcertResponse.from(concert, snapshots.get(concert.getId())));
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
     }

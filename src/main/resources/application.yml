@@ -59,9 +59,11 @@ app:
   social:
     real-e2e:
       enabled: ${APP_AUTH_SOCIAL_REAL_E2E_ENABLED:false}
+  portfolio-seed:
+    enabled: ${APP_PORTFOLIO_SEED_ENABLED:false}
   frontend:
     u1-callback-url: ${U1_CALLBACK_URL:/ux/u1/callback.html}
-    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080}
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8080,http://127.0.0.1:8080}
   cache:
     concert:
       list-ttl: ${APP_CACHE_CONCERT_LIST_TTL:30s}

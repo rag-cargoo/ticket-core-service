@@ -1,8 +1,10 @@
 package com.ticketrush.domain.concert.service;
 
 import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.user.UserTier;
@@ -35,6 +37,9 @@ class ConcertExplorerIntegrationTest {
 
     @Autowired
     private ReservationService reservationService;
+
+    @Autowired
+    private SalesPolicyService salesPolicyService;
 
     @Autowired
     private UserRepository userRepository;
@@ -89,6 +94,67 @@ class ConcertExplorerIntegrationTest {
                 .andExpect(jsonPath("$.items[0].artistDebutDate").value("2022-07-22"))
                 .andExpect(jsonPath("$.items[0].agencyName").value("Agency-Meta"))
                 .andExpect(jsonPath("$.items[0].agencyCountryCode").value("KR"));
+    }
+
+    @Test
+    void searchEndpointIncludesOpenSoonFiveMinuteAndButtonFlags() throws Exception {
+        var concert = concertService.createConcert("Countdown Show", "Artist-Count", "Agency-Count");
+        var option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(2));
+        concertService.createSeats(option.getId(), 5);
+        salesPolicyService.upsert(
+                concert.getId(),
+                new SalesPolicyUpsertRequest(
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.now().plusMinutes(4),
+                        1
+                )
+        );
+
+        mockMvc.perform(get("/api/concerts/search")
+                        .param("keyword", "Countdown Show")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].saleStatus").value("OPEN_SOON_5M"))
+                .andExpect(jsonPath("$.items[0].reservationButtonVisible").value(true))
+                .andExpect(jsonPath("$.items[0].reservationButtonEnabled").value(false))
+                .andExpect(jsonPath("$.items[0].totalSeatCount").value(5))
+                .andExpect(jsonPath("$.items[0].availableSeatCount").value(5))
+                .andExpect(jsonPath("$.items[0].saleOpensInSeconds").isNumber());
+    }
+
+    @Test
+    void searchEndpointIncludesSoldOutStatusWhenNoAvailableSeats() throws Exception {
+        User user = userRepository.save(new User("soldout_user_" + System.nanoTime(), UserTier.BASIC));
+        var concert = concertService.createConcert("Soldout Show", "Artist-Sold", "Agency-Sold");
+        var option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
+        concertService.createSeats(option.getId(), 1);
+        salesPolicyService.upsert(
+                concert.getId(),
+                new SalesPolicyUpsertRequest(
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.now().minusMinutes(1),
+                        1
+                )
+        );
+
+        Long seatId = concertService.getAvailableSeats(option.getId()).get(0).getId();
+        reservationService.createReservation(new ReservationRequest(user.getId(), seatId));
+
+        mockMvc.perform(get("/api/concerts/search")
+                        .param("keyword", "Soldout Show")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].saleStatus").value("SOLD_OUT"))
+                .andExpect(jsonPath("$.items[0].reservationButtonVisible").value(true))
+                .andExpect(jsonPath("$.items[0].reservationButtonEnabled").value(false))
+                .andExpect(jsonPath("$.items[0].availableSeatCount").value(0))
+                .andExpect(jsonPath("$.items[0].totalSeatCount").value(1));
     }
 
     @Test
