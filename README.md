@@ -35,6 +35,14 @@
 docker-compose up -d
 ```
 
+### 1-1. 프론트 포함 실행 (선택)
+```bash
+docker-compose --profile frontend up -d
+```
+
+- 프론트 컨테이너(`ticket-web-client`)는 `http://127.0.0.1:5173`로 노출됩니다.
+- Nginx가 `/api/*`를 `app:8080`, `/ws`를 `app:8080/ws`로 프록시합니다.
+
 ### 2. 애플리케이션 실행
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local'

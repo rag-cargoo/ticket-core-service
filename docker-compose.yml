@@ -97,6 +97,24 @@ services:
     networks:
       - ticket-network
 
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ../../frontend/ticket-web-client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_WS_URL: /ws
+        VITE_PUSH_MODE: websocket
+    container_name: ticket-web-client
+    ports:
+      - "5173:80"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - ticket-network
+
 networks:
   ticket-network:
     driver: bridge
