@@ -87,3 +87,5 @@ app:
       client-secret: ${NAVER_CLIENT_SECRET:}
       redirect-uri: ${NAVER_REDIRECT_URI:}
       service-url: ${NAVER_SERVICE_URL:}
+  admin:
+    test-setup-enabled: true

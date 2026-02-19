@@ -10,6 +10,7 @@ import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
@@ -27,12 +28,15 @@ public class ConcertController {
 
     private final ConcertService concertService;
     private final SalesPolicyService salesPolicyService;
+    @Value("${app.admin.test-setup-enabled:false}")
+    private boolean adminTestSetupEnabled;
 
     /**
      * [Admin/Test] 공연 및 좌석 일괄 생성
      */
     @PostMapping("/setup")
     public ResponseEntity<String> setupConcert(@RequestBody ConcertSetupRequest request) {
+        assertTestSetupEnabled();
         var concert = concertService.createConcert(
                 request.getTitle(),
                 request.getArtistName(),
@@ -54,7 +58,7 @@ public class ConcertController {
      */
     @DeleteMapping("/cleanup/{concertId}")
     public ResponseEntity<String> cleanupConcert(@PathVariable Long concertId) {
-        // 실제 운영 환경에서는 사용 금지, 테스트용 로직
+        assertTestSetupEnabled();
         concertService.deleteConcert(concertId);
         return ResponseEntity.ok("Cleanup completed for ConcertID: " + concertId);
     }
@@ -181,6 +185,12 @@ public class ConcertController {
             return Sort.Direction.fromString(candidate);
         } catch (IllegalArgumentException ignored) {
             return Sort.Direction.ASC;
+        }
+    }
+
+    private void assertTestSetupEnabled() {
+        if (!adminTestSetupEnabled) {
+            throw new IllegalArgumentException("setup/cleanup endpoints are disabled in this profile");
         }
     }
 }

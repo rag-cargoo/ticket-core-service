@@ -59,6 +59,8 @@ app:
   social:
     real-e2e:
       enabled: ${APP_AUTH_SOCIAL_REAL_E2E_ENABLED:false}
+  admin:
+    test-setup-enabled: ${APP_ADMIN_TEST_SETUP_ENABLED:false}
   portfolio-seed:
     enabled: ${APP_PORTFOLIO_SEED_ENABLED:false}
   frontend:

@@ -1,0 +1,36 @@
+@host = http://localhost:8080
+@ts = {{$timestamp}}
+@concertTitle = Legacy-Setup-Concert-{{ts}}
+@artistName = Legacy-Setup-Artist-{{ts}}
+@agencyName = Legacy-Setup-Agency-{{ts}}
+
+### 1) [Legacy Dev/Test] 테스트용 공연/옵션/좌석 셋업
+### 주의: profile에서 app.admin.test-setup-enabled=true 인 경우에만 사용
+POST {{host}}/api/concerts/setup
+Content-Type: application/json
+
+{
+  "title": "{{concertTitle}}",
+  "artistName": "{{artistName}}",
+  "artistDisplayName": "{{artistName}}",
+  "artistGenre": "K-POP",
+  "artistDebutDate": "2022-07-22",
+  "agencyName": "{{agencyName}}",
+  "agencyCountryCode": "KR",
+  "agencyHomepageUrl": "https://example.com/{{agencyName}}",
+  "concertDate": "2026-06-01T18:00:00",
+  "seatCount": 50
+}
+> {%
+client.test("legacy setup success", function() {
+  client.assert(response.status === 200, "expected 200");
+});
+const body = typeof response.body === "string" ? response.body : String(response.body);
+const concertMatch = body.match(/ConcertID=(\d+)/);
+const optionMatch = body.match(/OptionID=(\d+)/);
+if (concertMatch) client.global.set("concertId", concertMatch[1]);
+if (optionMatch) client.global.set("optionId", optionMatch[1]);
+%}
+
+### 2) [Legacy Dev/Test] 셋업 데이터 정리 (선택)
+DELETE {{host}}/api/concerts/cleanup/{{concertId}}

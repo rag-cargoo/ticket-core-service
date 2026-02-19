@@ -1,0 +1,98 @@
+@host = http://localhost:8080
+@adminToken = REPLACE_WITH_ADMIN_BEARER_TOKEN
+@ts = {{$timestamp}}
+@concertTitle = Admin-Concert-{{ts}}
+@artistName = Admin-Artist-{{ts}}
+@agencyName = Admin-Agency-{{ts}}
+
+### 1) [Admin] 콘서트 생성
+POST {{host}}/api/admin/concerts
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "{{concertTitle}}",
+  "artistName": "{{artistName}}",
+  "artistDisplayName": "{{artistName}}",
+  "artistGenre": "K-POP",
+  "artistDebutDate": "2022-07-22",
+  "agencyName": "{{agencyName}}",
+  "agencyCountryCode": "KR",
+  "agencyHomepageUrl": "https://example.com/{{agencyName}}",
+  "youtubeVideoUrl": "https://www.youtube.com/watch?v=U8A5sK5PRCI"
+}
+> {%
+client.test("admin concert create success", function() {
+  client.assert(response.status === 201, "expected 201");
+});
+if (response.body && response.body.id) {
+  client.global.set("concertId", String(response.body.id));
+}
+%}
+
+### 2) [Admin] 회차 생성(좌석/가격 포함)
+POST {{host}}/api/admin/concerts/{{concertId}}/options
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "concertDate": "2026-06-01T18:00:00",
+  "seatCount": 50,
+  "ticketPriceAmount": 120000
+}
+> {%
+client.test("admin option create success", function() {
+  client.assert(response.status === 201, "expected 201");
+});
+if (response.body && response.body.id) {
+  client.global.set("optionId", String(response.body.id));
+}
+%}
+
+### 3) [Admin] 판매정책 생성/수정
+PUT {{host}}/api/admin/concerts/{{concertId}}/sales-policy
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "presaleStartAt": "2026-05-01T12:00:00",
+  "presaleEndAt": "2026-05-01T13:00:00",
+  "presaleMinimumTier": "BASIC",
+  "generalSaleStartAt": "2026-05-01T13:00:00",
+  "maxReservationsPerUser": 2
+}
+
+### 4) [Admin] 썸네일 업로드 (multipart)
+POST {{host}}/api/admin/concerts/{{concertId}}/thumbnail
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=AdminConcertBoundary
+
+--AdminConcertBoundary
+Content-Disposition: form-data; name="image"; filename="thumbnail.jpg"
+Content-Type: image/jpeg
+
+< ./samples/thumbnail.jpg
+--AdminConcertBoundary--
+
+### 5) [Public] 목록/검색/옵션/좌석/썸네일 조회
+GET {{host}}/api/concerts
+
+###
+GET {{host}}/api/concerts/search?keyword={{concertTitle}}&page=0&size=10&sort=id,desc
+
+###
+GET {{host}}/api/concerts/{{concertId}}/options
+
+###
+GET {{host}}/api/concerts/options/{{optionId}}/seats
+
+###
+GET {{host}}/api/concerts/{{concertId}}/thumbnail
+
+### 6) [Admin] 회차 삭제 (선택)
+DELETE {{host}}/api/admin/concerts/options/{{optionId}}
+Authorization: Bearer {{adminToken}}
+
+### 7) [Admin] 콘서트 삭제 (선택)
+DELETE {{host}}/api/admin/concerts/{{concertId}}
+Authorization: Bearer {{adminToken}}
