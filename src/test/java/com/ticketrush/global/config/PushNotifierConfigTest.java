@@ -11,6 +11,13 @@ class PushNotifierConfigTest {
     private final PushNotifierConfig config = new PushNotifierConfig();
 
     @Test
+    void pushProperties_defaultModeShouldBeWebSocket() {
+        PushProperties properties = new PushProperties();
+
+        assertThat(properties.getMode()).isEqualTo(PushProperties.Mode.WEBSOCKET);
+    }
+
+    @Test
     void pushNotifier_shouldSelectSseWhenModeIsSse() {
         PushProperties properties = new PushProperties();
         properties.setMode(PushProperties.Mode.SSE);

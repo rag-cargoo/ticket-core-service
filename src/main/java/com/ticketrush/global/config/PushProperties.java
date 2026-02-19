@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.push")
 public class PushProperties {
 
-    private Mode mode = Mode.SSE;
+    private Mode mode = Mode.WEBSOCKET;
 
     public enum Mode {
         SSE,

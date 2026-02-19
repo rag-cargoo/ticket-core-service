@@ -4,11 +4,11 @@ import com.ticketrush.global.auth.AuthErrorClassifier;
 import com.ticketrush.global.auth.AuthErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.Map;
 
@@ -16,8 +16,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String ERROR_BAD_REQUEST = "BAD_REQUEST";
+    private static final String ERROR_CONFLICT = "CONFLICT";
+    private static final String ERROR_INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+    private static final String ERROR_REQUEST_BODY_INVALID = "REQUEST_BODY_INVALID";
+
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<?> handleBadRequest(IllegalArgumentException e, HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException e, HttpServletRequest request) {
         if (isAuthPath(request)) {
             AuthErrorCode errorCode = AuthErrorClassifier.classify(e.getMessage());
             log.warn(
@@ -27,32 +32,32 @@ public class GlobalExceptionHandler {
                     request.getRequestURI(),
                     safeDetail(e.getMessage())
             );
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", 400,
-                    "errorCode", errorCode.name(),
-                    "message", safeDetail(e.getMessage())
-            ));
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.name(), safeDetail(e.getMessage()));
         }
         log.warn(">>>> [400 Error] URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
-        return ResponseEntity.badRequest().body(e.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ERROR_BAD_REQUEST, safeDetail(e.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<?> handleConflict(IllegalStateException e, HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> handleConflict(IllegalStateException e, HttpServletRequest request) {
         log.warn(">>>> [409 Error] URL: {}, Message: {}", request.getRequestURL(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, ERROR_CONFLICT, safeDetail(e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleAll(Exception e, HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> handleAll(Exception e, HttpServletRequest request) {
         log.error(">>>> [GlobalError] URL: {}, Message: {}", request.getRequestURL(), e.getMessage(), e);
-        return ResponseEntity.internalServerError().body(e.getMessage());
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ERROR_INTERNAL_SERVER_ERROR,
+                safeDetail(e.getMessage())
+        );
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+    public ResponseEntity<Map<String, Object>> handleReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+        String detail = "JSON Parsing Error: " + extractReadableDetail(e);
         if (isAuthPath(request)) {
-            String detail = "JSON Parsing Error: " + safeDetail(e.getMostSpecificCause().getMessage());
             AuthErrorCode errorCode = AuthErrorCode.AUTH_REQUEST_BODY_INVALID;
             log.warn(
                     "AUTH_MONITOR code={} status=400 method={} path={} detail={}",
@@ -61,14 +66,26 @@ public class GlobalExceptionHandler {
                     request.getRequestURI(),
                     detail
             );
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", 400,
-                    "errorCode", errorCode.name(),
-                    "message", detail
-            ));
+            return buildErrorResponse(HttpStatus.BAD_REQUEST, errorCode.name(), detail);
         }
-        log.error(">>>> [400 Error] JSON 파싱 실패! URL: {}, Cause: {}", request.getRequestURL(), e.getMostSpecificCause().getMessage());
-        return ResponseEntity.badRequest().body("JSON Parsing Error: " + e.getMostSpecificCause().getMessage());
+        log.error(">>>> [400 Error] JSON 파싱 실패! URL: {}, Detail: {}", request.getRequestURL(), detail);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ERROR_REQUEST_BODY_INVALID, detail);
+    }
+
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(HttpStatus status, String errorCode, String message) {
+        return ResponseEntity.status(status).body(Map.of(
+                "status", status.value(),
+                "errorCode", errorCode,
+                "message", safeDetail(message)
+        ));
+    }
+
+    private String extractReadableDetail(HttpMessageNotReadableException e) {
+        Throwable mostSpecificCause = e.getMostSpecificCause();
+        if (mostSpecificCause == null) {
+            return "request body is invalid";
+        }
+        return safeDetail(mostSpecificCause.getMessage());
     }
 
     private boolean isAuthPath(HttpServletRequest request) {

@@ -86,6 +86,7 @@ services:
       - .env.local
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - APP_PUSH_MODE=${APP_PUSH_MODE:-websocket}
     depends_on:
       postgres-db:
         condition: service_healthy

@@ -16,6 +16,7 @@ log_file="${STEP7_LOG_FILE:-$default_log_file}"
 keep_env="${STEP7_KEEP_ENV:-false}"
 compose_build="${STEP7_COMPOSE_BUILD:-true}"
 force_recreate="${STEP7_FORCE_RECREATE:-true}"
+step7_push_mode="${STEP7_PUSH_MODE:-sse}"
 
 compose_cmd=()
 if docker compose version >/dev/null 2>&1; then
@@ -47,11 +48,11 @@ if [[ "$compose_build" == "true" ]]; then
     echo "[step7-regression] compose down (force recreate)"
     "${compose_cmd[@]}" down || true
   fi
-  echo "[step7-regression] compose up --build: postgres-db redis zookeeper kafka app"
-  "${compose_cmd[@]}" up --build -d postgres-db redis zookeeper kafka app
+  echo "[step7-regression] compose up --build: postgres-db redis zookeeper kafka app (APP_PUSH_MODE=${step7_push_mode})"
+  APP_PUSH_MODE="$step7_push_mode" "${compose_cmd[@]}" up --build -d postgres-db redis zookeeper kafka app
 else
-  echo "[step7-regression] compose up: postgres-db redis zookeeper kafka app"
-  "${compose_cmd[@]}" up -d postgres-db redis zookeeper kafka app
+  echo "[step7-regression] compose up: postgres-db redis zookeeper kafka app (APP_PUSH_MODE=${step7_push_mode})"
+  APP_PUSH_MODE="$step7_push_mode" "${compose_cmd[@]}" up -d postgres-db redis zookeeper kafka app
 fi
 
 echo "[step7-regression] waiting for backend health: $health_url"

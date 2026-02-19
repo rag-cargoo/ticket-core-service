@@ -31,7 +31,7 @@ app:
   payment:
     default-ticket-price-amount: 100000
   push:
-    mode: ${APP_PUSH_MODE:sse}
+    mode: ${APP_PUSH_MODE:websocket}
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"
