@@ -10,6 +10,7 @@ import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationSeatPortAdapter;
+import com.ticketrush.domain.reservation.adapter.outbound.ReservationPaymentPortAdapter;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationUserPortAdapter;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationWaitingQueuePortAdapter;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
@@ -17,6 +18,7 @@ import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.payment.service.PaymentService;
 import com.ticketrush.domain.payment.service.PaymentServiceImpl;
+import com.ticketrush.domain.payment.gateway.WalletPaymentGateway;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
@@ -56,7 +58,9 @@ import static org.mockito.Mockito.when;
         AbuseAuditServiceImpl.class,
         AbuseAuditWriter.class,
         PaymentServiceImpl.class,
+        WalletPaymentGateway.class,
         ReservationSeatPortAdapter.class,
+        ReservationPaymentPortAdapter.class,
         ReservationUserPortAdapter.class,
         ReservationWaitingQueuePortAdapter.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
@@ -239,6 +243,36 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
+    }
+
+    @Test
+    void confirmShouldKeepPayingStateWhenWalletIsInsufficient() {
+        User user = userRepository.save(new User("step10-insufficient-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-104-1");
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+
+        paymentService.payForReservation(
+                user.getId(),
+                999_001L,
+                200_000L,
+                "drain-wallet-before-confirm-" + user.getId()
+        );
+
+        assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Insufficient wallet balance");
+
+        Reservation reservation = reservationRepository.findById(hold.getId()).orElseThrow();
+        assertThat(reservation.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING);
+        assertThat(reservation.getHoldExpiresAt()).isNotNull();
+        assertThat(reservation.getExpiredAt()).isNull();
+        assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
+                .isEqualTo(Seat.SeatStatus.TEMP_RESERVED);
+        assertThat(paymentService.getWalletBalance(user.getId())).isZero();
     }
 
     @Test

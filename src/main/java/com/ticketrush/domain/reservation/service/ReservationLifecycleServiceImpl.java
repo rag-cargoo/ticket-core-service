@@ -6,7 +6,7 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.Reservation;
-import com.ticketrush.domain.payment.service.PaymentService;
+import com.ticketrush.domain.reservation.port.outbound.ReservationPaymentPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
@@ -40,7 +40,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final PaymentProperties paymentProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
-    private final PaymentService paymentService;
+    private final ReservationPaymentPort reservationPaymentPort;
     private final PushNotifier pushNotifier;
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
@@ -76,7 +76,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
-        paymentService.payForReservation(
+        reservationPaymentPort.payForReservation(
                 userId,
                 reservationId,
                 paymentProperties.getDefaultTicketPriceAmount(),
@@ -106,7 +106,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     @Transactional
     public ReservationLifecycleResponse refund(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
-        paymentService.refundReservation(userId, reservationId, "reservation-refund-" + reservationId);
+        reservationPaymentPort.refundReservation(userId, reservationId, "reservation-refund-" + reservationId);
         reservation.refund(LocalDateTime.now());
         return ReservationLifecycleResponse.from(reservation);
     }
