@@ -62,6 +62,8 @@ app:
   payment:
     provider: wallet
     default-ticket-price-amount: 100000
+  admin-console:
+    minimum-role: USER
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"

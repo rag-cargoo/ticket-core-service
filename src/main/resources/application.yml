@@ -32,6 +32,8 @@ app:
   payment:
     provider: wallet
     default-ticket-price-amount: 100000
+  admin-console:
+    minimum-role: USER
   push:
     mode: ${APP_PUSH_MODE:websocket}
   waiting-queue:

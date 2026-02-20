@@ -15,8 +15,11 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -30,7 +33,13 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            @Value("${app.admin-console.minimum-role:USER}") String adminConsoleMinimumRole
+    ) throws Exception {
+        AuthorizationManager<RequestAuthorizationContext> adminConsoleAccessManager =
+                resolveAdminConsoleAccessManager(adminConsoleMinimumRole);
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -45,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reservations/v1/**", "/api/reservations/v2/**", "/api/reservations/v3/**",
                                 "/api/reservations/v4/**", "/api/reservations/v5/**", "/api/reservations/v6/**").permitAll()
                         .requestMatchers("/api/auth/social/**", "/api/auth/token/refresh").permitAll()
+                        .requestMatchers("/api/admin/**").access(adminConsoleAccessManager)
                         .requestMatchers("/api/reservations/v7/audit/abuse").hasRole("ADMIN")
                         .requestMatchers("/api/reservations/v7/**", "/api/auth/me", "/api/auth/logout").authenticated()
                         .anyRequest().permitAll()
@@ -115,5 +125,13 @@ public class SecurityConfig {
                         message
                 )
         );
+    }
+
+    private AuthorizationManager<RequestAuthorizationContext> resolveAdminConsoleAccessManager(String minimumRoleRaw) {
+        String minimumRole = minimumRoleRaw == null ? "USER" : minimumRoleRaw.trim().toUpperCase();
+        if ("ADMIN".equals(minimumRole)) {
+            return AuthorityAuthorizationManager.hasRole("ADMIN");
+        }
+        return AuthorityAuthorizationManager.hasAnyRole("USER", "ADMIN");
     }
 }
