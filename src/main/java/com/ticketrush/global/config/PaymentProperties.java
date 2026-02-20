@@ -12,6 +12,12 @@ import org.springframework.stereotype.Component;
 public class PaymentProperties {
 
     /**
+     * 예약 결제 처리 게이트웨이 provider.
+     * 지원값: wallet, mock, pg-ready
+     */
+    private String provider = "wallet";
+
+    /**
      * 예약 확정 시 차감되는 기본 티켓 금액.
      */
     private long defaultTicketPriceAmount = 100_000L;

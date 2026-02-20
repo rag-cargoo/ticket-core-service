@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
@@ -245,6 +246,18 @@ public class ReservationController {
             @PathVariable Long reservationId
     ) {
         return ResponseEntity.ok(reservationLifecycleService.refund(reservationId, requiredUserId(principal)));
+    }
+
+    /**
+     * [v7] Admin - 환불 마감 이후 강제 환불(override)
+     */
+    @PostMapping("/v7/admin/{reservationId}/refund")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReservationLifecycleResponse> refundAsAdminV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long reservationId
+    ) {
+        return ResponseEntity.ok(reservationLifecycleService.refundAsAdmin(reservationId, requiredUserId(principal)));
     }
 
     /**

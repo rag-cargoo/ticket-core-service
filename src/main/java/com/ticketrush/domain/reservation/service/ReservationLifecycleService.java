@@ -14,6 +14,8 @@ public interface ReservationLifecycleService {
 
     ReservationLifecycleResponse refund(Long reservationId, Long userId);
 
+    ReservationLifecycleResponse refundAsAdmin(Long reservationId, Long adminUserId);
+
     ReservationLifecycleResponse getReservation(Long reservationId, Long userId);
 
     int expireTimedOutHolds();

@@ -10,6 +10,7 @@ import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationSeatPortAdapter;
+import com.ticketrush.domain.reservation.adapter.outbound.ReservationPaymentPortAdapter;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationUserPortAdapter;
 import com.ticketrush.domain.reservation.adapter.outbound.ReservationWaitingQueuePortAdapter;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
@@ -17,6 +18,7 @@ import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.payment.service.PaymentService;
 import com.ticketrush.domain.payment.service.PaymentServiceImpl;
+import com.ticketrush.domain.payment.gateway.WalletPaymentGateway;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
@@ -24,6 +26,7 @@ import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
@@ -56,7 +59,9 @@ import static org.mockito.Mockito.when;
         AbuseAuditServiceImpl.class,
         AbuseAuditWriter.class,
         PaymentServiceImpl.class,
+        WalletPaymentGateway.class,
         ReservationSeatPortAdapter.class,
+        ReservationPaymentPortAdapter.class,
         ReservationUserPortAdapter.class,
         ReservationWaitingQueuePortAdapter.class,
         ReservationLifecycleServiceIntegrationTest.TestConfig.class
@@ -70,6 +75,7 @@ class ReservationLifecycleServiceIntegrationTest {
             ReservationProperties properties = new ReservationProperties();
             properties.setHoldTtlSeconds(1);
             properties.setExpireCheckDelayMillis(1000);
+            properties.setRefundCutoffHoursBeforeConcert(24);
             return properties;
         }
 
@@ -191,6 +197,7 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(expired.getExpiredAt()).isNotNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
+        verify(pushNotifier).sendReservationStatus(user.getId(), seat.getId(), Reservation.ReservationStatus.EXPIRED.name());
     }
 
     @Test
@@ -239,6 +246,97 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
+    }
+
+    @Test
+    void refundCancelled_shouldFailWhenRefundCutoffPassed() {
+        User user = userRepository.save(new User("step10-refund-cutoff-user-" + System.nanoTime()));
+        Seat seat = saveSeatWithConcertDate("A-104-2", LocalDateTime.now().plusHours(2));
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
+        reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        assertThatThrownBy(() -> reservationLifecycleService.refund(hold.getId(), user.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Refund cutoff passed");
+    }
+
+    @Test
+    void refundCancelled_shouldAllowAdminOverrideWhenRefundCutoffPassed() {
+        User user = userRepository.save(new User("step10-refund-cutoff-owner-" + System.nanoTime()));
+        User admin = userRepository.save(new User("step10-refund-cutoff-admin-" + System.nanoTime(), UserTier.VIP, UserRole.ADMIN));
+        Seat seat = saveSeatWithConcertDate("A-104-3", LocalDateTime.now().plusHours(2));
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
+        reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        ReservationLifecycleResponse refunded = reservationLifecycleService.refundAsAdmin(hold.getId(), admin.getId());
+
+        assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
+        assertThat(refunded.getRefundedAt()).isNotNull();
+        assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
+    }
+
+    @Test
+    void refundAsAdmin_shouldFailWhenRequesterIsNotAdmin() {
+        User user = userRepository.save(new User("step10-refund-non-admin-owner-" + System.nanoTime()));
+        User nonAdmin = userRepository.save(new User("step10-refund-non-admin-" + System.nanoTime(), UserTier.BASIC, UserRole.USER));
+        Seat seat = saveSeatWithConcertDate("A-104-4", LocalDateTime.now().plusHours(2));
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
+        reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        assertThatThrownBy(() -> reservationLifecycleService.refundAsAdmin(hold.getId(), nonAdmin.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("requires ADMIN role");
+    }
+
+    @Test
+    void confirmShouldKeepPayingStateWhenWalletIsInsufficient() {
+        User user = userRepository.save(new User("step10-insufficient-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-104-1");
+
+        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
+                new ReservationRequest(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+
+        paymentService.payForReservation(
+                user.getId(),
+                999_001L,
+                200_000L,
+                "drain-wallet-before-confirm-" + user.getId()
+        );
+
+        assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Insufficient wallet balance");
+
+        Reservation reservation = reservationRepository.findById(hold.getId()).orElseThrow();
+        assertThat(reservation.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING);
+        assertThat(reservation.getHoldExpiresAt()).isNotNull();
+        assertThat(reservation.getExpiredAt()).isNull();
+        assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
+                .isEqualTo(Seat.SeatStatus.TEMP_RESERVED);
+        assertThat(paymentService.getWalletBalance(user.getId())).isZero();
     }
 
     @Test
@@ -380,10 +478,14 @@ class ReservationLifecycleServiceIntegrationTest {
     }
 
     private Seat saveSeat(String seatNo) {
+        return saveSeatWithConcertDate(seatNo, LocalDateTime.now().plusDays(2));
+    }
+
+    private Seat saveSeatWithConcertDate(String seatNo, LocalDateTime concertDate) {
         Agency agency = agencyRepository.save(new Agency("agency-" + seatNo + "-" + System.nanoTime()));
         Artist artist = artistRepository.save(new Artist("artist-" + seatNo + "-" + System.nanoTime(), agency));
         Concert concert = concertRepository.save(new Concert("concert-" + seatNo + "-" + System.nanoTime(), artist));
-        ConcertOption option = concertOptionRepository.save(new ConcertOption(concert, java.time.LocalDateTime.now().plusDays(1)));
+        ConcertOption option = concertOptionRepository.save(new ConcertOption(concert, concertDate));
         return seatRepository.save(new Seat(option, seatNo));
     }
 }

@@ -20,4 +20,10 @@ public class ReservationProperties {
      * 만료 스캔 스케줄러 주기.
      */
     private long expireCheckDelayMillis = 5_000;
+
+    /**
+     * 공연 시작 기준 환불 허용 마감 시간(시간 단위).
+     * 기본값 24는 공연 시작 24시간 전까지만 환불을 허용한다.
+     */
+    private long refundCutoffHoursBeforeConcert = 24;
 }

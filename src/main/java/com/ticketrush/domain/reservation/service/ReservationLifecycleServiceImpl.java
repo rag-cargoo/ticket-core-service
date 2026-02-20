@@ -6,12 +6,13 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.Reservation;
-import com.ticketrush.domain.payment.service.PaymentService;
+import com.ticketrush.domain.reservation.port.outbound.ReservationPaymentPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.config.PaymentProperties;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
@@ -40,7 +41,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final PaymentProperties paymentProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
-    private final PaymentService paymentService;
+    private final ReservationPaymentPort reservationPaymentPort;
     private final PushNotifier pushNotifier;
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
@@ -76,7 +77,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
-        paymentService.payForReservation(
+        reservationPaymentPort.payForReservation(
                 userId,
                 reservationId,
                 paymentProperties.getDefaultTicketPriceAmount(),
@@ -106,9 +107,18 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     @Transactional
     public ReservationLifecycleResponse refund(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
-        paymentService.refundReservation(userId, reservationId, "reservation-refund-" + reservationId);
-        reservation.refund(LocalDateTime.now());
-        return ReservationLifecycleResponse.from(reservation);
+        return refundInternal(reservation, userId, userId, false);
+    }
+
+    @Transactional
+    public ReservationLifecycleResponse refundAsAdmin(Long reservationId, Long adminUserId) {
+        User adminUser = reservationUserPort.getUser(adminUserId);
+        if (adminUser.getRole() != UserRole.ADMIN) {
+            throw new IllegalStateException("Admin override refund requires ADMIN role. userId=" + adminUserId);
+        }
+        Reservation reservation = getReservation(reservationId);
+        Long reservationOwnerId = reservation.getUser().getId();
+        return refundInternal(reservation, reservationOwnerId, adminUserId, true);
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +139,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         for (Reservation reservation : expiredTargets) {
             reservation.expire(now);
             reservation.getSeat().cancel();
+            notifyReservationExpired(reservation);
             changedOptionIds.add(reservation.getSeat().getConcertOption().getId());
         }
         for (Long optionId : changedOptionIds) {
@@ -148,12 +159,18 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 ));
     }
 
+    private Reservation getReservation(Long reservationId) {
+        return reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found. reservationId=" + reservationId));
+    }
+
     private void expireIfNeeded(Reservation reservation, LocalDateTime now) {
         if (!reservation.isHoldInProgress() || !reservation.isExpired(now)) {
             return;
         }
         reservation.expire(now);
         reservation.getSeat().cancel();
+        notifyReservationExpired(reservation);
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
     }
 
@@ -170,5 +187,55 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     .build();
             pushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
         }
+    }
+
+    private ReservationLifecycleResponse refundInternal(
+            Reservation reservation,
+            Long paymentUserId,
+            Long actorUserId,
+            boolean allowAdminOverride
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+        validateRefundCutoff(reservation, now, allowAdminOverride, actorUserId);
+        Long reservationId = reservation.getId();
+        reservationPaymentPort.refundReservation(paymentUserId, reservationId, "reservation-refund-" + reservationId);
+        reservation.refund(now);
+        return ReservationLifecycleResponse.from(reservation);
+    }
+
+    private void validateRefundCutoff(
+            Reservation reservation,
+            LocalDateTime now,
+            boolean allowAdminOverride,
+            Long actorUserId
+    ) {
+        long cutoffHours = Math.max(0, reservationProperties.getRefundCutoffHoursBeforeConcert());
+        LocalDateTime concertDate = reservation.getSeat().getConcertOption().getConcertDate();
+        LocalDateTime cutoffAt = concertDate.minusHours(cutoffHours);
+        boolean isPastCutoff = !now.isBefore(cutoffAt);
+        if (!isPastCutoff) {
+            return;
+        }
+        if (allowAdminOverride) {
+            log.info(
+                    ">>>> [ReservationLifecycle] admin override refund cutoff: reservationId={}, adminUserId={}, concertDate={}, cutoffAt={}",
+                    reservation.getId(),
+                    actorUserId,
+                    concertDate,
+                    cutoffAt
+            );
+            return;
+        }
+        throw new IllegalStateException(
+                "Refund cutoff passed. reservationId=" + reservation.getId() + ", cutoffAt=" + cutoffAt + ", concertDate=" + concertDate
+        );
+    }
+
+    private void notifyReservationExpired(Reservation reservation) {
+        pushNotifier.sendReservationStatus(
+                reservation.getUser().getId(),
+                reservation.getSeat().getId(),
+                Reservation.ReservationStatus.EXPIRED.name()
+        );
     }
 }
