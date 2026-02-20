@@ -97,11 +97,31 @@ public class PaymentTransaction {
             String idempotencyKey,
             String description
     ) {
+        return payment(
+                user,
+                reservationId,
+                amount,
+                balanceAfterAmount,
+                idempotencyKey,
+                description,
+                PaymentTransactionStatus.SUCCESS
+        );
+    }
+
+    public static PaymentTransaction payment(
+            User user,
+            Long reservationId,
+            Long amount,
+            Long balanceAfterAmount,
+            String idempotencyKey,
+            String description,
+            PaymentTransactionStatus status
+    ) {
         return new PaymentTransaction(
                 user,
                 reservationId,
                 PaymentTransactionType.PAYMENT,
-                PaymentTransactionStatus.SUCCESS,
+                status,
                 amount,
                 balanceAfterAmount,
                 idempotencyKey,
@@ -146,6 +166,20 @@ public class PaymentTransaction {
         this.amount = amount;
         this.balanceAfterAmount = balanceAfterAmount;
         this.idempotencyKey = idempotencyKey;
+        this.description = description;
+    }
+
+    public boolean isStatus(PaymentTransactionStatus expectedStatus) {
+        return this.status == expectedStatus;
+    }
+
+    public void markSuccess(String description) {
+        this.status = PaymentTransactionStatus.SUCCESS;
+        this.description = description;
+    }
+
+    public void markFailed(String description) {
+        this.status = PaymentTransactionStatus.FAILED;
         this.description = description;
     }
 

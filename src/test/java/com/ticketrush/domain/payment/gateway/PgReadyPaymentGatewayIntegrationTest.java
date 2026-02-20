@@ -1,6 +1,7 @@
 package com.ticketrush.domain.payment.gateway;
 
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
+import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
@@ -23,7 +24,7 @@ class PgReadyPaymentGatewayIntegrationTest {
     private UserRepository userRepository;
 
     @Test
-    void payForReservation_shouldCreateApprovedPaymentTransaction() {
+    void payForReservation_shouldCreatePendingPaymentTransaction() {
         User user = userRepository.save(new User("pg-ready-user-" + System.nanoTime()));
 
         PaymentTransaction tx = paymentGateway.payForReservation(
@@ -34,7 +35,8 @@ class PgReadyPaymentGatewayIntegrationTest {
         );
 
         assertThat(tx.getType()).isEqualTo(PaymentTransactionType.PAYMENT);
-        assertThat(tx.getDescription()).isEqualTo("PG_READY_PAYMENT_APPROVED");
+        assertThat(tx.getStatus()).isEqualTo(PaymentTransactionStatus.PENDING);
+        assertThat(tx.getDescription()).isEqualTo("PG_READY_PAYMENT_PENDING");
         assertThat(tx.getBalanceAfterAmount()).isEqualTo(user.getWalletBalanceAmountSafe());
     }
 }

@@ -3,15 +3,18 @@ package com.ticketrush.api.controller;
 import com.ticketrush.domain.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.AbuseAuditService;
+import com.ticketrush.domain.reservation.service.AdminRefundAuditService;
 import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
+import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.global.lock.RedissonLockFacade;
 import com.ticketrush.global.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SsePushNotifier;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
+import com.ticketrush.api.dto.reservation.AdminRefundAuditResponse;
 import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
@@ -40,6 +43,7 @@ public class ReservationController {
     private final ReservationQueueService queueService;
     private final ReservationLifecycleService reservationLifecycleService;
     private final AbuseAuditService abuseAuditService;
+    private final AdminRefundAuditService adminRefundAuditService;
     private final SsePushNotifier ssePushNotifier;
 
     /**
@@ -299,6 +303,27 @@ public class ReservationController {
                 abuseAuditService.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
                         .stream()
                         .map(AbuseAuditResponse::from)
+                        .toList()
+        );
+    }
+
+    /**
+     * [v7] Admin - 강제 환불 감사 로그 조회
+     */
+    @GetMapping("/v7/audit/admin-refunds")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AdminRefundAuditResponse>> getAdminRefundAuditsV7(
+            @RequestParam(required = false) Long reservationId,
+            @RequestParam(required = false) Long actorUserId,
+            @RequestParam(required = false) AdminRefundAuditLog.AuditResult result,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toAt,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(
+                adminRefundAuditService.getAuditLogs(reservationId, actorUserId, result, fromAt, toAt, limit)
+                        .stream()
+                        .map(AdminRefundAuditResponse::from)
                         .toList()
         );
     }

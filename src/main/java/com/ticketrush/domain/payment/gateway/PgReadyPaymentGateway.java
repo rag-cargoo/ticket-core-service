@@ -32,14 +32,15 @@ public class PgReadyPaymentGateway implements PaymentGateway {
         long normalizedAmount = validatePositiveAmount(amount);
         User user = getUser(userId);
 
-        // PG 연동 전환 전까지는 승인 이벤트를 즉시 성공으로 시뮬레이션한다.
+        // 외부 PG 승인 webhook 확정 전에는 PENDING 상태로 저장한다.
         return paymentTransactionRepository.save(PaymentTransaction.payment(
                 user,
                 reservationId,
                 normalizedAmount,
                 user.getWalletBalanceAmountSafe(),
                 key,
-                "PG_READY_PAYMENT_APPROVED"
+                "PG_READY_PAYMENT_PENDING",
+                PaymentTransactionStatus.PENDING
         ));
     }
 
