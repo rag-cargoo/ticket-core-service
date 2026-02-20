@@ -19,5 +19,10 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
             PaymentTransactionStatus status
     );
 
+    Optional<PaymentTransaction> findTopByReservationIdAndTypeOrderByIdDesc(
+            Long reservationId,
+            PaymentTransactionType type
+    );
+
     List<PaymentTransaction> findByUserIdOrderByIdDesc(Long userId, Pageable pageable);
 }

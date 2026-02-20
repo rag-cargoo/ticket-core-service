@@ -1,5 +1,6 @@
 package com.ticketrush.domain.reservation.adapter.outbound;
 
+import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.reservation.port.outbound.ReservationPaymentPort;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +15,13 @@ public class ReservationPaymentPortAdapter implements ReservationPaymentPort {
 
     @Override
     @Transactional
-    public void payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
-        paymentGateway.payForReservation(userId, reservationId, amount, idempotencyKey);
+    public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
+        return paymentGateway.payForReservation(userId, reservationId, amount, idempotencyKey);
     }
 
     @Override
     @Transactional
-    public void refundReservation(Long userId, Long reservationId, String idempotencyKey) {
-        paymentGateway.refundReservation(userId, reservationId, idempotencyKey);
+    public PaymentTransaction refundReservation(Long userId, Long reservationId, String idempotencyKey) {
+        return paymentGateway.refundReservation(userId, reservationId, idempotencyKey);
     }
 }
