@@ -19,9 +19,11 @@ import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.payment.service.PaymentService;
 import com.ticketrush.domain.payment.service.PaymentServiceImpl;
 import com.ticketrush.domain.payment.gateway.WalletPaymentGateway;
+import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
+import com.ticketrush.domain.reservation.repository.AdminRefundAuditLogRepository;
 import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
@@ -57,6 +59,7 @@ import static org.mockito.Mockito.when;
         ReservationLifecycleServiceImpl.class,
         SalesPolicyServiceImpl.class,
         AbuseAuditServiceImpl.class,
+        AdminRefundAuditService.class,
         AbuseAuditWriter.class,
         PaymentServiceImpl.class,
         WalletPaymentGateway.class,
@@ -128,6 +131,9 @@ class ReservationLifecycleServiceIntegrationTest {
 
     @jakarta.annotation.Resource
     private AbuseAuditLogRepository abuseAuditLogRepository;
+
+    @jakarta.annotation.Resource
+    private AdminRefundAuditLogRepository adminRefundAuditLogRepository;
 
     @jakarta.annotation.Resource
     private SeatRepository seatRepository;
@@ -287,6 +293,12 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
+        assertThat(adminRefundAuditLogRepository.findAll()).anyMatch(log ->
+                log.getReservationId().equals(hold.getId())
+                        && log.getActorUserId().equals(admin.getId())
+                        && log.getTargetUserId().equals(user.getId())
+                        && log.getResult() == AdminRefundAuditLog.AuditResult.SUCCESS
+        );
     }
 
     @Test
@@ -307,6 +319,11 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThatThrownBy(() -> reservationLifecycleService.refundAsAdmin(hold.getId(), nonAdmin.getId()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("requires ADMIN role");
+        assertThat(adminRefundAuditLogRepository.findAll()).anyMatch(log ->
+                log.getReservationId().equals(hold.getId())
+                        && log.getActorUserId().equals(nonAdmin.getId())
+                        && log.getResult() == AdminRefundAuditLog.AuditResult.DENIED
+        );
     }
 
     @Test

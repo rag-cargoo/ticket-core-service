@@ -5,6 +5,8 @@ import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.domain.payment.entity.PaymentTransaction;
+import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.port.outbound.ReservationPaymentPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
@@ -41,6 +43,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final PaymentProperties paymentProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
+    private final AdminRefundAuditService adminRefundAuditService;
     private final ReservationPaymentPort reservationPaymentPort;
     private final PushNotifier pushNotifier;
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
@@ -77,15 +80,26 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
-        reservationPaymentPort.payForReservation(
+        if (reservation.getStatus() == Reservation.ReservationStatus.CONFIRMED) {
+            return ReservationLifecycleResponse.from(reservation);
+        }
+        if (reservation.getStatus() != Reservation.ReservationStatus.PAYING) {
+            throw new IllegalStateException(
+                    "Only PAYING reservation can transition to CONFIRMED. currentStatus=" + reservation.getStatus()
+            );
+        }
+
+        PaymentTransaction paymentTransaction = reservationPaymentPort.payForReservation(
                 userId,
                 reservationId,
                 paymentProperties.getDefaultTicketPriceAmount(),
                 "reservation-payment-" + reservationId
         );
-        reservation.confirmPayment(now);
-        reservation.getSeat().confirmHeldSeat();
-        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
+
+        if (paymentTransaction.isStatus(PaymentTransactionStatus.SUCCESS)) {
+            confirmReservationAndSeat(reservation, now);
+        }
+
         return ReservationLifecycleResponse.from(reservation);
     }
 
@@ -114,11 +128,37 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     public ReservationLifecycleResponse refundAsAdmin(Long reservationId, Long adminUserId) {
         User adminUser = reservationUserPort.getUser(adminUserId);
         if (adminUser.getRole() != UserRole.ADMIN) {
+            adminRefundAuditService.recordDenied(
+                    reservationId,
+                    null,
+                    adminUserId,
+                    adminUser.getRole(),
+                    "Admin override refund requires ADMIN role"
+            );
             throw new IllegalStateException("Admin override refund requires ADMIN role. userId=" + adminUserId);
         }
         Reservation reservation = getReservation(reservationId);
         Long reservationOwnerId = reservation.getUser().getId();
-        return refundInternal(reservation, reservationOwnerId, adminUserId, true);
+        try {
+            ReservationLifecycleResponse response = refundInternal(reservation, reservationOwnerId, adminUserId, true);
+            adminRefundAuditService.recordSuccess(
+                    reservationId,
+                    reservationOwnerId,
+                    adminUserId,
+                    adminUser.getRole(),
+                    "Admin override refund completed"
+            );
+            return response;
+        } catch (RuntimeException exception) {
+            adminRefundAuditService.recordFailed(
+                    reservationId,
+                    reservationOwnerId,
+                    adminUserId,
+                    adminUser.getRole(),
+                    exception.getMessage()
+            );
+            throw exception;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -198,7 +238,16 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         LocalDateTime now = LocalDateTime.now();
         validateRefundCutoff(reservation, now, allowAdminOverride, actorUserId);
         Long reservationId = reservation.getId();
-        reservationPaymentPort.refundReservation(paymentUserId, reservationId, "reservation-refund-" + reservationId);
+        PaymentTransaction refundTransaction = reservationPaymentPort.refundReservation(
+                paymentUserId,
+                reservationId,
+                "reservation-refund-" + reservationId
+        );
+        if (!refundTransaction.isStatus(PaymentTransactionStatus.SUCCESS)) {
+            throw new IllegalStateException(
+                    "Refund not completed yet. reservationId=" + reservationId + ", status=" + refundTransaction.getStatus()
+            );
+        }
         reservation.refund(now);
         return ReservationLifecycleResponse.from(reservation);
     }
@@ -236,6 +285,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),
                 Reservation.ReservationStatus.EXPIRED.name()
+        );
+    }
+
+    private void confirmReservationAndSeat(Reservation reservation, LocalDateTime now) {
+        reservation.confirmPayment(now);
+        reservation.getSeat().confirmHeldSeat();
+        concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
+        pushNotifier.sendReservationStatus(
+                reservation.getUser().getId(),
+                reservation.getSeat().getId(),
+                Reservation.ReservationStatus.CONFIRMED.name()
         );
     }
 }
