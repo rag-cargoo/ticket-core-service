@@ -30,6 +30,7 @@ app:
     expire-check-delay-millis: 5000
     refund-cutoff-hours-before-concert: 24
   payment:
+    provider: wallet
     default-ticket-price-amount: 100000
   push:
     mode: ${APP_PUSH_MODE:websocket}

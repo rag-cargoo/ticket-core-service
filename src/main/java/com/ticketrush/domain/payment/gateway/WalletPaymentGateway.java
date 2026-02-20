@@ -3,10 +3,12 @@ package com.ticketrush.domain.payment.gateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@ConditionalOnProperty(prefix = "app.payment", name = "provider", havingValue = "wallet", matchIfMissing = true)
 @RequiredArgsConstructor
 public class WalletPaymentGateway implements PaymentGateway {
 
