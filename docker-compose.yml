@@ -1,9 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres-db:
     image: postgres:16-alpine
-    container_name: postgres-db
     ports:
       - "5432:5432"
     environment:
@@ -13,29 +12,27 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - ticket-network
 
   redis:
     image: redis:alpine
-    container_name: redis
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
     networks:
       - ticket-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
-    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 4000
@@ -48,13 +45,12 @@ services:
       test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181 | grep imok"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - ticket-network
 
   kafka:
     image: confluentinc/cp-kafka:7.0.1
-    container_name: kafka
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -73,20 +69,42 @@ services:
       test: ["CMD", "kafka-topics", "--list", "--bootstrap-server", "localhost:9092"]
       interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
+    networks:
+      - ticket-network
+
+  ws-relay:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: relayuser
+      RABBITMQ_DEFAULT_PASS: relaypass
+    command: >
+      sh -c "rabbitmq-plugins enable --offline rabbitmq_stomp && rabbitmq-server"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - ticket-network
 
   app:
     build: .
-    container_name: default-service
-    ports:
-      - "8080:8080"
     env_file:
       - .env.local
+    expose:
+      - "8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - APP_PUSH_MODE=${APP_PUSH_MODE:-websocket}
+      SPRING_PROFILES_ACTIVE: docker
+      APP_PUSH_MODE: ${APP_PUSH_MODE:-websocket}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      APP_WS_BROKER_MODE: ${APP_WS_BROKER_MODE:-relay}
+      APP_WS_RELAY_HOST: ${APP_WS_RELAY_HOST:-ws-relay}
+      APP_WS_RELAY_PORT: ${APP_WS_RELAY_PORT:-61613}
+      APP_WS_RELAY_CLIENT_LOGIN: ${APP_WS_RELAY_CLIENT_LOGIN:-relayuser}
+      APP_WS_RELAY_CLIENT_PASSCODE: ${APP_WS_RELAY_CLIENT_PASSCODE:-relaypass}
+      APP_WS_RELAY_SYSTEM_LOGIN: ${APP_WS_RELAY_SYSTEM_LOGIN:-relayuser}
+      APP_WS_RELAY_SYSTEM_PASSCODE: ${APP_WS_RELAY_SYSTEM_PASSCODE:-relaypass}
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -94,6 +112,20 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      ws-relay:
+        condition: service_healthy
+    networks:
+      - ticket-network
+
+  nginx-lb:
+    image: nginx:alpine
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "${APP_LB_PORT:-18080}:8080"
+    volumes:
+      - ./scripts/perf/nginx/k6-distributed-lb.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - ticket-network
 
@@ -106,11 +138,10 @@ services:
         VITE_API_BASE_URL: /api
         VITE_WS_URL: /ws
         VITE_PUSH_MODE: websocket
-    container_name: ticket-web-client
     ports:
       - "5173:80"
     depends_on:
-      app:
+      nginx-lb:
         condition: service_started
     networks:
       - ticket-network

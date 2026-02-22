@@ -1,12 +1,20 @@
 # Makefile for TicketRush API Testing
 
-.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-k6-distributed test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
+.PHONY: help compose-up compose-up-frontend compose-down test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-k6-distributed test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
+
+COMPOSE_FILE ?= docker-compose.yml
+COMPOSE_PROJECT ?= tcs
+APP_REPLICAS ?= 1
 
 # 기본 명령어 (도움말)
 help:
 	@echo "========================================================================"
 	@echo " TicketRush API Test Automation"
 	@echo "========================================================================"
+	@echo " make compose-up APP_REPLICAS=1 : 단일 compose 기동 (LB 진입점 18080)"
+	@echo " make compose-up APP_REPLICAS=3 : 다중 app 스케일 기동"
+	@echo " make compose-up-frontend APP_REPLICAS=1 : 프론트 프로필 포함 기동"
+	@echo " make compose-down : compose 종료/정리"
 	@echo " make setup-data : 테스트 기초 데이터 생성 (Concert, Seat)"
 	@echo " make test-v1    : [v1] 낙관적 락 예약 API 테스트"
 	@echo " make test-v2    : [v2] 비관적 락 예약 API 테스트"
@@ -27,6 +35,15 @@ help:
 # 데이터 초기화
 setup-data:
 	./scripts/api/setup-test-data.sh
+
+compose-up:
+	docker-compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d --build --scale app=$(APP_REPLICAS)
+
+compose-up-frontend:
+	docker-compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) --profile frontend up -d --build --scale app=$(APP_REPLICAS)
+
+compose-down:
+	docker-compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) down -v
 
 # 개별 테스트 실행
 test-v1:
