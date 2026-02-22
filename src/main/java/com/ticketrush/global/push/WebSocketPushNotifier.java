@@ -1,17 +1,20 @@
 package com.ticketrush.global.push;
 
+import com.ticketrush.global.config.WaitingQueueProperties;
 import com.ticketrush.global.sse.SseEventNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component("webSocketPushNotifier")
@@ -23,34 +26,37 @@ public class WebSocketPushNotifier implements PushNotifier {
     private static final String SEAT_MAP_TOPIC_PREFIX = "/topic/seats";
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final Map<Long, Set<Long>> queueSubscribersByConcert = new ConcurrentHashMap<>();
-    private final Set<String> reservationSubscriptions = ConcurrentHashMap.newKeySet();
+    private final StringRedisTemplate redisTemplate;
+    private final WaitingQueueProperties waitingQueueProperties;
 
     public String subscribeQueue(Long userId, Long concertId) {
-        queueSubscribersByConcert
-                .computeIfAbsent(concertId, ignored -> ConcurrentHashMap.newKeySet())
-                .add(userId);
+        long nowMillis = System.currentTimeMillis();
+        long ttlSeconds = normalizedSubscriberTtlSeconds();
+        long expiresAtMillis = nowMillis + (ttlSeconds * 1000L);
+        String subscriberKey = queueSubscriberKey(concertId);
+        redisTemplate.opsForZSet().add(subscriberKey, String.valueOf(userId), expiresAtMillis);
+        redisTemplate.opsForSet().add(concertIndexKey(), String.valueOf(concertId));
+        redisTemplate.expire(subscriberKey, ttlSeconds * 2, TimeUnit.SECONDS);
+        redisTemplate.expire(concertIndexKey(), ttlSeconds * 2, TimeUnit.SECONDS);
         return queueDestination(userId, concertId);
     }
 
     public void unsubscribeQueue(Long userId, Long concertId) {
-        Set<Long> users = queueSubscribersByConcert.get(concertId);
-        if (users == null) {
-            return;
-        }
-        users.remove(userId);
-        if (users.isEmpty()) {
-            queueSubscribersByConcert.remove(concertId, users);
+        String subscriberKey = queueSubscriberKey(concertId);
+        redisTemplate.opsForZSet().remove(subscriberKey, String.valueOf(userId));
+        Long size = redisTemplate.opsForZSet().zCard(subscriberKey);
+        if (size == null || size <= 0) {
+            redisTemplate.delete(subscriberKey);
+            redisTemplate.opsForSet().remove(concertIndexKey(), String.valueOf(concertId));
         }
     }
 
     public String subscribeReservation(Long userId, Long seatId) {
-        reservationSubscriptions.add(reservationKey(userId, seatId));
         return reservationDestination(userId, seatId);
     }
 
     public void unsubscribeReservation(Long userId, Long seatId) {
-        reservationSubscriptions.remove(reservationKey(userId, seatId));
+        // STOMP topic subscription lifecycle is managed by broker/client session.
     }
 
     public String subscribeSeatMap(Long optionId) {
@@ -88,20 +94,41 @@ public class WebSocketPushNotifier implements PushNotifier {
     @Override
     public void sendQueueHeartbeat() {
         String timestamp = Instant.now().toString();
-        queueSubscribersByConcert.forEach((concertId, users) -> {
+        Set<String> concertIdMembers = redisTemplate.opsForSet().members(concertIndexKey());
+        if (concertIdMembers == null || concertIdMembers.isEmpty()) {
+            return;
+        }
+        for (String concertIdMember : concertIdMembers) {
+            Long concertId = parseLong(concertIdMember);
+            if (concertId == null) {
+                continue;
+            }
+            Set<Long> users = getSubscribedQueueUsers(concertId);
             for (Long userId : users) {
                 sendQueueEvent(userId, concertId, SseEventNames.KEEPALIVE, Map.of("timestamp", timestamp));
             }
-        });
+        }
     }
 
     @Override
     public Set<Long> getSubscribedQueueUsers(Long concertId) {
-        Set<Long> users = queueSubscribersByConcert.get(concertId);
-        if (users == null) {
+        String subscriberKey = queueSubscriberKey(concertId);
+        long nowMillis = System.currentTimeMillis();
+        redisTemplate.opsForZSet().removeRangeByScore(subscriberKey, Double.NEGATIVE_INFINITY, nowMillis - 1);
+        Set<String> users = redisTemplate.opsForZSet().rangeByScore(subscriberKey, nowMillis, Double.POSITIVE_INFINITY);
+        if (users == null || users.isEmpty()) {
+            redisTemplate.opsForSet().remove(concertIndexKey(), String.valueOf(concertId));
+            redisTemplate.delete(subscriberKey);
             return Set.of();
         }
-        return new HashSet<>(users);
+        Set<Long> parsed = new LinkedHashSet<>();
+        for (String user : users) {
+            Long userId = parseLong(user);
+            if (userId != null) {
+                parsed.add(userId);
+            }
+        }
+        return parsed;
     }
 
     @Override
@@ -127,6 +154,7 @@ public class WebSocketPushNotifier implements PushNotifier {
                 queueDestination(userId, concertId),
                 Map.of(
                         "event", eventName,
+                        "transport", "websocket",
                         "userId", userId,
                         "concertId", concertId,
                         "data", data
@@ -142,11 +170,32 @@ public class WebSocketPushNotifier implements PushNotifier {
         return RESERVATION_TOPIC_PREFIX + "/" + seatId + "/" + userId;
     }
 
-    private String reservationKey(Long userId, Long seatId) {
-        return userId + ":" + seatId;
-    }
-
     private String seatMapDestination(Long optionId) {
         return SEAT_MAP_TOPIC_PREFIX + "/" + optionId;
+    }
+
+    private String queueSubscriberKey(Long concertId) {
+        return waitingQueueProperties.getWsSubscriberZsetKeyPrefix() + concertId;
+    }
+
+    private String concertIndexKey() {
+        return waitingQueueProperties.getWsConcertIndexKey();
+    }
+
+    private long normalizedSubscriberTtlSeconds() {
+        long ttlSeconds = waitingQueueProperties.getWsSubscriberTtlSeconds();
+        return ttlSeconds > 0 ? ttlSeconds : 300L;
+    }
+
+    private Long parseLong(String rawValue) {
+        if (!StringUtils.hasText(rawValue)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(rawValue);
+        } catch (NumberFormatException exception) {
+            log.debug("invalid queue subscriber id: {}", rawValue, exception);
+            return null;
+        }
     }
 }

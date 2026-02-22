@@ -38,9 +38,24 @@ app:
     minimum-role: USER
   push:
     mode: ${APP_PUSH_MODE:websocket}
+  websocket:
+    broker:
+      mode: ${APP_WS_BROKER_MODE:simple}
+      relay-host: ${APP_WS_RELAY_HOST:localhost}
+      relay-port: ${APP_WS_RELAY_PORT:61613}
+      relay-client-login: ${APP_WS_RELAY_CLIENT_LOGIN:guest}
+      relay-client-passcode: ${APP_WS_RELAY_CLIENT_PASSCODE:guest}
+      relay-system-login: ${APP_WS_RELAY_SYSTEM_LOGIN:guest}
+      relay-system-passcode: ${APP_WS_RELAY_SYSTEM_PASSCODE:guest}
+      relay-virtual-host: ${APP_WS_RELAY_VIRTUAL_HOST:/}
+      relay-system-heartbeat-send-interval: ${APP_WS_RELAY_SYSTEM_HEARTBEAT_SEND_INTERVAL:10000}
+      relay-system-heartbeat-receive-interval: ${APP_WS_RELAY_SYSTEM_HEARTBEAT_RECEIVE_INTERVAL:10000}
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"
+    ws-subscriber-zset-key-prefix: "ws:queue:subs:"
+    ws-concert-index-key: "ws:queue:concerts"
+    ws-subscriber-ttl-seconds: 300
     max-queue-size: 100
     active-ttl-minutes: 5
     activation-batch-size: 10
