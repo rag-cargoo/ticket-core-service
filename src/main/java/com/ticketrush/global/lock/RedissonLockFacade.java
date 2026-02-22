@@ -1,6 +1,6 @@
 package com.ticketrush.global.lock;
 
-import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;

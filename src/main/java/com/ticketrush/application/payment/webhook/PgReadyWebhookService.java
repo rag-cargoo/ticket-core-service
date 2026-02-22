@@ -1,4 +1,4 @@
-package com.ticketrush.domain.payment.webhook;
+package com.ticketrush.application.payment.webhook;
 
 import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
 import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;

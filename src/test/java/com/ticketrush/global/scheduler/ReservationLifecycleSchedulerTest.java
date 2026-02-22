@@ -1,6 +1,6 @@
 package com.ticketrush.global.scheduler;
 
-import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
+import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

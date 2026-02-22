@@ -2,7 +2,7 @@ package com.ticketrush.domain.concert.service;
 
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.domain.concert.entity.Seat;
-import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.user.UserTier;

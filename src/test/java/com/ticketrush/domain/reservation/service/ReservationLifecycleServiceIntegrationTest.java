@@ -1,5 +1,8 @@
 package com.ticketrush.domain.reservation.service;
 
+import com.ticketrush.application.reservation.service.ReservationLifecycleService;
+import com.ticketrush.application.reservation.service.ReservationLifecycleServiceImpl;
+import com.ticketrush.application.reservation.service.SalesPolicyServiceImpl;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.domain.entertainment.Entertainment;
@@ -31,7 +34,7 @@ import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.domain.user.UserRepository;
-import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.config.AbuseGuardProperties;
 import com.ticketrush.global.config.PaymentProperties;

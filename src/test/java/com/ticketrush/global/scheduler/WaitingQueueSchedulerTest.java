@@ -1,7 +1,7 @@
 package com.ticketrush.global.scheduler;
 
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
-import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.config.WaitingQueueProperties;
 import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;

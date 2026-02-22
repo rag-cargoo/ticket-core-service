@@ -4,7 +4,7 @@ import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueRequest;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
-import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.sse.SsePushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

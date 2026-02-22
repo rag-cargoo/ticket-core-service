@@ -1,10 +1,10 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.AbuseAuditService;
 import com.ticketrush.domain.reservation.service.AdminRefundAuditService;
-import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
+import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.domain.reservation.service.SeatSoftLockService;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;

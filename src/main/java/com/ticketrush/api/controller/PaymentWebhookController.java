@@ -2,7 +2,7 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
 import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
-import com.ticketrush.domain.payment.webhook.PgReadyWebhookService;
+import com.ticketrush.application.payment.webhook.PgReadyWebhookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

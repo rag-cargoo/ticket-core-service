@@ -1,4 +1,4 @@
-package com.ticketrush.domain.waitingqueue.service;
+package com.ticketrush.application.waitingqueue.service;
 
 import com.ticketrush.global.config.WaitingQueueProperties;
 import org.junit.jupiter.api.BeforeEach;

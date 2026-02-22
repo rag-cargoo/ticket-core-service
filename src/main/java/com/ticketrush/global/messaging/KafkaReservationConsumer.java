@@ -2,7 +2,7 @@ package com.ticketrush.global.messaging;
 
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
-import com.ticketrush.domain.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
