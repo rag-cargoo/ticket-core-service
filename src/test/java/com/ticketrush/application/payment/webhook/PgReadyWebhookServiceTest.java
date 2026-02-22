@@ -1,7 +1,7 @@
 package com.ticketrush.application.payment.webhook;
 
-import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
-import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
@@ -103,7 +103,7 @@ class PgReadyWebhookServiceTest {
                 )
         );
 
-        PgReadyWebhookResponse response = pgReadyWebhookService.handle(new PgReadyWebhookRequest(
+        PgReadyWebhookResult response = pgReadyWebhookService.handle(new PgReadyWebhookCommand(
                 "evt-approved-1",
                 "PAYMENT",
                 "APPROVED",
@@ -152,7 +152,7 @@ class PgReadyWebhookServiceTest {
                 )
         );
 
-        PgReadyWebhookResponse response = pgReadyWebhookService.handle(new PgReadyWebhookRequest(
+        PgReadyWebhookResult response = pgReadyWebhookService.handle(new PgReadyWebhookCommand(
                 "evt-failed-1",
                 "PAYMENT",
                 "FAILED",
@@ -180,7 +180,7 @@ class PgReadyWebhookServiceTest {
 
     @Test
     void handle_shouldIgnoreUnsupportedEventType() {
-        PgReadyWebhookResponse response = pgReadyWebhookService.handle(new PgReadyWebhookRequest(
+        PgReadyWebhookResult response = pgReadyWebhookService.handle(new PgReadyWebhookCommand(
                 "evt-unsupported",
                 "REFUND",
                 "APPROVED",

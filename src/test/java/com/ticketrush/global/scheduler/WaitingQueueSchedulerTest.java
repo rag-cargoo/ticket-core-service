@@ -1,6 +1,8 @@
 package com.ticketrush.global.scheduler;
 
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.config.WaitingQueueProperties;
 import com.ticketrush.global.push.PushNotifier;
@@ -53,11 +55,11 @@ class WaitingQueueSchedulerTest {
         when(waitingQueueService.activateUsers(1L, 10L)).thenReturn(List.of(101L));
         when(waitingQueueService.getActiveTtlSeconds(101L)).thenReturn(280L);
         when(pushNotifier.getSubscribedQueueUsers(1L)).thenReturn(Set.of(101L, 102L));
-        when(waitingQueueService.getStatus(102L, 1L)).thenReturn(
-                WaitingQueueResponse.builder()
+        when(waitingQueueService.getStatus(new WaitingQueueStatusQuery(102L, 1L))).thenReturn(
+                WaitingQueueStatusResult.builder()
                         .userId(102L)
                         .concertId(1L)
-                        .status("WAITING")
+                        .status(WaitingQueueStatusType.WAITING)
                         .rank(5L)
                         .build()
         );
@@ -67,7 +69,7 @@ class WaitingQueueSchedulerTest {
         verify(schedulerLockService).runWithLock(eq("scheduler:waiting-queue:activate:1"), any());
         verify(pushNotifier).sendQueueActivated(eq(101L), eq(1L), any());
         verify(pushNotifier).sendQueueRankUpdate(eq(102L), eq(1L), any());
-        verify(waitingQueueService, never()).getStatus(101L, 1L);
+        verify(waitingQueueService, never()).getStatus(new WaitingQueueStatusQuery(101L, 1L));
     }
 
     @Test

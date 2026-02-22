@@ -1,12 +1,14 @@
 package com.ticketrush.application.waitingqueue.service;
 
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 
 import java.util.List;
 
 public interface WaitingQueueService {
-    WaitingQueueResponse join(Long userId, Long concertId);
-    WaitingQueueResponse getStatus(Long userId, Long concertId);
+    WaitingQueueStatusResult join(WaitingQueueJoinCommand command);
+    WaitingQueueStatusResult getStatus(WaitingQueueStatusQuery query);
     List<Long> activateUsers(Long concertId, long count);
     Long getActiveTtlSeconds(Long userId);
 }

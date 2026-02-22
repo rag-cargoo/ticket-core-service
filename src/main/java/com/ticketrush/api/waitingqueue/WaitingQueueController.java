@@ -1,9 +1,12 @@
 package com.ticketrush.api.waitingqueue;
 
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueRequest;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.sse.SsePushNotifier;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +30,10 @@ public class WaitingQueueController {
     @PostMapping("/join")
     public ResponseEntity<WaitingQueueResponse> join(@RequestBody WaitingQueueRequest request) {
         log.debug(">>>> [Incoming Request] join - userId: {}, concertId: {}", request.getUserId(), request.getConcertId());
-        return ResponseEntity.ok(waitingQueueService.join(request.getUserId(), request.getConcertId()));
+        WaitingQueueStatusResult result = waitingQueueService.join(
+                new WaitingQueueJoinCommand(request.getUserId(), request.getConcertId())
+        );
+        return ResponseEntity.ok(toApiResponse(result));
     }
 
     @GetMapping("/status")
@@ -35,7 +41,8 @@ public class WaitingQueueController {
             @RequestParam Long userId,
             @RequestParam Long concertId) {
         log.debug(">>>> [Incoming Request] status - userId: {}, concertId: {}", userId, concertId);
-        return ResponseEntity.ok(waitingQueueService.getStatus(userId, concertId));
+        WaitingQueueStatusResult result = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
+        return ResponseEntity.ok(toApiResponse(result));
     }
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -45,26 +52,35 @@ public class WaitingQueueController {
         log.debug(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
 
         SseEmitter emitter = ssePushNotifier.subscribeQueue(userId, concertId);
-        WaitingQueueResponse currentStatus = waitingQueueService.getStatus(userId, concertId);
-        Long activeTtlSeconds = WaitingQueueStatus.ACTIVE.name().equals(currentStatus.getStatus())
+        WaitingQueueStatusResult currentStatus = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
+        Long activeTtlSeconds = currentStatus.getStatus() == WaitingQueueStatusType.ACTIVE
                 ? waitingQueueService.getActiveTtlSeconds(userId)
                 : 0L;
 
         WaitingQueueSsePayload payload = WaitingQueueSsePayload.builder()
                 .userId(userId)
                 .concertId(concertId)
-                .status(currentStatus.getStatus())
+                .status(currentStatus.getStatus().name())
                 .rank(currentStatus.getRank())
                 .activeTtlSeconds(activeTtlSeconds)
                 .timestamp(Instant.now().toString())
                 .build();
 
-        if (WaitingQueueStatus.ACTIVE.name().equals(currentStatus.getStatus())) {
+        if (currentStatus.getStatus() == WaitingQueueStatusType.ACTIVE) {
             ssePushNotifier.sendQueueActivated(userId, concertId, payload);
         } else {
             ssePushNotifier.sendQueueRankUpdate(userId, concertId, payload);
         }
 
         return emitter;
+    }
+
+    private WaitingQueueResponse toApiResponse(WaitingQueueStatusResult result) {
+        return WaitingQueueResponse.builder()
+                .userId(result.getUserId())
+                .concertId(result.getConcertId())
+                .status(result.getStatus().name())
+                .rank(result.getRank())
+                .build();
     }
 }
