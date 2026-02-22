@@ -5,7 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_abs="$(cd "$script_dir/../.." && pwd)"
 repo_root="$(git -C "$project_abs" rev-parse --show-toplevel 2>/dev/null || echo "$project_abs")"
 
-compose_file="${DIST_COMPOSE_FILE:-$project_abs/scripts/perf/docker-compose.distributed.yml}"
+compose_file="${DIST_COMPOSE_FILE:-$project_abs/docker-compose.distributed.yml}"
 compose_project="${DIST_COMPOSE_PROJECT:-tcsdist}"
 lb_service="${DIST_LB_SERVICE_NAME:-nginx-lb}"
 docker_network="${DIST_DOCKER_NETWORK:-${compose_project}_ticket-network}"
