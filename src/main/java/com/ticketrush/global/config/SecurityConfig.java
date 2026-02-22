@@ -55,6 +55,7 @@ public class SecurityConfig {
                                 "/api/reservations/v4/**", "/api/reservations/v5/**", "/api/reservations/v6/**").permitAll()
                         .requestMatchers("/api/auth/social/**", "/api/auth/token/refresh").permitAll()
                         .requestMatchers("/api/admin/**").access(adminConsoleAccessManager)
+                        .requestMatchers("/api/push/websocket/**").authenticated()
                         .requestMatchers("/api/reservations/v7/audit/abuse").hasRole("ADMIN")
                         .requestMatchers("/api/reservations/v7/**", "/api/auth/me", "/api/auth/logout").authenticated()
                         .anyRequest().permitAll()

@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 public class WebSocketQueueSubscriptionRequest {
 
-    @NotNull
+    // Optional legacy field. Server authority is always authenticated principal userId.
     private Long userId;
 
     @NotNull

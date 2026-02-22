@@ -20,17 +20,25 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class WaitingQueueScheduler {
 
+    private static final String ACTIVATE_LOCK_KEY_PREFIX = "scheduler:waiting-queue:activate:";
+    private static final String HEARTBEAT_LOCK_KEY = "scheduler:waiting-queue:heartbeat";
+
     private final WaitingQueueService waitingQueueService;
     private final com.ticketrush.global.config.WaitingQueueProperties properties;
     private final PushNotifier pushNotifier;
+    private final SchedulerLockService schedulerLockService;
 
     // 대기열 상위 유저를 주기적으로 활성화
     @Scheduled(fixedDelayString = "${app.waiting-queue.activation-delay-millis}")
     public void activateWaitingUsers() {
-        log.info(">>>> [Scheduler] 대기열 유저 활성화 시작 (Concert: {}, Count: {})",
-                properties.getActivationConcertId(), properties.getActivationBatchSize());
-
         Long concertId = properties.getActivationConcertId();
+        schedulerLockService.runWithLock(ACTIVATE_LOCK_KEY_PREFIX + concertId, () -> activateWaitingUsersInternal(concertId));
+    }
+
+    private void activateWaitingUsersInternal(Long concertId) {
+        log.info(">>>> [Scheduler] 대기열 유저 활성화 시작 (Concert: {}, Count: {})",
+                concertId, properties.getActivationBatchSize());
+
         List<Long> activatedUsers = waitingQueueService.activateUsers(concertId, properties.getActivationBatchSize());
         if (activatedUsers.isEmpty()) {
             return;
@@ -52,7 +60,7 @@ public class WaitingQueueScheduler {
 
     @Scheduled(fixedDelayString = "${app.waiting-queue.sse-heartbeat-delay-millis}")
     public void sendQueueHeartbeat() {
-        pushNotifier.sendQueueHeartbeat();
+        schedulerLockService.runWithLock(HEARTBEAT_LOCK_KEY, pushNotifier::sendQueueHeartbeat);
     }
 
     private void publishRankUpdates(Long concertId, Set<Long> activatedUsers) {

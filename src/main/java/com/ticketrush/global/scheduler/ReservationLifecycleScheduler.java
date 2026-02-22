@@ -9,10 +9,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ReservationLifecycleScheduler {
 
+    private static final String EXPIRE_HOLDS_LOCK_KEY = "scheduler:reservation-lifecycle:expire-holds";
+
     private final ReservationLifecycleService reservationLifecycleService;
+    private final SchedulerLockService schedulerLockService;
 
     @Scheduled(fixedDelayString = "${app.reservation.expire-check-delay-millis:5000}")
     public void expireTimedOutHolds() {
-        reservationLifecycleService.expireTimedOutHolds();
+        schedulerLockService.runWithLock(EXPIRE_HOLDS_LOCK_KEY, reservationLifecycleService::expireTimedOutHolds);
     }
 }
