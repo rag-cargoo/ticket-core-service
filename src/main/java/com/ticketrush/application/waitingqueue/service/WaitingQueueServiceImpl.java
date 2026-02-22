@@ -1,7 +1,9 @@
 package com.ticketrush.application.waitingqueue.service;
 
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -83,9 +85,9 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
     }
 
     @Override
-    public WaitingQueueResponse join(Long userId, Long concertId) {
-        String queueKey = properties.getQueueKeyPrefix() + concertId;
-        String userIdStr = String.valueOf(userId);
+    public WaitingQueueStatusResult join(WaitingQueueJoinCommand command) {
+        String queueKey = properties.getQueueKeyPrefix() + command.getConcertId();
+        String userIdStr = String.valueOf(command.getUserId());
         String activeKey = properties.getActiveKeyPrefix() + userIdStr;
 
         // Redis round trip을 줄이기 위해 join/throttling/rank 계산을 Lua 스크립트로 원자 처리한다.
@@ -97,42 +99,42 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
                 String.valueOf(properties.getMaxQueueSize())
         );
         if (scriptResult == null || scriptResult.size() < 2) {
-            return getStatus(userId, concertId);
+            return getStatus(new WaitingQueueStatusQuery(command.getUserId(), command.getConcertId()));
         }
 
         long resultCode = toLong(scriptResult.get(0), JOIN_RESULT_UNKNOWN);
         long rank = toLong(scriptResult.get(1), -1L);
 
         if (resultCode == JOIN_RESULT_ACTIVE) {
-            return buildResponse(userId, concertId, WaitingQueueStatus.ACTIVE.name(), 0L);
+            return buildResponse(command.getUserId(), command.getConcertId(), WaitingQueueStatusType.ACTIVE, 0L);
         }
         if (resultCode == JOIN_RESULT_REJECTED) {
-            return buildResponse(userId, concertId, WaitingQueueStatus.REJECTED.name(), -1L);
+            return buildResponse(command.getUserId(), command.getConcertId(), WaitingQueueStatusType.REJECTED, -1L);
         }
         if (resultCode == JOIN_RESULT_WAITING) {
-            return buildResponse(userId, concertId, WaitingQueueStatus.WAITING.name(), rank > 0 ? rank : 1L);
+            return buildResponse(command.getUserId(), command.getConcertId(), WaitingQueueStatusType.WAITING, rank > 0 ? rank : 1L);
         }
 
-        return getStatus(userId, concertId);
+        return getStatus(new WaitingQueueStatusQuery(command.getUserId(), command.getConcertId()));
     }
 
     @Override
-    public WaitingQueueResponse getStatus(Long userId, Long concertId) {
-        String userIdStr = String.valueOf(userId);
+    public WaitingQueueStatusResult getStatus(WaitingQueueStatusQuery query) {
+        String userIdStr = String.valueOf(query.getUserId());
 
         // 1. 활성 상태 확인
         if (Boolean.TRUE.equals(redisTemplate.hasKey(properties.getActiveKeyPrefix() + userIdStr))) {
-            return buildResponse(userId, concertId, WaitingQueueStatus.ACTIVE.name(), 0L);
+            return buildResponse(query.getUserId(), query.getConcertId(), WaitingQueueStatusType.ACTIVE, 0L);
         }
 
         // 2. 대기 순번 조회
-        String queueKey = properties.getQueueKeyPrefix() + concertId;
+        String queueKey = properties.getQueueKeyPrefix() + query.getConcertId();
         Long rank = redisTemplate.opsForZSet().rank(queueKey, userIdStr);
 
         return buildResponse(
-                userId,
-                concertId,
-                rank != null ? WaitingQueueStatus.WAITING.name() : WaitingQueueStatus.NONE.name(),
+                query.getUserId(),
+                query.getConcertId(),
+                rank != null ? WaitingQueueStatusType.WAITING : WaitingQueueStatusType.NONE,
                 rank != null ? rank + 1 : -1L // 0-based rank이므로 +1
         );
     }
@@ -174,8 +176,8 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
         return (ttl != null && ttl > 0) ? ttl : 0L;
     }
 
-    private WaitingQueueResponse buildResponse(Long userId, Long concertId, String status, Long rank) {
-        return WaitingQueueResponse.builder()
+    private WaitingQueueStatusResult buildResponse(Long userId, Long concertId, WaitingQueueStatusType status, Long rank) {
+        return WaitingQueueStatusResult.builder()
                 .userId(userId)
                 .concertId(concertId)
                 .status(status)

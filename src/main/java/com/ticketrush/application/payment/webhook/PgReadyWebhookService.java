@@ -1,7 +1,7 @@
 package com.ticketrush.application.payment.webhook;
 
-import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
-import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -33,11 +33,11 @@ public class PgReadyWebhookService {
     private static final String STATUS_FAILED = "FAILED";
 
     @Transactional
-    public PgReadyWebhookResponse handle(PgReadyWebhookRequest request) {
-        String eventType = normalizeUpper(request.getEventType());
-        String status = normalizeUpper(request.getStatus());
-        Long reservationId = request.getReservationId();
-        String providerEventId = normalizeRaw(request.getProviderEventId());
+    public PgReadyWebhookResult handle(PgReadyWebhookCommand command) {
+        String eventType = normalizeUpper(command.getEventType());
+        String status = normalizeUpper(command.getStatus());
+        Long reservationId = command.getReservationId();
+        String providerEventId = normalizeRaw(command.getProviderEventId());
 
         if (!StringUtils.hasText(eventType)) {
             throw new IllegalArgumentException("eventType is required");
@@ -53,7 +53,7 @@ public class PgReadyWebhookService {
             return acceptedResponse(eventType, status, reservationId, "ignored unsupported eventType");
         }
 
-        PaymentTransaction paymentTransaction = resolvePaymentTransaction(request, reservationId);
+        PaymentTransaction paymentTransaction = resolvePaymentTransaction(command, reservationId);
         if (STATUS_APPROVED.equals(status)) {
             handleApproved(paymentTransaction, reservationId, providerEventId);
             return acceptedResponse(eventType, status, reservationId, "applied approved");
@@ -74,8 +74,8 @@ public class PgReadyWebhookService {
         return acceptedResponse(eventType, status, reservationId, "ignored unsupported status");
     }
 
-    private PaymentTransaction resolvePaymentTransaction(PgReadyWebhookRequest request, Long reservationId) {
-        String idempotencyKey = normalizeRaw(request.getIdempotencyKey());
+    private PaymentTransaction resolvePaymentTransaction(PgReadyWebhookCommand command, Long reservationId) {
+        String idempotencyKey = normalizeRaw(command.getIdempotencyKey());
         if (StringUtils.hasText(idempotencyKey)) {
             return paymentTransactionRepository.findByIdempotencyKey(idempotencyKey)
                     .orElseThrow(() -> new IllegalStateException("Payment transaction not found. idempotencyKey=" + idempotencyKey));
@@ -128,8 +128,8 @@ public class PgReadyWebhookService {
         paymentTransaction.markFailed(buildDescription("PG_READY_PAYMENT_FAILED", providerEventId));
     }
 
-    private PgReadyWebhookResponse acceptedResponse(String eventType, String status, Long reservationId, String message) {
-        return new PgReadyWebhookResponse("pg-ready", eventType, status, reservationId, true, message);
+    private PgReadyWebhookResult acceptedResponse(String eventType, String status, Long reservationId, String message) {
+        return new PgReadyWebhookResult("pg-ready", eventType, status, reservationId, true, message);
     }
 
     private String buildDescription(String base, String providerEventId) {

@@ -1,8 +1,9 @@
 package com.ticketrush.global.scheduler;
 
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,7 @@ public class WaitingQueueScheduler {
             pushNotifier.sendQueueActivated(
                     userId,
                     concertId,
-                    buildPayload(userId, concertId, WaitingQueueStatus.ACTIVE.name(), 0L, activeTtlSeconds)
+                    buildPayload(userId, concertId, WaitingQueueStatusType.ACTIVE.name(), 0L, activeTtlSeconds)
             );
         }
 
@@ -70,19 +71,19 @@ public class WaitingQueueScheduler {
                 continue;
             }
 
-            WaitingQueueResponse status = waitingQueueService.getStatus(userId, concertId);
-            Long activeTtlSeconds = WaitingQueueStatus.ACTIVE.name().equals(status.getStatus())
+            WaitingQueueStatusResult status = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
+            Long activeTtlSeconds = status.getStatus() == WaitingQueueStatusType.ACTIVE
                     ? waitingQueueService.getActiveTtlSeconds(userId)
                     : 0L;
             WaitingQueueSsePayload payload = buildPayload(
                     userId,
                     concertId,
-                    status.getStatus(),
+                    status.getStatus().name(),
                     status.getRank(),
                     activeTtlSeconds
             );
 
-            if (WaitingQueueStatus.ACTIVE.name().equals(status.getStatus())) {
+            if (status.getStatus() == WaitingQueueStatusType.ACTIVE) {
                 pushNotifier.sendQueueActivated(userId, concertId, payload);
             } else {
                 pushNotifier.sendQueueRankUpdate(userId, concertId, payload);

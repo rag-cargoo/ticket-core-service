@@ -2,6 +2,8 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
 import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
+import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
 import com.ticketrush.application.payment.webhook.PgReadyWebhookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,29 @@ public class PaymentWebhookController {
     public ResponseEntity<PgReadyWebhookResponse> receivePgReadyWebhook(
             @RequestBody PgReadyWebhookRequest request
     ) {
-        return ResponseEntity.accepted().body(pgReadyWebhookService.handle(request));
+        PgReadyWebhookResult result = pgReadyWebhookService.handle(
+                new PgReadyWebhookCommand(
+                        request.getProviderEventId(),
+                        request.getEventType(),
+                        request.getStatus(),
+                        request.getUserId(),
+                        request.getReservationId(),
+                        request.getAmount(),
+                        request.getIdempotencyKey(),
+                        request.getOccurredAt(),
+                        request.getSignature(),
+                        request.getMetadata()
+                )
+        );
+        return ResponseEntity.accepted().body(
+                new PgReadyWebhookResponse(
+                        result.getProvider(),
+                        result.getEventType(),
+                        result.getStatus(),
+                        result.getReservationId(),
+                        result.isAccepted(),
+                        result.getMessage()
+                )
+        );
     }
 }
