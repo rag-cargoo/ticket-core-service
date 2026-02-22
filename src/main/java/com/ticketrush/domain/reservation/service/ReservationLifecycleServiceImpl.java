@@ -96,10 +96,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             );
         }
 
+        Long paymentAmount = resolvePaymentAmount(reservation);
         PaymentTransaction paymentTransaction = reservationPaymentPort.payForReservation(
                 userId,
                 reservationId,
-                paymentProperties.getDefaultTicketPriceAmount(),
+                paymentAmount,
                 "reservation-payment-" + reservationId
         );
 
@@ -325,5 +326,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 reservation.getSeat().getId(),
                 Reservation.ReservationStatus.CONFIRMED.name()
         );
+    }
+
+    private Long resolvePaymentAmount(Reservation reservation) {
+        Long optionPriceAmount = reservation.getSeat().getConcertOption().getTicketPriceAmount();
+        if (optionPriceAmount != null && optionPriceAmount >= 0L) {
+            return optionPriceAmount;
+        }
+        return paymentProperties.getDefaultTicketPriceAmount();
     }
 }

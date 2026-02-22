@@ -4,4 +4,5 @@ import com.ticketrush.domain.concert.entity.ConcertOption;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ConcertOptionRepository extends JpaRepository<ConcertOption, Long> {
+    boolean existsByVenueId(Long venueId);
 }

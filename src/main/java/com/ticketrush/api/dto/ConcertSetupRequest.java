@@ -22,6 +22,13 @@ public class ConcertSetupRequest {
     private String agencyName;
     private String agencyCountryCode;
     private String agencyHomepageUrl;
+    private String promoterName;
+    private String promoterCountryCode;
+    private String promoterHomepageUrl;
+    private String venueName;
+    private String venueCity;
+    private String venueCountryCode;
+    private String venueAddress;
     private LocalDateTime concertDate;
     private int seatCount;
 }

@@ -13,8 +13,24 @@ import java.time.LocalDateTime;
 public class ConcertOptionResponse {
     private Long id;
     private LocalDateTime concertDate;
+    private Long ticketPriceAmount;
+    private Long venueId;
+    private String venueName;
+    private String venueCity;
+    private String venueCountryCode;
+    private String venueAddress;
 
     public static ConcertOptionResponse from(ConcertOption option) {
-        return new ConcertOptionResponse(option.getId(), option.getConcertDate());
+        var venue = option.getVenue();
+        return new ConcertOptionResponse(
+                option.getId(),
+                option.getConcertDate(),
+                option.getTicketPriceAmount(),
+                venue != null ? venue.getId() : null,
+                venue != null ? venue.getName() : null,
+                venue != null ? venue.getCity() : null,
+                venue != null ? venue.getCountryCode() : null,
+                venue != null ? venue.getAddress() : null
+        );
     }
 }

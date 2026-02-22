@@ -16,4 +16,5 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     Optional<Seat> findByIdWithPessimisticLock(@Param("id") Long id);
 
     java.util.List<Seat> findByConcertOptionIdAndStatus(Long concertOptionId, Seat.SeatStatus status);
+    boolean existsByConcertOptionId(Long concertOptionId);
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface ConcertRepository extends JpaRepository<Concert, Long> {
     boolean existsByArtistId(Long artistId);
+    boolean existsByPromoterId(Long promoterId);
 
     @Query("SELECT c FROM Concert c JOIN FETCH c.options")
     List<Concert> findAllWithOptions();
@@ -48,7 +49,7 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                            OR lower(ag.name) = lower(:agencyName))
                     """
     )
-    @EntityGraph(attributePaths = {"artist", "artist.agency"})
+    @EntityGraph(attributePaths = {"artist", "artist.agency", "promoter"})
     Page<Concert> searchPaged(@Param("keyword") String keyword,
                               @Param("artistName") String artistName,
                               @Param("agencyName") String agencyName,

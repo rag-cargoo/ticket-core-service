@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 @Getter
 @NoArgsConstructor
@@ -21,10 +22,17 @@ public class ConcertResponse {
     private String agencyName;
     private String agencyCountryCode;
     private String agencyHomepageUrl;
+    private String youtubeVideoUrl;
+    private String thumbnailUrl;
+    private Long promoterId;
+    private String promoterName;
+    private String promoterCountryCode;
+    private String promoterHomepageUrl;
 
     public static ConcertResponse from(Concert concert) {
         var artist = concert.getArtist();
         var agency = artist.getAgency();
+        var promoter = concert.getPromoter();
         return new ConcertResponse(
                 concert.getId(),
                 concert.getTitle(),
@@ -35,7 +43,25 @@ public class ConcertResponse {
                 artist.getDebutDate(),
                 agency != null ? agency.getName() : null,
                 agency != null ? agency.getCountryCode() : null,
-                agency != null ? agency.getHomepageUrl() : null
+                agency != null ? agency.getHomepageUrl() : null,
+                concert.getYoutubeVideoUrl(),
+                resolveThumbnailUrl(concert),
+                promoter != null ? promoter.getId() : null,
+                promoter != null ? promoter.getName() : null,
+                promoter != null ? promoter.getCountryCode() : null,
+                promoter != null ? promoter.getHomepageUrl() : null
         );
+    }
+
+    private static String resolveThumbnailUrl(Concert concert) {
+        if (!concert.hasThumbnail()) {
+            return null;
+        }
+        String base = "/api/concerts/" + concert.getId() + "/thumbnail";
+        if (concert.getThumbnailUpdatedAt() == null) {
+            return base;
+        }
+        long ts = concert.getThumbnailUpdatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+        return base + "?ts=" + ts;
     }
 }

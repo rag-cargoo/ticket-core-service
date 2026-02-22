@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ConcertService {
@@ -30,12 +31,121 @@ public interface ConcertService {
                           LocalDate artistDebutDate,
                           String agencyCountryCode,
                           String agencyHomepageUrl);
-    ConcertOption addOption(Long concertId, java.time.LocalDateTime date);
+
+    default Concert createConcert(String title,
+                                  String artistName,
+                                  String agencyName,
+                                  String artistDisplayName,
+                                  String artistGenre,
+                                  LocalDate artistDebutDate,
+                                  String agencyCountryCode,
+                                  String agencyHomepageUrl,
+                                  String promoterName,
+                                  String promoterCountryCode,
+                                  String promoterHomepageUrl) {
+        return createConcert(
+                title,
+                artistName,
+                agencyName,
+                artistDisplayName,
+                artistGenre,
+                artistDebutDate,
+                agencyCountryCode,
+                agencyHomepageUrl,
+                promoterName,
+                promoterCountryCode,
+                promoterHomepageUrl,
+                null
+        );
+    }
+    Concert createConcert(String title,
+                          String artistName,
+                          String agencyName,
+                          String artistDisplayName,
+                          String artistGenre,
+                          LocalDate artistDebutDate,
+                          String agencyCountryCode,
+                          String agencyHomepageUrl,
+                          String promoterName,
+                          String promoterCountryCode,
+                          String promoterHomepageUrl,
+                          String youtubeVideoUrl);
+
+    default Concert updateConcert(Long concertId,
+                                  String title,
+                                  String artistName,
+                                  String agencyName,
+                                  String artistDisplayName,
+                                  String artistGenre,
+                                  LocalDate artistDebutDate,
+                                  String agencyCountryCode,
+                                  String agencyHomepageUrl,
+                                  String promoterName,
+                                  String promoterCountryCode,
+                                  String promoterHomepageUrl) {
+        return updateConcert(
+                concertId,
+                title,
+                artistName,
+                agencyName,
+                artistDisplayName,
+                artistGenre,
+                artistDebutDate,
+                agencyCountryCode,
+                agencyHomepageUrl,
+                promoterName,
+                promoterCountryCode,
+                promoterHomepageUrl,
+                null
+        );
+    }
+    Concert updateConcert(Long concertId,
+                          String title,
+                          String artistName,
+                          String agencyName,
+                          String artistDisplayName,
+                          String artistGenre,
+                          LocalDate artistDebutDate,
+                          String agencyCountryCode,
+                          String agencyHomepageUrl,
+                          String promoterName,
+                          String promoterCountryCode,
+                          String promoterHomepageUrl,
+                          String youtubeVideoUrl);
+
+    default Concert createConcertByReferences(String title, Long artistId, Long promoterId) {
+        return createConcertByReferences(title, artistId, promoterId, null);
+    }
+    Concert createConcertByReferences(String title, Long artistId, Long promoterId, String youtubeVideoUrl);
+    default Concert updateConcertByReferences(Long concertId, String title, Long artistId, Long promoterId) {
+        return updateConcertByReferences(concertId, title, artistId, promoterId, null);
+    }
+    Concert updateConcertByReferences(Long concertId, String title, Long artistId, Long promoterId, String youtubeVideoUrl);
+    Concert getConcert(Long concertId);
+    default ConcertOption addOption(Long concertId, LocalDateTime date) {
+        return addOption(concertId, date, null, null);
+    }
+    default ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId) {
+        return addOption(concertId, date, venueId, null);
+    }
+    ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount);
+    default ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId) {
+        return updateOption(optionId, date, venueId, null);
+    }
+    ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId, Long ticketPriceAmount);
+    void deleteOption(Long optionId);
     void createSeats(Long optionId, int count);
 
     void deleteConcert(Long concertId);
 
+    Concert updateThumbnail(Long concertId, byte[] imageBytes, String contentType);
+    void deleteThumbnail(Long concertId);
+    ConcertThumbnail getThumbnail(Long concertId);
+
     // ReservationService에서 사용할 메서드
     Seat getSeat(Long seatId);
     Seat getSeatWithPessimisticLock(Long seatId);
+
+    record ConcertThumbnail(byte[] bytes, String contentType) {
+    }
 }

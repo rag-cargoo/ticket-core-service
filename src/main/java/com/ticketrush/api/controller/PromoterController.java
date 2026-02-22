@@ -1,9 +1,9 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.api.dto.AgencyResponse;
-import com.ticketrush.api.dto.AgencySearchPageResponse;
-import com.ticketrush.api.dto.AgencyUpsertRequest;
-import com.ticketrush.domain.agency.service.AgencyService;
+import com.ticketrush.api.dto.PromoterResponse;
+import com.ticketrush.api.dto.PromoterSearchPageResponse;
+import com.ticketrush.api.dto.PromoterUpsertRequest;
+import com.ticketrush.domain.promoter.service.PromoterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -13,28 +13,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/agencies")
+@RequestMapping("/api/admin/promoters")
 @RequiredArgsConstructor
-public class AgencyController {
+public class PromoterController {
 
-    private final AgencyService agencyService;
+    private final PromoterService promoterService;
 
     @PostMapping
-    public ResponseEntity<AgencyResponse> create(@RequestBody AgencyUpsertRequest request) {
-        return ResponseEntity.status(201).body(AgencyResponse.from(
-                agencyService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
+    public ResponseEntity<PromoterResponse> create(@RequestBody PromoterUpsertRequest request) {
+        return ResponseEntity.status(201).body(PromoterResponse.from(
+                promoterService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @GetMapping
-    public ResponseEntity<List<AgencyResponse>> getAll() {
-        return ResponseEntity.ok(agencyService.getAll().stream()
-                .map(AgencyResponse::from)
+    public ResponseEntity<List<PromoterResponse>> getAll() {
+        return ResponseEntity.ok(promoterService.getAll().stream()
+                .map(PromoterResponse::from)
                 .toList());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<AgencySearchPageResponse> search(
+    public ResponseEntity<PromoterSearchPageResponse> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -45,25 +45,25 @@ public class AgencyController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = agencyService.search(keyword, pageable).map(AgencyResponse::from);
-        return ResponseEntity.ok(AgencySearchPageResponse.from(result));
+        var result = promoterService.search(keyword, pageable).map(PromoterResponse::from);
+        return ResponseEntity.ok(PromoterSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AgencyResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(AgencyResponse.from(agencyService.getById(id)));
+    public ResponseEntity<PromoterResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(PromoterResponse.from(promoterService.getById(id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AgencyResponse> update(@PathVariable Long id, @RequestBody AgencyUpsertRequest request) {
-        return ResponseEntity.ok(AgencyResponse.from(
-                agencyService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
+    public ResponseEntity<PromoterResponse> update(@PathVariable Long id, @RequestBody PromoterUpsertRequest request) {
+        return ResponseEntity.ok(PromoterResponse.from(
+                promoterService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        agencyService.delete(id);
+        promoterService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

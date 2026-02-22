@@ -10,6 +10,7 @@ import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -39,9 +40,12 @@ public class ConcertController {
                 request.getArtistGenre(),
                 request.getArtistDebutDate(),
                 request.getAgencyCountryCode(),
-                request.getAgencyHomepageUrl()
+                request.getAgencyHomepageUrl(),
+                request.getPromoterName(),
+                request.getPromoterCountryCode(),
+                request.getPromoterHomepageUrl()
         );
-        var option = concertService.addOption(concert.getId(), request.getConcertDate());
+        var option = concertService.addOption(concert.getId(), request.getConcertDate(), null);
         concertService.createSeats(option.getId(), request.getSeatCount());
         
         return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
@@ -98,6 +102,14 @@ public class ConcertController {
         return ResponseEntity.ok(concertService.getConcertOptions(id).stream()
                 .map(ConcertOptionResponse::from)
                 .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/{concertId}/thumbnail")
+    public ResponseEntity<byte[]> getThumbnail(@PathVariable Long concertId) {
+        ConcertService.ConcertThumbnail thumbnail = concertService.getThumbnail(concertId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(thumbnail.contentType()))
+                .body(thumbnail.bytes());
     }
 
     /**

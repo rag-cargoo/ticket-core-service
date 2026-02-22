@@ -6,6 +6,8 @@ import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,12 @@ public class ArtistServiceImpl implements ArtistService {
             throw new IllegalArgumentException("Artist already exists: " + existing.getName());
         });
         return artistRepository.save(new Artist(normalizedName, agency, displayName, genre, debutDate));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Artist> search(String keyword, Long agencyId, Pageable pageable) {
+        return artistRepository.searchPaged(normalize(keyword), agencyId, pageable);
     }
 
     @Override
@@ -90,5 +98,13 @@ public class ArtistServiceImpl implements ArtistService {
             throw new IllegalArgumentException(fieldName + " is required");
         }
         return normalized;
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

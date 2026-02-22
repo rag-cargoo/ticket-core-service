@@ -4,6 +4,8 @@ import com.ticketrush.domain.agency.Agency;
 import com.ticketrush.domain.agency.AgencyRepository;
 import com.ticketrush.domain.artist.ArtistRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,12 @@ public class AgencyServiceImpl implements AgencyService {
             throw new IllegalArgumentException("Agency already exists: " + existing.getName());
         });
         return agencyRepository.save(new Agency(normalizedName, countryCode, homepageUrl));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Agency> search(String keyword, Pageable pageable) {
+        return agencyRepository.searchPaged(normalize(keyword), pageable);
     }
 
     @Override
@@ -75,5 +83,13 @@ public class AgencyServiceImpl implements AgencyService {
             throw new IllegalArgumentException(fieldName + " is required");
         }
         return normalized;
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
