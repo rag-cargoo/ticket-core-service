@@ -67,6 +67,9 @@ app:
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"
+    ws-subscriber-zset-key-prefix: "ws:queue:subs:"
+    ws-concert-index-key: "ws:queue:concerts"
+    ws-subscriber-ttl-seconds: 300
     max-queue-size: 100
     active-ttl-minutes: 5
     activation-batch-size: 10

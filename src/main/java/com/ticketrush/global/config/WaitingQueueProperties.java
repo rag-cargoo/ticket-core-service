@@ -19,4 +19,7 @@ public class WaitingQueueProperties {
     private long sseHeartbeatDelayMillis;
     private String queueKeyPrefix;
     private String activeKeyPrefix;
+    private long wsSubscriberTtlSeconds = 90;
+    private String wsSubscriberZsetKeyPrefix = "ws:queue:subs:";
+    private String wsConcertIndexKey = "ws:queue:concerts";
 }
