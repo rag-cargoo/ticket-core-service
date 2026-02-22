@@ -13,10 +13,10 @@ export const options = {
   vus,
   duration,
   thresholds: {
-    http_req_failed: ['rate<0.05'],
+    http_req_failed: ['rate==0'],
     http_req_duration: ['p(95)<700', 'p(99)<1200'],
-    checks: ['rate>0.95'],
-    join_valid_status_rate: ['rate>0.95'],
+    checks: ['rate==1'],
+    join_valid_status_rate: ['rate==1'],
   },
 };
 
