@@ -2,6 +2,7 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.api.dto.push.WebSocketQueueSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketReservationSubscriptionRequest;
+import com.ticketrush.api.dto.push.WebSocketSeatMapSubscriptionRequest;
 import com.ticketrush.domain.auth.security.AuthUserPrincipal;
 import com.ticketrush.global.push.WebSocketPushNotifier;
 import jakarta.validation.Valid;
@@ -73,6 +74,29 @@ public class WebSocketPushController {
         Long authenticatedUserId = requiredUserId(principal);
         validateRequestedUserId(userId, authenticatedUserId);
         webSocketPushNotifier.unsubscribeReservation(authenticatedUserId, seatId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/seats/subscriptions")
+    public ResponseEntity<Map<String, String>> subscribeSeatMap(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @Valid @RequestBody WebSocketSeatMapSubscriptionRequest request
+    ) {
+        requiredUserId(principal);
+        String destination = webSocketPushNotifier.subscribeSeatMap(request.getOptionId());
+        return ResponseEntity.ok(Map.of(
+                "transport", "websocket",
+                "destination", destination
+        ));
+    }
+
+    @DeleteMapping("/seats/subscriptions")
+    public ResponseEntity<Void> unsubscribeSeatMap(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestParam Long optionId
+    ) {
+        requiredUserId(principal);
+        webSocketPushNotifier.unsubscribeSeatMap(optionId);
         return ResponseEntity.noContent().build();
     }
 

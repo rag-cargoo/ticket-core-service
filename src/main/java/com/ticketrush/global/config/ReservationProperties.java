@@ -17,6 +17,16 @@ public class ReservationProperties {
     private long holdTtlSeconds = 300;
 
     /**
+     * 좌석 선택(soft lock) 유지 시간.
+     */
+    private long softLockTtlSeconds = 30;
+
+    /**
+     * 좌석 soft lock Redis key prefix.
+     */
+    private String softLockKeyPrefix = "seat:lock:";
+
+    /**
      * 만료 스캔 스케줄러 주기.
      */
     private long expireCheckDelayMillis = 5_000;

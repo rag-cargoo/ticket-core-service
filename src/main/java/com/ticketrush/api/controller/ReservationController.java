@@ -5,6 +5,7 @@ import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.AbuseAuditService;
 import com.ticketrush.domain.reservation.service.AdminRefundAuditService;
 import com.ticketrush.domain.reservation.service.ReservationLifecycleService;
+import com.ticketrush.domain.reservation.service.SeatSoftLockService;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
@@ -17,6 +18,9 @@ import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
 import com.ticketrush.api.dto.reservation.AdminRefundAuditResponse;
 import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
+import com.ticketrush.api.dto.reservation.SeatSoftLockAcquireResponse;
+import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
+import com.ticketrush.api.dto.reservation.SeatSoftLockRequest;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
 import com.ticketrush.domain.auth.security.AuthUserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,7 @@ public class ReservationController {
     private final KafkaReservationProducer kafkaProducer;
     private final ReservationQueueService queueService;
     private final ReservationLifecycleService reservationLifecycleService;
+    private final SeatSoftLockService seatSoftLockService;
     private final AbuseAuditService abuseAuditService;
     private final AdminRefundAuditService adminRefundAuditService;
     private final SsePushNotifier ssePushNotifier;
@@ -196,6 +201,38 @@ public class ReservationController {
     }
 
     /**
+     * [v7] Auth Track A2 - 좌석 선택 soft lock 획득
+     */
+    @PostMapping("/v7/locks/seats/{seatId}")
+    public ResponseEntity<SeatSoftLockAcquireResponse> acquireSeatSoftLockV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long seatId,
+            @RequestBody(required = false) SeatSoftLockRequest request
+    ) {
+        String requestId = request == null ? null : request.getRequestId();
+        return ResponseEntity.ok(
+                SeatSoftLockAcquireResponse.from(
+                        seatSoftLockService.acquire(requiredUserId(principal), seatId, requestId)
+                )
+        );
+    }
+
+    /**
+     * [v7] Auth Track A2 - 좌석 선택 soft lock 해제
+     */
+    @DeleteMapping("/v7/locks/seats/{seatId}")
+    public ResponseEntity<SeatSoftLockReleaseResponse> releaseSeatSoftLockV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long seatId
+    ) {
+        return ResponseEntity.ok(
+                SeatSoftLockReleaseResponse.from(
+                        seatSoftLockService.release(requiredUserId(principal), seatId)
+                )
+        );
+    }
+
+    /**
      * [v7] Auth Track A2 - 인증 사용자 기반 HOLD 생성
      */
     @PostMapping("/v7/holds")
@@ -203,9 +240,13 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @RequestBody AuthenticatedHoldRequest request
     ) {
-        return ResponseEntity.status(201).body(
-                reservationLifecycleService.createHold(request.toReservationRequest(requiredUserId(principal)))
+        Long userId = requiredUserId(principal);
+        seatSoftLockService.ensureHoldableByUser(userId, request.getSeatId());
+        ReservationLifecycleResponse response = reservationLifecycleService.createHold(
+                request.toReservationRequest(userId)
         );
+        seatSoftLockService.promoteToHold(userId, response.getSeatId(), response.getHoldExpiresAt());
+        return ResponseEntity.status(201).body(response);
     }
 
     /**

@@ -13,4 +13,8 @@ public interface PushNotifier {
     void sendQueueHeartbeat();
 
     Set<Long> getSubscribedQueueUsers(Long concertId);
+
+    default void sendSeatMapStatus(Long optionId, Long seatId, String status, Long ownerUserId, String expiresAt) {
+        // Optional capability. Implementations without seat-map channel support can ignore.
+    }
 }
