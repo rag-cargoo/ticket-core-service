@@ -8,7 +8,7 @@ import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.security.AuthUserPrincipal;
 import com.ticketrush.domain.auth.service.AuthSessionService;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.UserRepository;
+import com.ticketrush.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthSessionService authSessionService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @PostMapping("/token/refresh")
     public ResponseEntity<AuthTokenResponse> refresh(@RequestBody TokenRefreshRequest request) {
@@ -51,8 +51,7 @@ public class AuthController {
         if (principal == null) {
             throw new IllegalArgumentException("authenticated user is required");
         }
-        User user = userRepository.findById(principal.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + principal.getUserId()));
+        User user = userService.getUser(principal.getUserId());
         return ResponseEntity.ok(AuthMeResponse.from(user));
     }
 

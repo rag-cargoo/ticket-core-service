@@ -1,6 +1,5 @@
 package com.ticketrush.domain.reservation.entity;
 
-import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.user.User;
 import jakarta.persistence.Column;
@@ -92,7 +91,15 @@ public class AbuseAuditLog {
         this.occurredAt = occurredAt;
     }
 
-    public static AbuseAuditLog blockedHold(User user, Seat seat, ReservationRequest request, AuditReason reason, String detailMessage, LocalDateTime now) {
+    public static AbuseAuditLog blockedHold(
+            User user,
+            Seat seat,
+            String requestFingerprint,
+            String deviceFingerprint,
+            AuditReason reason,
+            String detailMessage,
+            LocalDateTime now
+    ) {
         return new AbuseAuditLog(
                 AuditAction.HOLD_CREATE,
                 AuditResult.BLOCKED,
@@ -101,14 +108,21 @@ public class AbuseAuditLog {
                 seat.getConcertOption().getConcert().getId(),
                 seat.getId(),
                 null,
-                request.getRequestFingerprint(),
-                request.getDeviceFingerprint(),
+                requestFingerprint,
+                deviceFingerprint,
                 detailMessage,
                 now
         );
     }
 
-    public static AbuseAuditLog allowedHold(User user, Seat seat, ReservationRequest request, Long reservationId, LocalDateTime now) {
+    public static AbuseAuditLog allowedHold(
+            User user,
+            Seat seat,
+            String requestFingerprint,
+            String deviceFingerprint,
+            Long reservationId,
+            LocalDateTime now
+    ) {
         return new AbuseAuditLog(
                 AuditAction.HOLD_CREATE,
                 AuditResult.ALLOWED,
@@ -117,8 +131,8 @@ public class AbuseAuditLog {
                 seat.getConcertOption().getConcert().getId(),
                 seat.getId(),
                 reservationId,
-                request.getRequestFingerprint(),
-                request.getDeviceFingerprint(),
+                requestFingerprint,
+                deviceFingerprint,
                 "hold accepted",
                 now
         );

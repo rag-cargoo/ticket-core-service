@@ -450,7 +450,8 @@ class ReservationLifecycleServiceIntegrationTest {
                     AbuseAuditLog.allowedHold(
                             user,
                             firstSeat,
-                            new ReservationRequest(user.getId(), firstSeat.getId(), "seed-rate-" + i, "device-rate"),
+                            "seed-rate-" + i,
+                            "device-rate",
                             null,
                             now.minusSeconds(1)
                     )
