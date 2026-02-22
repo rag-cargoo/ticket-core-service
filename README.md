@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-18 23:52:32`
+> - **Updated At**: `2026-02-22 20:20:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -58,6 +58,15 @@ make test-suite
 make test-k6
 ```
 
+### 4-1. 분산 환경 실행 (3 app + LB + WS relay)
+```bash
+docker-compose -f docker-compose.distributed.yml up -d --build
+```
+
+```bash
+make test-k6-distributed
+```
+
 ### 5. Auth-Social CI-safe 파이프라인 테스트
 ```bash
 make test-auth-social-pipeline
@@ -84,7 +93,15 @@ make test-auth-social-real-provider
 - auth-social 파이프라인 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-e2e-latest.md`
 - auth-social real provider e2e 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-real-provider-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
+- 분산 compose 경로: `docker-compose.distributed.yml`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `websocket`)
+- WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `simple`)
+- 분산 compose 기본값:
+  - `APP_WS_BROKER_MODE=relay`
+  - relay host/port/login은 compose 내부 `ws-relay` 기준으로 주입
+- 운영 오버라이드 가능한 핵심 설정:
+  - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
+  - `APP_PAYMENT_PROVIDER` (기본 `wallet`)
 - WebSocket STOMP 엔드포인트: `/ws` (`/topic/waiting-queue/{concertId}/{userId}`, `/topic/reservations/{seatId}/{userId}`)
 - WebSocket 구독 등록 API:
   - `POST /api/push/websocket/waiting-queue/subscriptions`

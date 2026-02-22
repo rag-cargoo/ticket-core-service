@@ -27,12 +27,12 @@ app:
       reservation: "ticket-reservation-events"
   reservation:
     hold-ttl-seconds: 300
-    soft-lock-ttl-seconds: 30
+    soft-lock-ttl-seconds: ${APP_RESERVATION_SOFT_LOCK_TTL_SECONDS:30}
     soft-lock-key-prefix: "seat:lock:"
     expire-check-delay-millis: 5000
     refund-cutoff-hours-before-concert: 24
   payment:
-    provider: wallet
+    provider: ${APP_PAYMENT_PROVIDER:wallet}
     default-ticket-price-amount: 100000
   admin-console:
     minimum-role: USER
