@@ -1,6 +1,6 @@
 # Makefile for TicketRush API Testing
 
-.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
+.PHONY: help test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-k6-distributed test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
 
 # 기본 명령어 (도움말)
 help:
@@ -16,6 +16,7 @@ help:
 	@echo " make test-v9    : [v9] Step10 취소/환불/재판매 연계 테스트"
 	@echo " make test-k6    : [perf] k6 대기열 부하 테스트"
 	@echo " make test-k6-dashboard : [perf] k6 + 웹 대시보드(5665) 실행"
+	@echo " make test-k6-distributed : [perf] 다중 app + nginx LB 분산 k6 테스트"
 	@echo " make test-suite : 변경된 API 스크립트 실행 + 리포트 생성"
 	@echo " make test-auth-social-pipeline : auth-social CI-safe 파이프라인 테스트"
 	@echo " make test-auth-social-real-provider : auth-social real provider E2E (선택 실행)"
@@ -57,6 +58,9 @@ test-k6:
 
 test-k6-dashboard:
 	K6_WEB_DASHBOARD=true K6_DURATION=$${K6_DURATION:-30s} bash ./scripts/perf/run-k6-waiting-queue.sh
+
+test-k6-distributed:
+	bash ./scripts/perf/run-k6-waiting-queue-distributed.sh
 
 test-suite:
 	bash ./scripts/api/run-api-script-tests.sh
