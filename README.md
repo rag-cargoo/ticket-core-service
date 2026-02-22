@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-22 20:20:00`
+> - **Updated At**: `2026-02-22 22:23:50`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -32,16 +32,29 @@
 
 ### 1. 인프라 실행
 ```bash
-docker-compose up -d
+docker-compose up -d --build --scale app=1
 ```
 
-### 1-1. 프론트 포함 실행 (선택)
 ```bash
-docker-compose --profile frontend up -d
+make compose-up APP_REPLICAS=1
 ```
 
+### 1-1. 분산 스케일 실행 예시
+```bash
+docker-compose up -d --build --scale app=3
+```
+
+```bash
+make compose-up APP_REPLICAS=3
+```
+
+### 1-2. 프론트 포함 실행 (선택)
+```bash
+docker-compose --profile frontend up -d --build --scale app=1
+```
+
+- 기본 외부 진입점은 LB(`nginx-lb`)의 `http://127.0.0.1:18080`입니다.
 - 프론트 컨테이너(`ticket-web-client`)는 `http://127.0.0.1:5173`로 노출됩니다.
-- Nginx가 `/api/*`를 `app:8080`, `/ws`를 `app:8080/ws`로 프록시합니다.
 
 ### 2. 애플리케이션 실행
 ```bash
@@ -58,11 +71,7 @@ make test-suite
 make test-k6
 ```
 
-### 4-1. 분산 환경 실행 (3 app + LB + WS relay)
-```bash
-docker-compose -f docker-compose.distributed.yml up -d --build
-```
-
+### 4-1. 분산 k6 실행
 ```bash
 make test-k6-distributed
 ```
@@ -93,12 +102,14 @@ make test-auth-social-real-provider
 - auth-social 파이프라인 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-e2e-latest.md`
 - auth-social real provider e2e 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-real-provider-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
-- 분산 compose 경로: `docker-compose.distributed.yml`
+- 분산/단일 공통 compose 경로: `docker-compose.yml`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `websocket`)
-- WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `simple`)
-- 분산 compose 기본값:
+- WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `relay`)
+- compose 기본값:
   - `APP_WS_BROKER_MODE=relay`
   - relay host/port/login은 compose 내부 `ws-relay` 기준으로 주입
+  - app 인스턴스 수는 `--scale app=<N>`으로 조절
+  - 로컬 `bootRun` 단독 실행 시 relay 미기동이면 `APP_WS_BROKER_MODE=simple`로 오버라이드
 - 운영 오버라이드 가능한 핵심 설정:
   - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
   - `APP_PAYMENT_PROVIDER` (기본 `wallet`)

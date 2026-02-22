@@ -40,7 +40,7 @@ app:
     mode: ${APP_PUSH_MODE:websocket}
   websocket:
     broker:
-      mode: ${APP_WS_BROKER_MODE:simple}
+      mode: ${APP_WS_BROKER_MODE:relay}
       relay-host: ${APP_WS_RELAY_HOST:localhost}
       relay-port: ${APP_WS_RELAY_PORT:61613}
       relay-client-login: ${APP_WS_RELAY_CLIENT_LOGIN:guest}

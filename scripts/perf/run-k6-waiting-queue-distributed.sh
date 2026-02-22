@@ -5,11 +5,12 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_abs="$(cd "$script_dir/../.." && pwd)"
 repo_root="$(git -C "$project_abs" rev-parse --show-toplevel 2>/dev/null || echo "$project_abs")"
 
-compose_file="${DIST_COMPOSE_FILE:-$project_abs/docker-compose.distributed.yml}"
+compose_file="${DIST_COMPOSE_FILE:-$project_abs/docker-compose.yml}"
 compose_project="${DIST_COMPOSE_PROJECT:-tcsdist}"
 lb_service="${DIST_LB_SERVICE_NAME:-nginx-lb}"
 docker_network="${DIST_DOCKER_NETWORK:-${compose_project}_ticket-network}"
 keep_env="${DIST_KEEP_ENV:-false}"
+app_replicas="${DIST_APP_REPLICAS:-3}"
 
 run_stamp="${K6_RUN_STAMP:-$(date -u '+%Y%m%dT%H%M%SZ')}"
 tmp_root="${CODEX_TMP_DIR:-$repo_root/.codex/tmp/ticket-core-service/k6/distributed}"
@@ -101,8 +102,8 @@ warmup_join_burst_once() {
   [[ "$total_count" -eq "$warmup_burst_requests" && "$fail_count" -eq 0 ]]
 }
 
-echo "[distributed-k6] compose_up project=$compose_project file=$compose_file"
-docker-compose -f "$compose_file" -p "$compose_project" up -d --build
+echo "[distributed-k6] compose_up project=$compose_project file=$compose_file scale_app=$app_replicas"
+docker-compose -f "$compose_file" -p "$compose_project" up -d --build --scale app="$app_replicas"
 
 lb_cid="$(docker-compose -f "$compose_file" -p "$compose_project" ps -q "$lb_service" || true)"
 if [[ -z "$lb_cid" ]]; then
@@ -227,9 +228,10 @@ cat >"$report_file" <<EOF
 - Result: ${result}
 - Run Stamp (UTC): ${run_stamp}
 - Compose Project: \`${compose_project}\`
+- App Replicas: \`${app_replicas}\`
 - LB Service: \`${lb_service}\`
 - API Host (in-network): \`${api_host}\`
-- API Host (host access): \`http://127.0.0.1:18080\`
+- API Host (host access): \`${host_api_host}\`
 - VUs: ${vus}
 - Duration: ${duration}
 - k6 Script: \`scripts/perf/k6-waiting-queue-join.js\`
