@@ -12,16 +12,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AgencySearchPageResponse {
-    private List<AgencyResponse> items;
+public class EntertainmentSearchPageResponse {
+    private List<EntertainmentResponse> items;
     private int page;
     private int size;
     private long totalElements;
     private int totalPages;
     private boolean hasNext;
 
-    public static AgencySearchPageResponse from(Page<AgencyResponse> page) {
-        return AgencySearchPageResponse.builder()
+    public static EntertainmentSearchPageResponse from(Page<EntertainmentResponse> page) {
+        return EntertainmentSearchPageResponse.builder()
                 .items(page.getContent())
                 .page(page.getNumber())
                 .size(page.getSize())

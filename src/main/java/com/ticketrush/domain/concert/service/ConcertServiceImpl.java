@@ -1,7 +1,7 @@
 package com.ticketrush.domain.concert.service;
 
-import com.ticketrush.domain.agency.Agency;
-import com.ticketrush.domain.agency.AgencyRepository;
+import com.ticketrush.domain.entertainment.Entertainment;
+import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.Concert;
@@ -34,7 +34,7 @@ public class ConcertServiceImpl implements ConcertService {
     private final ConcertRepository concertRepository;
     private final ConcertOptionRepository concertOptionRepository;
     private final SeatRepository seatRepository;
-    private final AgencyRepository agencyRepository;
+    private final EntertainmentRepository entertainmentRepository;
     private final ArtistRepository artistRepository;
     private final PromoterRepository promoterRepository;
     private final VenueRepository venueRepository;
@@ -50,13 +50,13 @@ public class ConcertServiceImpl implements ConcertService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = ConcertCacheNames.CONCERT_SEARCH,
-            key = "#keyword + '|' + #artistName + '|' + #agencyName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
+            key = "#keyword + '|' + #artistName + '|' + #entertainmentName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
     )
-    public Page<Concert> searchConcerts(String keyword, String artistName, String agencyName, Pageable pageable) {
+    public Page<Concert> searchConcerts(String keyword, String artistName, String entertainmentName, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         String normalizedArtistName = normalize(artistName);
-        String normalizedAgencyName = normalize(agencyName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedAgencyName, pageable);
+        String normalizedEntertainmentName = normalize(entertainmentName);
+        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedEntertainmentName, pageable);
     }
 
     @Override
@@ -83,8 +83,8 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = ConcertCacheNames.CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
-    public Concert createConcert(String title, String artistName, String agencyName) {
-        return createConcert(title, artistName, agencyName, null, null, null, null, null, null, null, null, null);
+    public Concert createConcert(String title, String artistName, String entertainmentName) {
+        return createConcert(title, artistName, entertainmentName, null, null, null, null, null, null, null, null, null);
     }
 
     @Override
@@ -97,21 +97,21 @@ public class ConcertServiceImpl implements ConcertService {
     })
     public Concert createConcert(String title,
                                  String artistName,
-                                 String agencyName,
+                                 String entertainmentName,
                                  String artistDisplayName,
                                  String artistGenre,
                                  LocalDate artistDebutDate,
-                                 String agencyCountryCode,
-                                 String agencyHomepageUrl) {
+                                 String entertainmentCountryCode,
+                                 String entertainmentHomepageUrl) {
         return createConcert(
                 title,
                 artistName,
-                agencyName,
+                entertainmentName,
                 artistDisplayName,
                 artistGenre,
                 artistDebutDate,
-                agencyCountryCode,
-                agencyHomepageUrl,
+                entertainmentCountryCode,
+                entertainmentHomepageUrl,
                 null,
                 null,
                 null,
@@ -129,12 +129,12 @@ public class ConcertServiceImpl implements ConcertService {
     })
     public Concert createConcert(String title,
                                  String artistName,
-                                 String agencyName,
+                                 String entertainmentName,
                                  String artistDisplayName,
                                  String artistGenre,
                                  LocalDate artistDebutDate,
-                                 String agencyCountryCode,
-                                 String agencyHomepageUrl,
+                                 String entertainmentCountryCode,
+                                 String entertainmentHomepageUrl,
                                  String promoterName,
                                  String promoterCountryCode,
                                  String promoterHomepageUrl,
@@ -142,12 +142,12 @@ public class ConcertServiceImpl implements ConcertService {
         String normalizedTitle = normalizeRequired(title, "title");
         Artist artist = resolveArtistByNames(
                 artistName,
-                agencyName,
+                entertainmentName,
                 artistDisplayName,
                 artistGenre,
                 artistDebutDate,
-                agencyCountryCode,
-                agencyHomepageUrl
+                entertainmentCountryCode,
+                entertainmentHomepageUrl
         );
 
         Promoter promoter = resolvePromoter(promoterName, promoterCountryCode, promoterHomepageUrl);
@@ -165,12 +165,12 @@ public class ConcertServiceImpl implements ConcertService {
     public Concert updateConcert(Long concertId,
                                  String title,
                                  String artistName,
-                                 String agencyName,
+                                 String entertainmentName,
                                  String artistDisplayName,
                                  String artistGenre,
                                  LocalDate artistDebutDate,
-                                 String agencyCountryCode,
-                                 String agencyHomepageUrl,
+                                 String entertainmentCountryCode,
+                                 String entertainmentHomepageUrl,
                                  String promoterName,
                                  String promoterCountryCode,
                                  String promoterHomepageUrl,
@@ -179,12 +179,12 @@ public class ConcertServiceImpl implements ConcertService {
         String normalizedTitle = normalizeRequired(title, "title");
         Artist artist = resolveArtistByNames(
                 artistName,
-                agencyName,
+                entertainmentName,
                 artistDisplayName,
                 artistGenre,
                 artistDebutDate,
-                agencyCountryCode,
-                agencyHomepageUrl
+                entertainmentCountryCode,
+                entertainmentHomepageUrl
         );
         Promoter promoter = normalize(promoterName) == null
                 ? concert.getPromoter()
@@ -474,27 +474,27 @@ public class ConcertServiceImpl implements ConcertService {
     }
 
     private Artist resolveArtistByNames(String artistName,
-                                        String agencyName,
+                                        String entertainmentName,
                                         String artistDisplayName,
                                         String artistGenre,
                                         LocalDate artistDebutDate,
-                                        String agencyCountryCode,
-                                        String agencyHomepageUrl) {
+                                        String entertainmentCountryCode,
+                                        String entertainmentHomepageUrl) {
         String normalizedArtistName = normalizeRequired(artistName, "artistName");
-        String normalizedAgencyName = normalizeRequired(agencyName, "agencyName");
+        String normalizedEntertainmentName = normalizeRequired(entertainmentName, "entertainmentName");
 
-        Agency agency = agencyRepository.findByNameIgnoreCase(normalizedAgencyName)
+        Entertainment entertainment = entertainmentRepository.findByNameIgnoreCase(normalizedEntertainmentName)
                 .map(existing -> {
-                    existing.updateMetadata(agencyCountryCode, agencyHomepageUrl);
+                    existing.updateMetadata(entertainmentCountryCode, entertainmentHomepageUrl);
                     return existing;
                 })
-                .orElseGet(() -> agencyRepository.save(new Agency(normalizedAgencyName, agencyCountryCode, agencyHomepageUrl)));
+                .orElseGet(() -> entertainmentRepository.save(new Entertainment(normalizedEntertainmentName, entertainmentCountryCode, entertainmentHomepageUrl)));
 
         return artistRepository.findByNameIgnoreCase(normalizedArtistName)
                 .map(existing -> {
-                    existing.updateProfile(agency, artistDisplayName, artistGenre, artistDebutDate);
+                    existing.updateProfile(entertainment, artistDisplayName, artistGenre, artistDebutDate);
                     return existing;
                 })
-                .orElseGet(() -> artistRepository.save(new Artist(normalizedArtistName, agency, artistDisplayName, artistGenre, artistDebutDate)));
+                .orElseGet(() -> artistRepository.save(new Artist(normalizedArtistName, entertainment, artistDisplayName, artistGenre, artistDebutDate)));
     }
 }

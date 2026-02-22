@@ -24,7 +24,7 @@ Content-Type: application/json
 {
   "title": "Waiting-Queue-{{ts}}",
   "artistName": "Waiting-Artist-{{ts}}",
-  "agencyName": "Waiting-Agency-{{ts}}",
+  "entertainmentName": "Waiting-Entertainment-{{ts}}",
   "concertDate": "2026-06-01T18:00:00",
   "seatCount": 50
 }

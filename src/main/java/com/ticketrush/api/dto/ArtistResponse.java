@@ -16,8 +16,8 @@ public class ArtistResponse {
     private String displayName;
     private String genre;
     private LocalDate debutDate;
-    private Long agencyId;
-    private String agencyName;
+    private Long entertainmentId;
+    private String entertainmentName;
 
     public static ArtistResponse from(Artist artist) {
         return new ArtistResponse(
@@ -26,8 +26,8 @@ public class ArtistResponse {
                 artist.getDisplayName(),
                 artist.getGenre(),
                 artist.getDebutDate(),
-                artist.getAgency() == null ? null : artist.getAgency().getId(),
-                artist.getAgency() == null ? null : artist.getAgency().getName()
+                artist.getEntertainment() == null ? null : artist.getEntertainment().getId(),
+                artist.getEntertainment() == null ? null : artist.getEntertainment().getName()
         );
     }
 }

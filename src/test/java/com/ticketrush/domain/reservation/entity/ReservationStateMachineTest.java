@@ -1,6 +1,6 @@
 package com.ticketrush.domain.reservation.entity;
 
-import com.ticketrush.domain.agency.Agency;
+import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
@@ -92,8 +92,8 @@ class ReservationStateMachineTest {
     }
 
     private Seat buildSeat(String seatNo) {
-        Agency agency = new Agency("agency-" + seatNo + "-" + System.nanoTime());
-        Artist artist = new Artist("artist-" + seatNo + "-" + System.nanoTime(), agency);
+        Entertainment entertainment = new Entertainment("entertainment-" + seatNo + "-" + System.nanoTime());
+        Artist artist = new Artist("artist-" + seatNo + "-" + System.nanoTime(), entertainment);
         Concert concert = new Concert("concert-" + seatNo + "-" + System.nanoTime(), artist);
         ConcertOption option = new ConcertOption(concert, LocalDateTime.now().plusDays(1));
         return new Seat(option, seatNo);

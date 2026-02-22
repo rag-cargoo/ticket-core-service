@@ -54,7 +54,7 @@ class 동시성_테스트_3_분산_락 {
         Concert concert = concertService.createConcert(
                 "testConcert_distributed_" + suffix,
                 "testArtist_distributed_" + suffix,
-                "testAgency_distributed_" + suffix
+                "testEntertainment_distributed_" + suffix
         );
         ConcertOption option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
         concertService.createSeats(option.getId(), 1);

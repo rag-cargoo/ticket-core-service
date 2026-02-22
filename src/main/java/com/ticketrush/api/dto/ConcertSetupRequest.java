@@ -19,9 +19,9 @@ public class ConcertSetupRequest {
     private String artistDisplayName;
     private String artistGenre;
     private LocalDate artistDebutDate;
-    private String agencyName;
-    private String agencyCountryCode;
-    private String agencyHomepageUrl;
+    private String entertainmentName;
+    private String entertainmentCountryCode;
+    private String entertainmentHomepageUrl;
     private String promoterName;
     private String promoterCountryCode;
     private String promoterHomepageUrl;

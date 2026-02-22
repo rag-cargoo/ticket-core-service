@@ -2,8 +2,8 @@ package com.ticketrush.domain.payment.webhook;
 
 import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
 import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
-import com.ticketrush.domain.agency.Agency;
-import com.ticketrush.domain.agency.AgencyRepository;
+import com.ticketrush.domain.entertainment.Entertainment;
+import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.Concert;
@@ -67,7 +67,7 @@ class PgReadyWebhookServiceTest {
     private UserRepository userRepository;
 
     @jakarta.annotation.Resource
-    private AgencyRepository agencyRepository;
+    private EntertainmentRepository entertainmentRepository;
 
     @jakarta.annotation.Resource
     private ArtistRepository artistRepository;
@@ -198,8 +198,8 @@ class PgReadyWebhookServiceTest {
     }
 
     private Seat saveSeat(String seatNumber) {
-        Agency agency = agencyRepository.save(new Agency("pg-webhook-agency-" + seatNumber + "-" + System.nanoTime()));
-        Artist artist = artistRepository.save(new Artist("pg-webhook-artist-" + seatNumber + "-" + System.nanoTime(), agency));
+        Entertainment entertainment = entertainmentRepository.save(new Entertainment("pg-webhook-entertainment-" + seatNumber + "-" + System.nanoTime()));
+        Artist artist = artistRepository.save(new Artist("pg-webhook-artist-" + seatNumber + "-" + System.nanoTime(), entertainment));
         Concert concert = concertRepository.save(new Concert("pg-webhook-concert-" + seatNumber + "-" + System.nanoTime(), artist));
         ConcertOption option = concertOptionRepository.save(new ConcertOption(concert, LocalDateTime.now().plusDays(3)));
         return seatRepository.save(new Seat(option, seatNumber));

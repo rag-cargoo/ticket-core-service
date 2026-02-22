@@ -1,7 +1,7 @@
 package com.ticketrush.domain.artist.service;
 
-import com.ticketrush.domain.agency.Agency;
-import com.ticketrush.domain.agency.AgencyRepository;
+import com.ticketrush.domain.entertainment.Entertainment;
+import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
@@ -19,24 +19,24 @@ import java.util.List;
 public class ArtistServiceImpl implements ArtistService {
 
     private final ArtistRepository artistRepository;
-    private final AgencyRepository agencyRepository;
+    private final EntertainmentRepository entertainmentRepository;
     private final ConcertRepository concertRepository;
 
     @Override
     @Transactional
-    public Artist create(String name, Long agencyId, String displayName, String genre, LocalDate debutDate) {
+    public Artist create(String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
         String normalizedName = normalizeRequired(name, "name");
-        Agency agency = getAgency(agencyId);
+        Entertainment entertainment = getEntertainment(entertainmentId);
         artistRepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -> {
             throw new IllegalArgumentException("Artist already exists: " + existing.getName());
         });
-        return artistRepository.save(new Artist(normalizedName, agency, displayName, genre, debutDate));
+        return artistRepository.save(new Artist(normalizedName, entertainment, displayName, genre, debutDate));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Artist> search(String keyword, Long agencyId, Pageable pageable) {
-        return artistRepository.searchPaged(normalize(keyword), agencyId, pageable);
+    public Page<Artist> search(String keyword, Long entertainmentId, Pageable pageable) {
+        return artistRepository.searchPaged(normalize(keyword), entertainmentId, pageable);
     }
 
     @Override
@@ -54,10 +54,10 @@ public class ArtistServiceImpl implements ArtistService {
 
     @Override
     @Transactional
-    public Artist update(Long id, String name, Long agencyId, String displayName, String genre, LocalDate debutDate) {
+    public Artist update(Long id, String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
         Artist artist = getById(id);
         String normalizedName = normalizeRequired(name, "name");
-        Agency agency = getAgency(agencyId);
+        Entertainment entertainment = getEntertainment(entertainmentId);
         artistRepository.findByNameIgnoreCase(normalizedName)
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
@@ -65,7 +65,7 @@ public class ArtistServiceImpl implements ArtistService {
                 });
 
         artist.rename(normalizedName);
-        artist.updateProfile(agency, displayName, genre, debutDate);
+        artist.updateProfile(entertainment, displayName, genre, debutDate);
         return artist;
     }
 
@@ -81,12 +81,12 @@ public class ArtistServiceImpl implements ArtistService {
         artistRepository.deleteById(id);
     }
 
-    private Agency getAgency(Long agencyId) {
-        if (agencyId == null) {
-            throw new IllegalArgumentException("agencyId is required");
+    private Entertainment getEntertainment(Long entertainmentId) {
+        if (entertainmentId == null) {
+            throw new IllegalArgumentException("entertainmentId is required");
         }
-        return agencyRepository.findById(agencyId)
-                .orElseThrow(() -> new IllegalArgumentException("Agency not found: " + agencyId));
+        return entertainmentRepository.findById(entertainmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Entertainment not found: " + entertainmentId));
     }
 
     private String normalizeRequired(String value, String fieldName) {

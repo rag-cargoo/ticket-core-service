@@ -22,7 +22,7 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                     SELECT c
                     FROM Concert c
                     JOIN c.artist a
-                    LEFT JOIN a.agency ag
+                    LEFT JOIN a.entertainment ag
                     WHERE (:keyword IS NULL
                            OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
                            OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
@@ -30,14 +30,14 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                            OR str(c.id) = :keyword)
                       AND (:artistName IS NULL
                            OR lower(a.name) = lower(:artistName))
-                      AND (:agencyName IS NULL
-                           OR lower(ag.name) = lower(:agencyName))
+                      AND (:entertainmentName IS NULL
+                           OR lower(ag.name) = lower(:entertainmentName))
                     """,
             countQuery = """
                     SELECT count(c)
                     FROM Concert c
                     JOIN c.artist a
-                    LEFT JOIN a.agency ag
+                    LEFT JOIN a.entertainment ag
                     WHERE (:keyword IS NULL
                            OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
                            OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
@@ -45,13 +45,13 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                            OR str(c.id) = :keyword)
                       AND (:artistName IS NULL
                            OR lower(a.name) = lower(:artistName))
-                      AND (:agencyName IS NULL
-                           OR lower(ag.name) = lower(:agencyName))
+                      AND (:entertainmentName IS NULL
+                           OR lower(ag.name) = lower(:entertainmentName))
                     """
     )
-    @EntityGraph(attributePaths = {"artist", "artist.agency", "promoter"})
+    @EntityGraph(attributePaths = {"artist", "artist.entertainment", "promoter"})
     Page<Concert> searchPaged(@Param("keyword") String keyword,
                               @Param("artistName") String artistName,
-                              @Param("agencyName") String agencyName,
+                              @Param("entertainmentName") String entertainmentName,
                               Pageable pageable);
 }

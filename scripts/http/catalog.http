@@ -2,7 +2,7 @@
 @ts = {{$timestamp}}
 
 ### 1) 기획사 생성 (순차 실행 시작점)
-POST {{host}}/api/agencies
+POST {{host}}/api/entertainments
 Content-Type: application/json
 
 {
@@ -11,21 +11,21 @@ Content-Type: application/json
   "homepageUrl": "https://ador.world"
 }
 > {%
-client.test("agency created", function() {
+client.test("entertainment created", function() {
   client.assert(response.status === 201, "expected 201");
-  client.assert(response.body && response.body.id, "agency id missing");
+  client.assert(response.body && response.body.id, "entertainment id missing");
 });
-client.global.set("agencyId", String(response.body.id));
+client.global.set("entertainmentId", String(response.body.id));
 %}
 
 ### 2) 기획사 목록 조회
-GET {{host}}/api/agencies
+GET {{host}}/api/entertainments
 
 ### 3) 기획사 단건 조회
-GET {{host}}/api/agencies/{{agencyId}}
+GET {{host}}/api/entertainments/{{entertainmentId}}
 
 ### 4) 기획사 수정
-PUT {{host}}/api/agencies/{{agencyId}}
+PUT {{host}}/api/entertainments/{{entertainmentId}}
 Content-Type: application/json
 
 {
@@ -40,7 +40,7 @@ Content-Type: application/json
 
 {
   "name": "NewJeans-{{ts}}",
-  "agencyId": {{agencyId}},
+  "entertainmentId": {{entertainmentId}},
   "displayName": "NewJeans",
   "genre": "K-POP",
   "debutDate": "2022-07-22"
@@ -65,7 +65,7 @@ Content-Type: application/json
 
 {
   "name": "NewJeans-{{ts}}",
-  "agencyId": {{agencyId}},
+  "entertainmentId": {{entertainmentId}},
   "displayName": "NJ",
   "genre": "Pop",
   "debutDate": "2022-07-22"
@@ -75,4 +75,4 @@ Content-Type: application/json
 DELETE {{host}}/api/artists/{{artistId}}
 
 ### 10) 기획사 삭제
-DELETE {{host}}/api/agencies/{{agencyId}}
+DELETE {{host}}/api/entertainments/{{entertainmentId}}

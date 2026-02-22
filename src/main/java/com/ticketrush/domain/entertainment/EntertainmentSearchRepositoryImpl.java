@@ -1,4 +1,4 @@
-package com.ticketrush.domain.agency;
+package com.ticketrush.domain.entertainment;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -14,35 +14,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class AgencySearchRepositoryImpl implements AgencySearchRepository {
+public class EntertainmentSearchRepositoryImpl implements EntertainmentSearchRepository {
 
     private final EntityManager entityManager;
 
     @Override
-    public Page<Agency> searchPaged(String keyword, Pageable pageable) {
-        QAgency agency = QAgency.agency;
+    public Page<Entertainment> searchPaged(String keyword, Pageable pageable) {
+        QEntertainment entertainment = QEntertainment.entertainment;
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
         BooleanBuilder where = new BooleanBuilder();
         String normalizedKeyword = normalize(keyword);
         if (normalizedKeyword != null) {
             where.and(
-                    agency.name.containsIgnoreCase(normalizedKeyword)
-                            .or(agency.countryCode.containsIgnoreCase(normalizedKeyword))
+                    entertainment.name.containsIgnoreCase(normalizedKeyword)
+                            .or(entertainment.countryCode.containsIgnoreCase(normalizedKeyword))
             );
         }
 
-        List<Agency> content = queryFactory
-                .selectFrom(agency)
+        List<Entertainment> content = queryFactory
+                .selectFrom(entertainment)
                 .where(where)
-                .orderBy(resolveOrderSpecifiers(agency, pageable.getSort()))
+                .orderBy(resolveOrderSpecifiers(entertainment, pageable.getSort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
         Long total = queryFactory
-                .select(agency.count())
-                .from(agency)
+                .select(entertainment.count())
+                .from(entertainment)
                 .where(where)
                 .fetchOne();
 
@@ -50,25 +50,25 @@ public class AgencySearchRepositoryImpl implements AgencySearchRepository {
         return new PageImpl<>(content, pageable, resolvedTotal);
     }
 
-    private OrderSpecifier<?>[] resolveOrderSpecifiers(QAgency agency, Sort sort) {
+    private OrderSpecifier<?>[] resolveOrderSpecifiers(QEntertainment entertainment, Sort sort) {
         List<OrderSpecifier<?>> specifiers = new ArrayList<>();
 
         for (Sort.Order order : sort) {
             boolean asc = order.isAscending();
             String property = order.getProperty();
             if ("name".equalsIgnoreCase(property)) {
-                specifiers.add(asc ? agency.name.asc() : agency.name.desc());
+                specifiers.add(asc ? entertainment.name.asc() : entertainment.name.desc());
                 continue;
             }
             if ("countryCode".equalsIgnoreCase(property)) {
-                specifiers.add(asc ? agency.countryCode.asc() : agency.countryCode.desc());
+                specifiers.add(asc ? entertainment.countryCode.asc() : entertainment.countryCode.desc());
                 continue;
             }
-            specifiers.add(asc ? agency.id.asc() : agency.id.desc());
+            specifiers.add(asc ? entertainment.id.asc() : entertainment.id.desc());
         }
 
         if (specifiers.isEmpty()) {
-            specifiers.add(agency.id.desc());
+            specifiers.add(entertainment.id.desc());
         }
         return specifiers.toArray(new OrderSpecifier<?>[0]);
     }

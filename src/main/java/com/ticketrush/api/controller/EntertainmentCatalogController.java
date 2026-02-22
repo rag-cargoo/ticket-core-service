@@ -1,9 +1,9 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.api.dto.AgencyResponse;
-import com.ticketrush.api.dto.AgencySearchPageResponse;
-import com.ticketrush.api.dto.AgencyUpsertRequest;
-import com.ticketrush.domain.agency.service.AgencyService;
+import com.ticketrush.api.dto.EntertainmentResponse;
+import com.ticketrush.api.dto.EntertainmentSearchPageResponse;
+import com.ticketrush.api.dto.EntertainmentUpsertRequest;
+import com.ticketrush.domain.entertainment.service.EntertainmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -13,28 +13,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/agencies")
+@RequestMapping("/api/entertainments")
 @RequiredArgsConstructor
-public class AgencyController {
+public class EntertainmentCatalogController {
 
-    private final AgencyService agencyService;
+    private final EntertainmentService entertainmentService;
 
     @PostMapping
-    public ResponseEntity<AgencyResponse> create(@RequestBody AgencyUpsertRequest request) {
-        return ResponseEntity.status(201).body(AgencyResponse.from(
-                agencyService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
+    public ResponseEntity<EntertainmentResponse> create(@RequestBody EntertainmentUpsertRequest request) {
+        return ResponseEntity.status(201).body(EntertainmentResponse.from(
+                entertainmentService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @GetMapping
-    public ResponseEntity<List<AgencyResponse>> getAll() {
-        return ResponseEntity.ok(agencyService.getAll().stream()
-                .map(AgencyResponse::from)
+    public ResponseEntity<List<EntertainmentResponse>> getAll() {
+        return ResponseEntity.ok(entertainmentService.getAll().stream()
+                .map(EntertainmentResponse::from)
                 .toList());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<AgencySearchPageResponse> search(
+    public ResponseEntity<EntertainmentSearchPageResponse> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -45,25 +45,25 @@ public class AgencyController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = agencyService.search(keyword, pageable).map(AgencyResponse::from);
-        return ResponseEntity.ok(AgencySearchPageResponse.from(result));
+        var result = entertainmentService.search(keyword, pageable).map(EntertainmentResponse::from);
+        return ResponseEntity.ok(EntertainmentSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AgencyResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(AgencyResponse.from(agencyService.getById(id)));
+    public ResponseEntity<EntertainmentResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(EntertainmentResponse.from(entertainmentService.getById(id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AgencyResponse> update(@PathVariable Long id, @RequestBody AgencyUpsertRequest request) {
-        return ResponseEntity.ok(AgencyResponse.from(
-                agencyService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
+    public ResponseEntity<EntertainmentResponse> update(@PathVariable Long id, @RequestBody EntertainmentUpsertRequest request) {
+        return ResponseEntity.ok(EntertainmentResponse.from(
+                entertainmentService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        agencyService.delete(id);
+        entertainmentService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -4,7 +4,7 @@ set -euo pipefail
 # --- [통합 설정] ---
 API_HOST="${API_HOST:-http://127.0.0.1:8080}"
 SETUP_API="${SETUP_API:-${API_HOST}/api/concerts/setup}"
-AGENCY_API="${AGENCY_API:-${API_HOST}/api/agencies}"
+ENTERTAINMENT_API="${ENTERTAINMENT_API:-${API_HOST}/api/entertainments}"
 ARTIST_API="${ARTIST_API:-${API_HOST}/api/artists}"
 USE_DOMAIN_CRUD="${USE_DOMAIN_CRUD:-1}"
 CONTENT_TYPE="Content-Type: application/json"
@@ -18,7 +18,7 @@ NC='\033[0m'
 CONCERT_TITLE="TEST_CONCERT_$(date +%s)"
 CONCERT_DATE=$(date -d "+10 days" +"%Y-%m-%dT%H:%M:%S")
 SUFFIX=$(date +%s)
-AGENCY_NAME="TEST_AGENCY_${SUFFIX}"
+ENTERTAINMENT_NAME="TEST_AGENCY_${SUFFIX}"
 ARTIST_NAME="TEST_ARTIST_${SUFFIX}"
 
 echo -e "${BLUE}====================================================${NC}"
@@ -26,18 +26,18 @@ echo -e "${BLUE}[Admin] Setting up new test environment...${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 if [ "${USE_DOMAIN_CRUD}" = "1" ]; then
-    echo -e "${YELLOW}Step 0) Creating agency/artist via CRUD APIs...${NC}"
+    echo -e "${YELLOW}Step 0) Creating entertainment/artist via CRUD APIs...${NC}"
 
-    AGENCY_RESPONSE=$(curl -s -X POST "${AGENCY_API}" \
+    AGENCY_RESPONSE=$(curl -s -X POST "${ENTERTAINMENT_API}" \
          -H "${CONTENT_TYPE}" \
          -d "{
-           \"name\": \"${AGENCY_NAME}\",
+           \"name\": \"${ENTERTAINMENT_NAME}\",
            \"countryCode\": \"KR\",
-           \"homepageUrl\": \"https://example.com/${AGENCY_NAME}\"
+           \"homepageUrl\": \"https://example.com/${ENTERTAINMENT_NAME}\"
          }")
-    AGENCY_ID=$(echo "${AGENCY_RESPONSE}" | grep -oP '"id":\s*\K\d+' || true)
-    if [ -z "${AGENCY_ID}" ]; then
-        echo -e "${RED}Failed to create agency via CRUD API.${NC}"
+    ENTERTAINMENT_ID=$(echo "${AGENCY_RESPONSE}" | grep -oP '"id":\s*\K\d+' || true)
+    if [ -z "${ENTERTAINMENT_ID}" ]; then
+        echo -e "${RED}Failed to create entertainment via CRUD API.${NC}"
         echo "Response: ${AGENCY_RESPONSE}"
         exit 1
     fi
@@ -46,7 +46,7 @@ if [ "${USE_DOMAIN_CRUD}" = "1" ]; then
          -H "${CONTENT_TYPE}" \
          -d "{
            \"name\": \"${ARTIST_NAME}\",
-           \"agencyId\": ${AGENCY_ID},
+           \"entertainmentId\": ${ENTERTAINMENT_ID},
            \"displayName\": \"${ARTIST_NAME}\",
            \"genre\": \"K-POP\",
            \"debutDate\": \"2022-07-22\"
@@ -65,7 +65,7 @@ RESPONSE=$(curl -s -X POST "${SETUP_API}" \
      -d "{
        \"title\": \"${CONCERT_TITLE}\",
        \"artistName\": \"${ARTIST_NAME}\",
-       \"agencyName\": \"${AGENCY_NAME}\",
+       \"entertainmentName\": \"${ENTERTAINMENT_NAME}\",
        \"concertDate\": \"${CONCERT_DATE}\",
        \"seatCount\": 50
      }")

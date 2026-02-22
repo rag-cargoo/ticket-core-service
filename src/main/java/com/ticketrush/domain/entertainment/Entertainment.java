@@ -1,4 +1,4 @@
-package com.ticketrush.domain.agency;
+package com.ticketrush.domain.entertainment;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,9 +14,9 @@ import java.util.Locale;
 
 @Entity
 @Getter
-@Table(name = "agencies")
+@Table(name = "entertainments")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Agency {
+public class Entertainment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,11 +31,11 @@ public class Agency {
     @Column(name = "homepage_url", length = 255)
     private String homepageUrl;
 
-    public Agency(String name) {
+    public Entertainment(String name) {
         this.name = name;
     }
 
-    public Agency(String name, String countryCode, String homepageUrl) {
+    public Entertainment(String name, String countryCode, String homepageUrl) {
         this.name = name;
         this.countryCode = normalizeCountryCode(countryCode);
         this.homepageUrl = trimToNull(homepageUrl);

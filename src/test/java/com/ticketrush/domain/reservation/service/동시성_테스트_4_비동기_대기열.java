@@ -69,7 +69,7 @@ class 동시성_테스트_4_비동기_대기열 {
         Concert concert = concertService.createConcert(
                 "testConcert_async_" + suffix,
                 "testArtist_async_" + suffix,
-                "testAgency_async_" + suffix
+                "testEntertainment_async_" + suffix
         );
         ConcertOption option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
         concertService.createSeats(option.getId(), 1);

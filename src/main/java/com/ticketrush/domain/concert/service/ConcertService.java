@@ -15,43 +15,43 @@ public interface ConcertService {
     default Page<Concert> searchConcerts(String keyword, String artistName, Pageable pageable) {
         return searchConcerts(keyword, artistName, null, pageable);
     }
-    Page<Concert> searchConcerts(String keyword, String artistName, String agencyName, Pageable pageable);
+    Page<Concert> searchConcerts(String keyword, String artistName, String entertainmentName, Pageable pageable);
     List<ConcertOption> getConcertOptions(Long concertId);
     List<Seat> getAvailableSeats(Long concertOptionId);
     
     // Admin & Test Setup
-    default Concert createConcert(String title, String artistName, String agencyName) {
-        return createConcert(title, artistName, agencyName, null, null, null, null, null);
+    default Concert createConcert(String title, String artistName, String entertainmentName) {
+        return createConcert(title, artistName, entertainmentName, null, null, null, null, null);
     }
     Concert createConcert(String title,
                           String artistName,
-                          String agencyName,
+                          String entertainmentName,
                           String artistDisplayName,
                           String artistGenre,
                           LocalDate artistDebutDate,
-                          String agencyCountryCode,
-                          String agencyHomepageUrl);
+                          String entertainmentCountryCode,
+                          String entertainmentHomepageUrl);
 
     default Concert createConcert(String title,
                                   String artistName,
-                                  String agencyName,
+                                  String entertainmentName,
                                   String artistDisplayName,
                                   String artistGenre,
                                   LocalDate artistDebutDate,
-                                  String agencyCountryCode,
-                                  String agencyHomepageUrl,
+                                  String entertainmentCountryCode,
+                                  String entertainmentHomepageUrl,
                                   String promoterName,
                                   String promoterCountryCode,
                                   String promoterHomepageUrl) {
         return createConcert(
                 title,
                 artistName,
-                agencyName,
+                entertainmentName,
                 artistDisplayName,
                 artistGenre,
                 artistDebutDate,
-                agencyCountryCode,
-                agencyHomepageUrl,
+                entertainmentCountryCode,
+                entertainmentHomepageUrl,
                 promoterName,
                 promoterCountryCode,
                 promoterHomepageUrl,
@@ -60,12 +60,12 @@ public interface ConcertService {
     }
     Concert createConcert(String title,
                           String artistName,
-                          String agencyName,
+                          String entertainmentName,
                           String artistDisplayName,
                           String artistGenre,
                           LocalDate artistDebutDate,
-                          String agencyCountryCode,
-                          String agencyHomepageUrl,
+                          String entertainmentCountryCode,
+                          String entertainmentHomepageUrl,
                           String promoterName,
                           String promoterCountryCode,
                           String promoterHomepageUrl,
@@ -74,12 +74,12 @@ public interface ConcertService {
     default Concert updateConcert(Long concertId,
                                   String title,
                                   String artistName,
-                                  String agencyName,
+                                  String entertainmentName,
                                   String artistDisplayName,
                                   String artistGenre,
                                   LocalDate artistDebutDate,
-                                  String agencyCountryCode,
-                                  String agencyHomepageUrl,
+                                  String entertainmentCountryCode,
+                                  String entertainmentHomepageUrl,
                                   String promoterName,
                                   String promoterCountryCode,
                                   String promoterHomepageUrl) {
@@ -87,12 +87,12 @@ public interface ConcertService {
                 concertId,
                 title,
                 artistName,
-                agencyName,
+                entertainmentName,
                 artistDisplayName,
                 artistGenre,
                 artistDebutDate,
-                agencyCountryCode,
-                agencyHomepageUrl,
+                entertainmentCountryCode,
+                entertainmentHomepageUrl,
                 promoterName,
                 promoterCountryCode,
                 promoterHomepageUrl,
@@ -102,12 +102,12 @@ public interface ConcertService {
     Concert updateConcert(Long concertId,
                           String title,
                           String artistName,
-                          String agencyName,
+                          String entertainmentName,
                           String artistDisplayName,
                           String artistGenre,
                           LocalDate artistDebutDate,
-                          String agencyCountryCode,
-                          String agencyHomepageUrl,
+                          String entertainmentCountryCode,
+                          String entertainmentHomepageUrl,
                           String promoterName,
                           String promoterCountryCode,
                           String promoterHomepageUrl,

@@ -1,18 +1,18 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.domain.concert.service.ConcertService;
+import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.ConcertSearchPageResponse;
-import com.ticketrush.api.dto.ConcertOptionResponse;
-import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.ConcertSetupRequest;
+import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
+import com.ticketrush.domain.concert.service.ConcertService;
 import com.ticketrush.domain.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,19 +35,19 @@ public class ConcertController {
         var concert = concertService.createConcert(
                 request.getTitle(),
                 request.getArtistName(),
-                request.getAgencyName(),
+                request.getEntertainmentName(),
                 request.getArtistDisplayName(),
                 request.getArtistGenre(),
                 request.getArtistDebutDate(),
-                request.getAgencyCountryCode(),
-                request.getAgencyHomepageUrl(),
+                request.getEntertainmentCountryCode(),
+                request.getEntertainmentHomepageUrl(),
                 request.getPromoterName(),
                 request.getPromoterCountryCode(),
                 request.getPromoterHomepageUrl()
         );
         var option = concertService.addOption(concert.getId(), request.getConcertDate(), null);
         concertService.createSeats(option.getId(), request.getSeatCount());
-        
+
         return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
     }
 
@@ -56,7 +56,6 @@ public class ConcertController {
      */
     @DeleteMapping("/cleanup/{concertId}")
     public ResponseEntity<String> cleanupConcert(@PathVariable Long concertId) {
-        // 실제 운영 환경에서는 사용 금지, 테스트용 로직
         concertService.deleteConcert(concertId);
         return ResponseEntity.ok("Cleanup completed for ConcertID: " + concertId);
     }
@@ -78,7 +77,7 @@ public class ConcertController {
     public ResponseEntity<ConcertSearchPageResponse> searchConcerts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String artistName,
-            @RequestParam(required = false) String agencyName,
+            @RequestParam(required = false) String entertainmentName,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "id,asc") String sort
@@ -88,7 +87,7 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertService.searchConcerts(keyword, artistName, agencyName, pageable)
+        var result = concertService.searchConcerts(keyword, artistName, entertainmentName, pageable)
                 .map(ConcertResponse::from);
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
@@ -148,8 +147,8 @@ public class ConcertController {
         if ("artistName".equalsIgnoreCase(candidate)) {
             return "artist.name";
         }
-        if ("agencyName".equalsIgnoreCase(candidate)) {
-            return "artist.agency.name";
+        if ("entertainmentName".equalsIgnoreCase(candidate)) {
+            return "artist.entertainment.name";
         }
         return "id";
     }
