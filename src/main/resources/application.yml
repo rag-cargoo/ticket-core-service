@@ -25,6 +25,9 @@ app:
   kafka:
     topic:
       reservation: "ticket-reservation-events"
+      push: ${APP_KAFKA_TOPIC_PUSH:ticket-push-events}
+    push:
+      consumer-group-id: ${APP_KAFKA_PUSH_CONSUMER_GROUP_ID:${spring.application.name:ticket-core-service}-${random.uuid}}
   reservation:
     hold-ttl-seconds: 300
     soft-lock-ttl-seconds: ${APP_RESERVATION_SOFT_LOCK_TTL_SECONDS:30}

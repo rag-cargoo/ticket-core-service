@@ -23,23 +23,23 @@ class PushNotifierConfigTest {
         properties.setMode(PushProperties.Mode.SSE);
 
         PushNotifier ssePushNotifier = mock(PushNotifier.class);
-        PushNotifier webSocketPushNotifier = mock(PushNotifier.class);
+        PushNotifier kafkaWebSocketPushNotifier = mock(PushNotifier.class);
 
-        PushNotifier selected = config.pushNotifier(properties, ssePushNotifier, webSocketPushNotifier);
+        PushNotifier selected = config.pushNotifier(properties, ssePushNotifier, kafkaWebSocketPushNotifier);
 
         assertThat(selected).isSameAs(ssePushNotifier);
     }
 
     @Test
-    void pushNotifier_shouldSelectWebSocketWhenModeIsWebsocket() {
+    void pushNotifier_shouldSelectKafkaWebSocketWhenModeIsWebsocket() {
         PushProperties properties = new PushProperties();
         properties.setMode(PushProperties.Mode.WEBSOCKET);
 
         PushNotifier ssePushNotifier = mock(PushNotifier.class);
-        PushNotifier webSocketPushNotifier = mock(PushNotifier.class);
+        PushNotifier kafkaWebSocketPushNotifier = mock(PushNotifier.class);
 
-        PushNotifier selected = config.pushNotifier(properties, ssePushNotifier, webSocketPushNotifier);
+        PushNotifier selected = config.pushNotifier(properties, ssePushNotifier, kafkaWebSocketPushNotifier);
 
-        assertThat(selected).isSameAs(webSocketPushNotifier);
+        assertThat(selected).isSameAs(kafkaWebSocketPushNotifier);
     }
 }
