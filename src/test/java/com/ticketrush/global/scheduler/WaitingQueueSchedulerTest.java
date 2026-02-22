@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,11 +33,20 @@ class WaitingQueueSchedulerTest {
     @Mock
     private PushNotifier pushNotifier;
 
+    @Mock
+    private SchedulerLockService schedulerLockService;
+
     @InjectMocks
     private WaitingQueueScheduler waitingQueueScheduler;
 
     @Test
     void activateWaitingUsers_sendActiveAndRankUpdates() {
+        when(schedulerLockService.runWithLock(anyString(), any()))
+                .thenAnswer(invocation -> {
+                    Runnable task = invocation.getArgument(1);
+                    task.run();
+                    return true;
+                });
         when(properties.getActivationConcertId()).thenReturn(1L);
         when(properties.getActivationBatchSize()).thenReturn(10L);
 
@@ -53,6 +64,7 @@ class WaitingQueueSchedulerTest {
 
         waitingQueueScheduler.activateWaitingUsers();
 
+        verify(schedulerLockService).runWithLock(eq("scheduler:waiting-queue:activate:1"), any());
         verify(pushNotifier).sendQueueActivated(eq(101L), eq(1L), any());
         verify(pushNotifier).sendQueueRankUpdate(eq(102L), eq(1L), any());
         verify(waitingQueueService, never()).getStatus(101L, 1L);
@@ -60,7 +72,27 @@ class WaitingQueueSchedulerTest {
 
     @Test
     void sendQueueHeartbeat_delegateToPushNotifier() {
+        when(schedulerLockService.runWithLock(anyString(), any()))
+                .thenAnswer(invocation -> {
+                    Runnable task = invocation.getArgument(1);
+                    task.run();
+                    return true;
+                });
+
         waitingQueueScheduler.sendQueueHeartbeat();
+
+        verify(schedulerLockService).runWithLock(eq("scheduler:waiting-queue:heartbeat"), any());
         verify(pushNotifier).sendQueueHeartbeat();
+    }
+
+    @Test
+    void activateWaitingUsers_whenLockNotAcquired_skipProcessing() {
+        when(properties.getActivationConcertId()).thenReturn(1L);
+        when(schedulerLockService.runWithLock(anyString(), any())).thenReturn(false);
+
+        waitingQueueScheduler.activateWaitingUsers();
+
+        verify(waitingQueueService, never()).activateUsers(any(), anyLong());
+        verify(pushNotifier, never()).sendQueueActivated(any(), any(), any());
     }
 }

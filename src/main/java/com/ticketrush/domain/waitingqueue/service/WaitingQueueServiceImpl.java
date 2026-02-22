@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -23,6 +22,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
     private static final long JOIN_RESULT_WAITING = 3L;
     private static final long JOIN_RESULT_UNKNOWN = 4L;
     private static final DefaultRedisScript<List> JOIN_AND_RANK_SCRIPT;
+    private static final DefaultRedisScript<List> ACTIVATE_USERS_SCRIPT;
 
     static {
         JOIN_AND_RANK_SCRIPT = new DefaultRedisScript<>();
@@ -55,6 +55,30 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
                 end
 
                 return {4, -1}
+                """);
+
+        ACTIVATE_USERS_SCRIPT = new DefaultRedisScript<>();
+        ACTIVATE_USERS_SCRIPT.setResultType(List.class);
+        ACTIVATE_USERS_SCRIPT.setScriptText("""
+                local queueKey = KEYS[1]
+                local activeKeyPrefix = ARGV[1]
+                local ttlSeconds = tonumber(ARGV[2])
+                local count = tonumber(ARGV[3])
+
+                if count <= 0 then
+                    return {}
+                end
+
+                local popped = redis.call('ZPOPMIN', queueKey, count)
+                local activatedUsers = {}
+
+                for i = 1, #popped, 2 do
+                    local userId = popped[i]
+                    redis.call('SET', activeKeyPrefix .. userId, 'true', 'EX', ttlSeconds)
+                    table.insert(activatedUsers, userId)
+                end
+
+                return activatedUsers
                 """);
     }
 
@@ -115,26 +139,31 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
     @Override
     public List<Long> activateUsers(Long concertId, long count) {
-        String queueKey = properties.getQueueKeyPrefix() + concertId;
-        List<Long> activatedUsers = new ArrayList<>();
-
-        // 상위 N명 추출
-        Set<String> users = redisTemplate.opsForZSet().range(queueKey, 0, count - 1);
-
-        if (users != null && !users.isEmpty()) {
-            for (String userId : users) {
-                // 활성 상태로 전환
-                redisTemplate.opsForValue().set(
-                        properties.getActiveKeyPrefix() + userId,
-                        "true",
-                        java.time.Duration.ofMinutes(properties.getActiveTtlMinutes())
-                );
-                // 대기열에서 제거
-                redisTemplate.opsForZSet().remove(queueKey, userId);
-                activatedUsers.add(Long.valueOf(userId));
-            }
+        if (count <= 0) {
+            return List.of();
         }
 
+        String queueKey = properties.getQueueKeyPrefix() + concertId;
+        long activeTtlSeconds = TimeUnit.MINUTES.toSeconds(properties.getActiveTtlMinutes());
+        List<?> scriptResult = redisTemplate.execute(
+                ACTIVATE_USERS_SCRIPT,
+                List.of(queueKey),
+                properties.getActiveKeyPrefix(),
+                String.valueOf(activeTtlSeconds),
+                String.valueOf(count)
+        );
+
+        if (scriptResult == null || scriptResult.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> activatedUsers = new ArrayList<>(scriptResult.size());
+        for (Object rawUserId : scriptResult) {
+            Long userId = parseLong(rawUserId);
+            if (userId != null) {
+                activatedUsers.add(userId);
+            }
+        }
         return activatedUsers;
     }
 
@@ -159,5 +188,19 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
             return number.longValue();
         }
         return defaultValue;
+    }
+
+    private Long parseLong(Object rawValue) {
+        if (rawValue instanceof Number number) {
+            return number.longValue();
+        }
+        if (rawValue == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(String.valueOf(rawValue));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 }
