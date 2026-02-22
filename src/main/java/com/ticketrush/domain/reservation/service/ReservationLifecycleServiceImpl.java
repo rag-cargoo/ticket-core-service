@@ -63,6 +63,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
         reservationRepository.save(reservation);
         abuseAuditService.recordAllowedHold(request, user, seat, reservation.getId(), now);
+        pushNotifier.sendSeatMapStatus(
+                seat.getConcertOption().getId(),
+                seat.getId(),
+                Reservation.ReservationStatus.HOLD.name(),
+                user.getId(),
+                holdExpiresAt.toString()
+        );
         return ReservationLifecycleResponse.from(reservation);
     }
 
@@ -110,6 +117,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.cancel(now);
         reservation.getSeat().cancel();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
+        pushNotifier.sendSeatMapStatus(
+                reservation.getSeat().getConcertOption().getId(),
+                reservation.getSeat().getId(),
+                Seat.SeatStatus.AVAILABLE.name(),
+                null,
+                null
+        );
 
         Long concertId = reservation.getSeat().getConcertOption().getConcert().getId();
         List<Long> activatedUsers = reservationWaitingQueuePort.activateUsers(concertId, 1);
@@ -180,6 +194,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             reservation.expire(now);
             reservation.getSeat().cancel();
             notifyReservationExpired(reservation);
+            pushNotifier.sendSeatMapStatus(
+                    reservation.getSeat().getConcertOption().getId(),
+                    reservation.getSeat().getId(),
+                    Seat.SeatStatus.AVAILABLE.name(),
+                    null,
+                    null
+            );
             changedOptionIds.add(reservation.getSeat().getConcertOption().getId());
         }
         for (Long optionId : changedOptionIds) {
@@ -292,6 +313,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.confirmPayment(now);
         reservation.getSeat().confirmHeldSeat();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
+        pushNotifier.sendSeatMapStatus(
+                reservation.getSeat().getConcertOption().getId(),
+                reservation.getSeat().getId(),
+                Reservation.ReservationStatus.CONFIRMED.name(),
+                reservation.getUser().getId(),
+                null
+        );
         pushNotifier.sendReservationStatus(
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),

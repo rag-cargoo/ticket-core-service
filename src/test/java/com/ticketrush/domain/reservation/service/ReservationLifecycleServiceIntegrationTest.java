@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -183,6 +184,20 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.RESERVED);
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(100_000L);
+        verify(pushNotifier).sendSeatMapStatus(
+                eq(seat.getConcertOption().getId()),
+                eq(seat.getId()),
+                eq(Reservation.ReservationStatus.HOLD.name()),
+                eq(user.getId()),
+                any()
+        );
+        verify(pushNotifier).sendSeatMapStatus(
+                eq(seat.getConcertOption().getId()),
+                eq(seat.getId()),
+                eq(Reservation.ReservationStatus.CONFIRMED.name()),
+                eq(user.getId()),
+                isNull()
+        );
     }
 
     @Test
@@ -204,6 +219,13 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
         verify(pushNotifier).sendReservationStatus(user.getId(), seat.getId(), Reservation.ReservationStatus.EXPIRED.name());
+        verify(pushNotifier).sendSeatMapStatus(
+                eq(seat.getConcertOption().getId()),
+                eq(seat.getId()),
+                eq(Seat.SeatStatus.AVAILABLE.name()),
+                isNull(),
+                isNull()
+        );
     }
 
     @Test
@@ -231,6 +253,13 @@ class ReservationLifecycleServiceIntegrationTest {
 
         verify(waitingQueueService).activateUsers(concertId, 1);
         verify(pushNotifier).sendQueueActivated(eq(999L), eq(concertId), any());
+        verify(pushNotifier).sendSeatMapStatus(
+                eq(seat.getConcertOption().getId()),
+                eq(seat.getId()),
+                eq(Seat.SeatStatus.AVAILABLE.name()),
+                isNull(),
+                isNull()
+        );
     }
 
     @Test

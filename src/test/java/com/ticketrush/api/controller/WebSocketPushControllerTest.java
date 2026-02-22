@@ -2,6 +2,7 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.api.dto.push.WebSocketQueueSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketReservationSubscriptionRequest;
+import com.ticketrush.api.dto.push.WebSocketSeatMapSubscriptionRequest;
 import com.ticketrush.domain.auth.security.AuthUserPrincipal;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.global.push.WebSocketPushNotifier;
@@ -86,5 +87,27 @@ class WebSocketPushControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).containsEntry("destination", "/topic/reservations/55/200");
         verify(webSocketPushNotifier).subscribeReservation(200L, 55L);
+    }
+
+    @Test
+    void subscribeSeatMap_returnsTopicDestination() {
+        WebSocketSeatMapSubscriptionRequest request = new WebSocketSeatMapSubscriptionRequest();
+        request.setOptionId(19L);
+
+        when(webSocketPushNotifier.subscribeSeatMap(19L)).thenReturn("/topic/seats/19");
+
+        ResponseEntity<Map<String, String>> response = controller.subscribeSeatMap(principal, request);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).containsEntry("destination", "/topic/seats/19");
+        verify(webSocketPushNotifier).subscribeSeatMap(19L);
+    }
+
+    @Test
+    void unsubscribeSeatMap_returnsNoContent() {
+        ResponseEntity<Void> response = controller.unsubscribeSeatMap(principal, 19L);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(204);
+        verify(webSocketPushNotifier).unsubscribeSeatMap(19L);
     }
 }
