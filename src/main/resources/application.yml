@@ -37,6 +37,11 @@ app:
   payment:
     provider: ${APP_PAYMENT_PROVIDER:wallet}
     default-ticket-price-amount: 100000
+  seed:
+    create-admin-user: ${APP_SEED_ADMIN_ENABLED:true}
+    portfolio-enabled: ${APP_PORTFOLIO_SEED_ENABLED:false}
+    portfolio-marker-key: ${APP_PORTFOLIO_SEED_MARKER_KEY:portfolio_seed_marker_v1}
+    portfolio-profiles: ${APP_PORTFOLIO_SEED_PROFILES:local,demo}
   admin-console:
     minimum-role: USER
   push:
