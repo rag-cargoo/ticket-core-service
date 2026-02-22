@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.websocket.broker")
 public class WebSocketBrokerProperties {
 
-    private Mode mode = Mode.RELAY;
+    private Mode mode = Mode.SIMPLE;
     private String relayHost = "localhost";
     private int relayPort = 61613;
     private String relayClientLogin = "guest";

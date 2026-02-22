@@ -73,21 +73,6 @@ services:
     networks:
       - ticket-network
 
-  ws-relay:
-    image: rabbitmq:3.13-management
-    environment:
-      RABBITMQ_DEFAULT_USER: relayuser
-      RABBITMQ_DEFAULT_PASS: relaypass
-    command: >
-      sh -c "rabbitmq-plugins enable --offline rabbitmq_stomp && rabbitmq-server"
-    healthcheck:
-      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - ticket-network
-
   app:
     build: .
     env_file:
@@ -98,21 +83,13 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       APP_PUSH_MODE: ${APP_PUSH_MODE:-websocket}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      APP_WS_BROKER_MODE: ${APP_WS_BROKER_MODE:-relay}
-      APP_WS_RELAY_HOST: ${APP_WS_RELAY_HOST:-ws-relay}
-      APP_WS_RELAY_PORT: ${APP_WS_RELAY_PORT:-61613}
-      APP_WS_RELAY_CLIENT_LOGIN: ${APP_WS_RELAY_CLIENT_LOGIN:-relayuser}
-      APP_WS_RELAY_CLIENT_PASSCODE: ${APP_WS_RELAY_CLIENT_PASSCODE:-relaypass}
-      APP_WS_RELAY_SYSTEM_LOGIN: ${APP_WS_RELAY_SYSTEM_LOGIN:-relayuser}
-      APP_WS_RELAY_SYSTEM_PASSCODE: ${APP_WS_RELAY_SYSTEM_PASSCODE:-relaypass}
+      APP_WS_BROKER_MODE: ${APP_WS_BROKER_MODE:-simple}
     depends_on:
       postgres-db:
         condition: service_healthy
       redis:
         condition: service_healthy
       kafka:
-        condition: service_healthy
-      ws-relay:
         condition: service_healthy
     networks:
       - ticket-network
