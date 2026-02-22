@@ -3,7 +3,7 @@ package com.ticketrush.global.scheduler;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
-import com.ticketrush.domain.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

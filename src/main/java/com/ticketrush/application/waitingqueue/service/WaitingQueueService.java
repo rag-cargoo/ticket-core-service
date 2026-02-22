@@ -1,4 +1,4 @@
-package com.ticketrush.domain.waitingqueue.service;
+package com.ticketrush.application.waitingqueue.service;
 
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
 

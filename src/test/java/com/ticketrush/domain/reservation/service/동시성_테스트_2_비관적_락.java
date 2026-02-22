@@ -1,5 +1,6 @@
 package com.ticketrush.domain.reservation.service;
 
+import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;

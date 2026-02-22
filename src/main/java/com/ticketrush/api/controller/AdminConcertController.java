@@ -8,7 +8,7 @@ import com.ticketrush.api.dto.admin.AdminConcertUpsertRequest;
 import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.domain.concert.service.ConcertService;
-import com.ticketrush.domain.reservation.service.SalesPolicyService;
+import com.ticketrush.application.reservation.service.SalesPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

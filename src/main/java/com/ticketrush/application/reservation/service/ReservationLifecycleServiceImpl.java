@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.service;
+package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
@@ -13,6 +13,8 @@ import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
+import com.ticketrush.domain.reservation.service.AbuseAuditService;
+import com.ticketrush.domain.reservation.service.AdminRefundAuditService;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.global.config.ReservationProperties;
