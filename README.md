@@ -104,12 +104,11 @@ make test-auth-social-real-provider
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
 - 분산/단일 공통 compose 경로: `docker-compose.yml`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `websocket`)
-- WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `relay`)
+- WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `simple`)
 - compose 기본값:
-  - `APP_WS_BROKER_MODE=relay`
-  - relay host/port/login은 compose 내부 `ws-relay` 기준으로 주입
+  - `APP_WS_BROKER_MODE=simple`
   - app 인스턴스 수는 `--scale app=<N>`으로 조절
-  - 로컬 `bootRun` 단독 실행 시 relay 미기동이면 `APP_WS_BROKER_MODE=simple`로 오버라이드
+  - relay 모드를 사용할 경우 별도 STOMP relay 브로커를 외부에서 제공해야 함
 - 운영 오버라이드 가능한 핵심 설정:
   - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
   - `APP_PAYMENT_PROVIDER` (기본 `wallet`)
