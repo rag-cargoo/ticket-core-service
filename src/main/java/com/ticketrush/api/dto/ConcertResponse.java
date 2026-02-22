@@ -19,9 +19,9 @@ public class ConcertResponse {
     private String artistDisplayName;
     private String artistGenre;
     private LocalDate artistDebutDate;
-    private String agencyName;
-    private String agencyCountryCode;
-    private String agencyHomepageUrl;
+    private String entertainmentName;
+    private String entertainmentCountryCode;
+    private String entertainmentHomepageUrl;
     private String youtubeVideoUrl;
     private String thumbnailUrl;
     private Long promoterId;
@@ -31,7 +31,7 @@ public class ConcertResponse {
 
     public static ConcertResponse from(Concert concert) {
         var artist = concert.getArtist();
-        var agency = artist.getAgency();
+        var entertainment = artist.getEntertainment();
         var promoter = concert.getPromoter();
         return new ConcertResponse(
                 concert.getId(),
@@ -41,9 +41,9 @@ public class ConcertResponse {
                 artist.getDisplayName(),
                 artist.getGenre(),
                 artist.getDebutDate(),
-                agency != null ? agency.getName() : null,
-                agency != null ? agency.getCountryCode() : null,
-                agency != null ? agency.getHomepageUrl() : null,
+                entertainment != null ? entertainment.getName() : null,
+                entertainment != null ? entertainment.getCountryCode() : null,
+                entertainment != null ? entertainment.getHomepageUrl() : null,
                 concert.getYoutubeVideoUrl(),
                 resolveThumbnailUrl(concert),
                 promoter != null ? promoter.getId() : null,

@@ -2,7 +2,7 @@
 @ts = {{$timestamp}}
 @concertTitle = Concert-{{ts}}
 @artistName = Artist-{{ts}}
-@agencyName = Agency-{{ts}}
+@entertainmentName = Entertainment-{{ts}}
 
 ### 1) [Admin] 테스트용 공연/옵션/좌석 셋업 (순차 실행 시작점)
 POST {{host}}/api/concerts/setup
@@ -14,9 +14,9 @@ Content-Type: application/json
   "artistDisplayName": "{{artistName}}",
   "artistGenre": "K-POP",
   "artistDebutDate": "2022-07-22",
-  "agencyName": "{{agencyName}}",
-  "agencyCountryCode": "KR",
-  "agencyHomepageUrl": "https://example.com/{{agencyName}}",
+  "entertainmentName": "{{entertainmentName}}",
+  "entertainmentCountryCode": "KR",
+  "entertainmentHomepageUrl": "https://example.com/{{entertainmentName}}",
   "concertDate": "2026-06-01T18:00:00",
   "seatCount": 50
 }
@@ -35,7 +35,7 @@ if (optionMatch) client.global.set("optionId", optionMatch[1]);
 GET {{host}}/api/concerts
 
 ### 3) 공연 검색/필터/정렬 + 페이징 조회
-GET {{host}}/api/concerts/search?keyword={{concertTitle}}&artistName={{artistName}}&agencyName={{agencyName}}&page=0&size=10&sort=title,asc
+GET {{host}}/api/concerts/search?keyword={{concertTitle}}&artistName={{artistName}}&entertainmentName={{entertainmentName}}&page=0&size=10&sort=title,asc
 
 ### 4) 공연 날짜 옵션 조회
 GET {{host}}/api/concerts/{{concertId}}/options

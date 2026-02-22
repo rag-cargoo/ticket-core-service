@@ -47,8 +47,8 @@ class ConcertExplorerIntegrationTest {
 
     @Test
     void searchEndpointReturnsPagedResponse() throws Exception {
-        concertService.createConcert("Alpha Night Tour", "Artist-A", "Agency-A");
-        concertService.createConcert("Bravo Night Tour", "Artist-B", "Agency-B");
+        concertService.createConcert("Alpha Night Tour", "Artist-A", "Entertainment-A");
+        concertService.createConcert("Bravo Night Tour", "Artist-B", "Entertainment-B");
 
         mockMvc.perform(get("/api/concerts/search")
                         .param("keyword", "alpha")
@@ -64,37 +64,37 @@ class ConcertExplorerIntegrationTest {
     }
 
     @Test
-    void searchEndpointIncludesArtistAgencyExpandedFields() throws Exception {
+    void searchEndpointIncludesArtistEntertainmentExpandedFields() throws Exception {
         concertService.createConcert(
                 "Meta Concert",
                 "Artist-Meta",
-                "Agency-Meta",
+                "Entertainment-Meta",
                 "Artist Meta Display",
                 "K-POP",
                 LocalDate.of(2022, 7, 22),
                 "KR",
-                "https://agency-meta.example.com"
+                "https://entertainment-meta.example.com"
         );
 
         mockMvc.perform(get("/api/concerts/search")
                         .param("artistName", "Artist-Meta")
-                        .param("agencyName", "Agency-Meta")
+                        .param("entertainmentName", "Entertainment-Meta")
                         .param("page", "0")
                         .param("size", "10")
-                        .param("sort", "agencyName,asc"))
+                        .param("sort", "entertainmentName,asc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].artistName").value("Artist-Meta"))
                 .andExpect(jsonPath("$.items[0].artistDisplayName").value("Artist Meta Display"))
                 .andExpect(jsonPath("$.items[0].artistGenre").value("K-POP"))
                 .andExpect(jsonPath("$.items[0].artistDebutDate").value("2022-07-22"))
-                .andExpect(jsonPath("$.items[0].agencyName").value("Agency-Meta"))
-                .andExpect(jsonPath("$.items[0].agencyCountryCode").value("KR"));
+                .andExpect(jsonPath("$.items[0].entertainmentName").value("Entertainment-Meta"))
+                .andExpect(jsonPath("$.items[0].entertainmentCountryCode").value("KR"));
     }
 
     @Test
     void availableSeatCacheIsEvictedAfterReservation() {
         User user = userRepository.save(new User("cache_user_" + System.nanoTime(), UserTier.BASIC));
-        var concert = concertService.createConcert("Cache Invalidation Show", "Cache Artist", "Cache Agency");
+        var concert = concertService.createConcert("Cache Invalidation Show", "Cache Artist", "Cache Entertainment");
         var option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
         concertService.createSeats(option.getId(), 3);
 

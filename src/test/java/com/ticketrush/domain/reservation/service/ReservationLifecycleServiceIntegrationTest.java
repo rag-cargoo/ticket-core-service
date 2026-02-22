@@ -2,8 +2,8 @@ package com.ticketrush.domain.reservation.service;
 
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
-import com.ticketrush.domain.agency.Agency;
-import com.ticketrush.domain.agency.AgencyRepository;
+import com.ticketrush.domain.entertainment.Entertainment;
+import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.Concert;
@@ -143,7 +143,7 @@ class ReservationLifecycleServiceIntegrationTest {
     private UserRepository userRepository;
 
     @jakarta.annotation.Resource
-    private AgencyRepository agencyRepository;
+    private EntertainmentRepository entertainmentRepository;
 
     @jakarta.annotation.Resource
     private ArtistRepository artistRepository;
@@ -528,8 +528,8 @@ class ReservationLifecycleServiceIntegrationTest {
     }
 
     private Seat saveSeatWithConcertDate(String seatNo, LocalDateTime concertDate) {
-        Agency agency = agencyRepository.save(new Agency("agency-" + seatNo + "-" + System.nanoTime()));
-        Artist artist = artistRepository.save(new Artist("artist-" + seatNo + "-" + System.nanoTime(), agency));
+        Entertainment entertainment = entertainmentRepository.save(new Entertainment("entertainment-" + seatNo + "-" + System.nanoTime()));
+        Artist artist = artistRepository.save(new Artist("artist-" + seatNo + "-" + System.nanoTime(), entertainment));
         Concert concert = concertRepository.save(new Concert("concert-" + seatNo + "-" + System.nanoTime(), artist));
         ConcertOption option = concertOptionRepository.save(new ConcertOption(concert, concertDate));
         return seatRepository.save(new Seat(option, seatNo));

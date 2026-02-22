@@ -3,7 +3,7 @@ package com.ticketrush.domain.artist;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.ticketrush.domain.agency.QAgency;
+import com.ticketrush.domain.entertainment.QEntertainment;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,9 +20,9 @@ public class ArtistSearchRepositoryImpl implements ArtistSearchRepository {
     private final EntityManager entityManager;
 
     @Override
-    public Page<Artist> searchPaged(String keyword, Long agencyId, Pageable pageable) {
+    public Page<Artist> searchPaged(String keyword, Long entertainmentId, Pageable pageable) {
         QArtist artist = QArtist.artist;
-        QAgency agency = QAgency.agency;
+        QEntertainment entertainment = QEntertainment.entertainment;
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
         BooleanBuilder where = new BooleanBuilder();
@@ -32,18 +32,18 @@ public class ArtistSearchRepositoryImpl implements ArtistSearchRepository {
                     artist.name.containsIgnoreCase(normalizedKeyword)
                             .or(artist.displayName.containsIgnoreCase(normalizedKeyword))
                             .or(artist.genre.containsIgnoreCase(normalizedKeyword))
-                            .or(agency.name.containsIgnoreCase(normalizedKeyword))
+                            .or(entertainment.name.containsIgnoreCase(normalizedKeyword))
             );
         }
-        if (agencyId != null) {
-            where.and(artist.agency.id.eq(agencyId));
+        if (entertainmentId != null) {
+            where.and(artist.entertainment.id.eq(entertainmentId));
         }
 
         List<Artist> content = queryFactory
                 .selectFrom(artist)
-                .leftJoin(artist.agency, agency).fetchJoin()
+                .leftJoin(artist.entertainment, entertainment).fetchJoin()
                 .where(where)
-                .orderBy(resolveOrderSpecifiers(artist, agency, pageable.getSort()))
+                .orderBy(resolveOrderSpecifiers(artist, entertainment, pageable.getSort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -51,7 +51,7 @@ public class ArtistSearchRepositoryImpl implements ArtistSearchRepository {
         Long total = queryFactory
                 .select(artist.count())
                 .from(artist)
-                .leftJoin(artist.agency, agency)
+                .leftJoin(artist.entertainment, entertainment)
                 .where(where)
                 .fetchOne();
 
@@ -59,7 +59,7 @@ public class ArtistSearchRepositoryImpl implements ArtistSearchRepository {
         return new PageImpl<>(content, pageable, resolvedTotal);
     }
 
-    private OrderSpecifier<?>[] resolveOrderSpecifiers(QArtist artist, QAgency agency, Sort sort) {
+    private OrderSpecifier<?>[] resolveOrderSpecifiers(QArtist artist, QEntertainment entertainment, Sort sort) {
         List<OrderSpecifier<?>> specifiers = new ArrayList<>();
 
         for (Sort.Order order : sort) {
@@ -81,8 +81,8 @@ public class ArtistSearchRepositoryImpl implements ArtistSearchRepository {
                 specifiers.add(asc ? artist.debutDate.asc() : artist.debutDate.desc());
                 continue;
             }
-            if ("agencyName".equalsIgnoreCase(property)) {
-                specifiers.add(asc ? agency.name.asc() : agency.name.desc());
+            if ("entertainmentName".equalsIgnoreCase(property)) {
+                specifiers.add(asc ? entertainment.name.asc() : entertainment.name.desc());
                 continue;
             }
             specifiers.add(asc ? artist.id.asc() : artist.id.desc());

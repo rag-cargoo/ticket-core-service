@@ -44,7 +44,7 @@ echo -ne "${YELLOW}[Step 2] 테스트 공연 생성... ${NC}"
 SETUP_RESPONSE="$(curl -s -X POST "${CONCERT_SETUP_API}" -H "${CONTENT_TYPE}" -d "{
   \"title\": \"WS_TEST_${TS}\",
   \"artistName\": \"WS_ARTIST_${TS}\",
-  \"agencyName\": \"WS_AGENCY_${TS}\",
+  \"entertainmentName\": \"WS_AGENCY_${TS}\",
   \"concertDate\": \"2026-06-01T18:00:00\",
   \"seatCount\": 30
 }")"

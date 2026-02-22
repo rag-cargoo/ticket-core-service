@@ -14,12 +14,12 @@ public class AdminConcertUpsertRequest {
     private Long artistId;
     private Long promoterId;
     private String artistName;
-    private String agencyName;
+    private String entertainmentName;
     private String artistDisplayName;
     private String artistGenre;
     private LocalDate artistDebutDate;
-    private String agencyCountryCode;
-    private String agencyHomepageUrl;
+    private String entertainmentCountryCode;
+    private String entertainmentHomepageUrl;
     private String promoterName;
     private String youtubeVideoUrl;
 }

@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class ArtistUpsertRequest {
     private String name;
-    private Long agencyId;
+    private Long entertainmentId;
     private String displayName;
     private String genre;
     private LocalDate debutDate;

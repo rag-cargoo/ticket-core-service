@@ -77,7 +77,7 @@ echo -ne "${YELLOW}[Step 4] 공연/좌석 셋업... ${NC}"
 SETUP_BODY="$(curl -s -X POST "${CONCERT_API}/setup" -H "${CONTENT_TYPE}" -d "{
   \"title\": \"WALLET_FLOW_${TS}\",
   \"artistName\": \"WALLET_ARTIST_${TS}\",
-  \"agencyName\": \"WALLET_AGENCY_${TS}\",
+  \"entertainmentName\": \"WALLET_AGENCY_${TS}\",
   \"concertDate\": \"2026-06-01T18:00:00\",
   \"seatCount\": 10
 }")"

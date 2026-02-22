@@ -1,6 +1,6 @@
 package com.ticketrush.domain.reservation.service;
 
-import com.ticketrush.domain.agency.Agency;
+import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
@@ -123,8 +123,8 @@ class SeatSoftLockServiceImplTest {
     }
 
     private Seat buildSeat(Long optionId, Long seatId) {
-        Agency agency = new Agency("soft-lock-agency-" + seatId);
-        Artist artist = new Artist("soft-lock-artist-" + seatId, agency);
+        Entertainment entertainment = new Entertainment("soft-lock-entertainment-" + seatId);
+        Artist artist = new Artist("soft-lock-artist-" + seatId, entertainment);
         Concert concert = new Concert("soft-lock-concert-" + seatId, artist);
         ConcertOption option = new ConcertOption(concert, LocalDateTime.now().plusDays(1));
         Seat seat = new Seat(option, "A-" + seatId);

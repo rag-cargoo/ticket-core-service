@@ -67,7 +67,7 @@ class 동시성_테스트_1_낙관적_락 {
         Concert concert = concertService.createConcert(
                 "testConcert_optimistic_" + suffix,
                 "testArtist_optimistic_" + suffix,
-                "testAgency_optimistic_" + suffix
+                "testEntertainment_optimistic_" + suffix
         );
         ConcertOption option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
         concertService.createSeats(option.getId(), 1);

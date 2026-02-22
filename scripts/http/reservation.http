@@ -40,7 +40,7 @@ Content-Type: application/json
 {
   "title": "Reservation-Test-{{ts}}",
   "artistName": "Reservation-Artist-{{ts}}",
-  "agencyName": "Reservation-Agency-{{ts}}",
+  "entertainmentName": "Reservation-Entertainment-{{ts}}",
   "concertDate": "2026-06-01T18:00:00",
   "seatCount": 50
 }

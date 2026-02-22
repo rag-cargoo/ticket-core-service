@@ -1,6 +1,6 @@
 package com.ticketrush.domain.artist;
 
-import com.ticketrush.domain.agency.Agency;
+import com.ticketrush.domain.entertainment.Entertainment;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,17 +39,17 @@ public class Artist {
     private LocalDate debutDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agency_id")
-    private Agency agency;
+    @JoinColumn(name = "entertainment_id")
+    private Entertainment entertainment;
 
-    public Artist(String name, Agency agency) {
+    public Artist(String name, Entertainment entertainment) {
         this.name = name;
-        this.agency = agency;
+        this.entertainment = entertainment;
     }
 
-    public Artist(String name, Agency agency, String displayName, String genre, LocalDate debutDate) {
+    public Artist(String name, Entertainment entertainment, String displayName, String genre, LocalDate debutDate) {
         this.name = name;
-        this.agency = agency;
+        this.entertainment = entertainment;
         this.displayName = trimToNull(displayName);
         this.genre = trimToNull(genre);
         this.debutDate = debutDate;
@@ -63,9 +63,9 @@ public class Artist {
         this.name = normalized;
     }
 
-    public void updateProfile(Agency agency, String displayName, String genre, LocalDate debutDate) {
-        if (agency != null) {
-            this.agency = agency;
+    public void updateProfile(Entertainment entertainment, String displayName, String genre, LocalDate debutDate) {
+        if (entertainment != null) {
+            this.entertainment = entertainment;
         }
         if (displayName != null) {
             this.displayName = trimToNull(displayName);

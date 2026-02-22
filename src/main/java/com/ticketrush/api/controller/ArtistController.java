@@ -24,7 +24,7 @@ public class ArtistController {
         return ResponseEntity.status(201).body(ArtistResponse.from(
                 artistService.create(
                         request.getName(),
-                        request.getAgencyId(),
+                        request.getEntertainmentId(),
                         request.getDisplayName(),
                         request.getGenre(),
                         request.getDebutDate()
@@ -42,7 +42,7 @@ public class ArtistController {
     @GetMapping("/search")
     public ResponseEntity<ArtistSearchPageResponse> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long agencyId,
+            @RequestParam(required = false) Long entertainmentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "id,desc") String sort
@@ -52,7 +52,7 @@ public class ArtistController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = artistService.search(keyword, agencyId, pageable).map(ArtistResponse::from);
+        var result = artistService.search(keyword, entertainmentId, pageable).map(ArtistResponse::from);
         return ResponseEntity.ok(ArtistSearchPageResponse.from(result));
     }
 
@@ -67,7 +67,7 @@ public class ArtistController {
                 artistService.update(
                         id,
                         request.getName(),
-                        request.getAgencyId(),
+                        request.getEntertainmentId(),
                         request.getDisplayName(),
                         request.getGenre(),
                         request.getDebutDate()
@@ -94,8 +94,8 @@ public class ArtistController {
         if ("debutDate".equalsIgnoreCase(candidate)) {
             return "debutDate";
         }
-        if ("agencyName".equalsIgnoreCase(candidate)) {
-            return "agencyName";
+        if ("entertainmentName".equalsIgnoreCase(candidate)) {
+            return "entertainmentName";
         }
         return "id";
     }
