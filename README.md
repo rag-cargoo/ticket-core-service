@@ -108,7 +108,11 @@ make test-auth-social-real-provider
 - compose 기본값:
   - `APP_WS_BROKER_MODE=simple`
   - app 인스턴스 수는 `--scale app=<N>`으로 조절
-  - relay 모드를 사용할 경우 별도 STOMP relay 브로커를 외부에서 제공해야 함
+  - 다중 인스턴스 fanout은 Kafka push topic(`app.kafka.topic.push`) 기반으로 처리
+  - relay 모드를 사용할 경우 별도 STOMP relay 브로커를 외부에서 제공해야 함(기본 미사용)
+- Kafka push fanout 설정:
+  - `APP_KAFKA_TOPIC_PUSH` (기본 `ticket-push-events`)
+  - `APP_KAFKA_PUSH_CONSUMER_GROUP_ID` (기본 `${spring.application.name}-${random.uuid}`; 인스턴스별 고유 group)
 - 운영 오버라이드 가능한 핵심 설정:
   - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
   - `APP_PAYMENT_PROVIDER` (기본 `wallet`)

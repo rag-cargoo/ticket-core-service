@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -83,12 +84,12 @@ public class WebSocketPushNotifier implements PushNotifier {
 
     @Override
     public void sendQueueRankUpdate(Long userId, Long concertId, Object data) {
-        sendQueueEvent(userId, concertId, SseEventNames.RANK_UPDATE, data);
+        publishQueueEvent(userId, concertId, SseEventNames.RANK_UPDATE, data);
     }
 
     @Override
     public void sendQueueActivated(Long userId, Long concertId, Object data) {
-        sendQueueEvent(userId, concertId, SseEventNames.ACTIVE, data);
+        publishQueueEvent(userId, concertId, SseEventNames.ACTIVE, data);
     }
 
     @Override
@@ -105,9 +106,28 @@ public class WebSocketPushNotifier implements PushNotifier {
             }
             Set<Long> users = getSubscribedQueueUsers(concertId);
             for (Long userId : users) {
-                sendQueueEvent(userId, concertId, SseEventNames.KEEPALIVE, Map.of("timestamp", timestamp));
+                publishQueueEvent(userId, concertId, SseEventNames.KEEPALIVE, Map.of("timestamp", timestamp));
             }
         }
+    }
+
+    public Map<Long, Set<Long>> snapshotQueueSubscribers() {
+        Set<String> concertIdMembers = redisTemplate.opsForSet().members(concertIndexKey());
+        if (concertIdMembers == null || concertIdMembers.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Set<Long>> snapshot = new HashMap<>();
+        for (String concertIdMember : concertIdMembers) {
+            Long concertId = parseLong(concertIdMember);
+            if (concertId == null) {
+                continue;
+            }
+            Set<Long> users = getSubscribedQueueUsers(concertId);
+            if (!users.isEmpty()) {
+                snapshot.put(concertId, users);
+            }
+        }
+        return snapshot;
     }
 
     @Override
@@ -149,7 +169,7 @@ public class WebSocketPushNotifier implements PushNotifier {
         messagingTemplate.convertAndSend(seatMapDestination(optionId), payload);
     }
 
-    private void sendQueueEvent(Long userId, Long concertId, String eventName, Object data) {
+    public void publishQueueEvent(Long userId, Long concertId, String eventName, Object data) {
         messagingTemplate.convertAndSend(
                 queueDestination(userId, concertId),
                 Map.of(

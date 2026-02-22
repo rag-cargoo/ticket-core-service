@@ -18,11 +18,11 @@ public class PushNotifierConfig {
     public PushNotifier pushNotifier(
             PushProperties properties,
             @Qualifier("ssePushNotifier") PushNotifier ssePushNotifier,
-            @Qualifier("webSocketPushNotifier") PushNotifier webSocketPushNotifier
+            @Qualifier("kafkaWebSocketPushNotifier") PushNotifier kafkaWebSocketPushNotifier
     ) {
         if (properties.getMode() == PushProperties.Mode.WEBSOCKET) {
-            log.info("Push notifier mode: WEBSOCKET");
-            return webSocketPushNotifier;
+            log.info("Push notifier mode: WEBSOCKET (Kafka fanout)");
+            return kafkaWebSocketPushNotifier;
         }
 
         log.info("Push notifier mode: SSE");
