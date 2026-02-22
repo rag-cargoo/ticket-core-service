@@ -1,6 +1,5 @@
 package com.ticketrush.domain.reservation.service;
 
-import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
@@ -25,15 +24,26 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
     private final AbuseGuardProperties abuseGuardProperties;
 
     @Transactional
-    public void validateHoldRequest(ReservationRequest request, User user, Seat seat, LocalDateTime now) {
-        ensureRateLimit(request, user, seat, now);
-        ensureDuplicateFingerprint(request, user, seat, now);
-        ensureDeviceFingerprintPolicy(request, user, seat, now);
+    public void validateHoldRequest(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {
+        String normalizedRequestFingerprint = normalize(requestFingerprint);
+        String normalizedDeviceFingerprint = normalize(deviceFingerprint);
+        ensureRateLimit(normalizedRequestFingerprint, normalizedDeviceFingerprint, user, seat, now);
+        ensureDuplicateFingerprint(normalizedRequestFingerprint, normalizedDeviceFingerprint, user, seat, now);
+        ensureDeviceFingerprintPolicy(normalizedRequestFingerprint, normalizedDeviceFingerprint, user, seat, now);
     }
 
     @Transactional
-    public void recordAllowedHold(ReservationRequest request, User user, Seat seat, Long reservationId, LocalDateTime now) {
-        abuseAuditWriter.saveAllowed(AbuseAuditLog.allowedHold(user, seat, request, reservationId, now));
+    public void recordAllowedHold(
+            String requestFingerprint,
+            String deviceFingerprint,
+            User user,
+            Seat seat,
+            Long reservationId,
+            LocalDateTime now
+    ) {
+        abuseAuditWriter.saveAllowed(
+                AbuseAuditLog.allowedHold(user, seat, normalize(requestFingerprint), normalize(deviceFingerprint), reservationId, now)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -64,7 +74,7 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         );
     }
 
-    private void ensureRateLimit(ReservationRequest request, User user, Seat seat, LocalDateTime now) {
+    private void ensureRateLimit(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {
         LocalDateTime threshold = now.minusSeconds(abuseGuardProperties.getHoldRequestWindowSeconds());
         long attemptCount = abuseAuditLogRepository.countByActionAndUserIdAndOccurredAtAfter(
                 AbuseAuditLog.AuditAction.HOLD_CREATE,
@@ -73,7 +83,8 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         );
         if (attemptCount >= abuseGuardProperties.getHoldRequestMaxCount()) {
             throwBlocked(
-                    request,
+                    requestFingerprint,
+                    deviceFingerprint,
                     user,
                     seat,
                     AbuseAuditLog.AuditReason.RATE_LIMIT_EXCEEDED,
@@ -82,8 +93,7 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         }
     }
 
-    private void ensureDuplicateFingerprint(ReservationRequest request, User user, Seat seat, LocalDateTime now) {
-        String requestFingerprint = normalize(request.getRequestFingerprint());
+    private void ensureDuplicateFingerprint(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {
         if (requestFingerprint == null) {
             return;
         }
@@ -96,7 +106,8 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         );
         if (duplicateCount > 0) {
             throwBlocked(
-                    request,
+                    requestFingerprint,
+                    deviceFingerprint,
                     user,
                     seat,
                     AbuseAuditLog.AuditReason.DUPLICATE_REQUEST_FINGERPRINT,
@@ -106,8 +117,7 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         }
     }
 
-    private void ensureDeviceFingerprintPolicy(ReservationRequest request, User user, Seat seat, LocalDateTime now) {
-        String deviceFingerprint = normalize(request.getDeviceFingerprint());
+    private void ensureDeviceFingerprintPolicy(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {
         if (deviceFingerprint == null) {
             return;
         }
@@ -120,7 +130,8 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         );
         if (distinctUserCount >= abuseGuardProperties.getDeviceMaxDistinctUsers()) {
             throwBlocked(
-                    request,
+                    requestFingerprint,
+                    deviceFingerprint,
                     user,
                     seat,
                     AbuseAuditLog.AuditReason.DEVICE_FINGERPRINT_MULTI_ACCOUNT,
@@ -148,14 +159,15 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
     }
 
     private void throwBlocked(
-            ReservationRequest request,
+            String requestFingerprint,
+            String deviceFingerprint,
             User user,
             Seat seat,
             AbuseAuditLog.AuditReason reason,
             String message
     ) {
         abuseAuditWriter.saveBlocked(
-                AbuseAuditLog.blockedHold(user, seat, request, reason, message, LocalDateTime.now())
+                AbuseAuditLog.blockedHold(user, seat, requestFingerprint, deviceFingerprint, reason, message, LocalDateTime.now())
         );
         throw new IllegalStateException(message);
     }

@@ -5,9 +5,9 @@ import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.domain.auth.service.AuthSessionService;
 import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserTier;
+import com.ticketrush.domain.user.service.UserService;
 import com.ticketrush.global.config.AuthJwtProperties;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
@@ -19,8 +19,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -51,7 +49,7 @@ class AuthSecurityIntegrationTest {
     private AccessTokenDenylistService accessTokenDenylistService;
 
     @MockBean
-    private UserRepository userRepository;
+    private UserService userService;
 
     @MockBean
     private WaitingQueueInterceptor waitingQueueInterceptor;
@@ -70,7 +68,7 @@ class AuthSecurityIntegrationTest {
         User user = new User("token-user", UserTier.BASIC, UserRole.USER);
         ReflectionTestUtils.setField(user, "id", 101L);
         String accessToken = jwtTokenProvider.createAccessToken(user);
-        when(userRepository.findById(101L)).thenReturn(Optional.of(user));
+        when(userService.getUser(101L)).thenReturn(user);
 
         mockMvc.perform(get("/api/auth/me")
                         .header("Authorization", "Bearer " + accessToken))

@@ -55,14 +55,21 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
         LocalDateTime now = LocalDateTime.now();
         salesPolicyService.validateHoldRequest(user, seat, now);
-        abuseAuditService.validateHoldRequest(request, user, seat, now);
+        abuseAuditService.validateHoldRequest(request.getRequestFingerprint(), request.getDeviceFingerprint(), user, seat, now);
         seat.hold();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
         LocalDateTime holdExpiresAt = now.plusSeconds(reservationProperties.getHoldTtlSeconds());
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
         reservationRepository.save(reservation);
-        abuseAuditService.recordAllowedHold(request, user, seat, reservation.getId(), now);
+        abuseAuditService.recordAllowedHold(
+                request.getRequestFingerprint(),
+                request.getDeviceFingerprint(),
+                user,
+                seat,
+                reservation.getId(),
+                now
+        );
         pushNotifier.sendSeatMapStatus(
                 seat.getConcertOption().getId(),
                 seat.getId(),
