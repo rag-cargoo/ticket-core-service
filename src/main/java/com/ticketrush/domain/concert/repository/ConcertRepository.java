@@ -9,10 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ConcertRepository extends JpaRepository<Concert, Long> {
     boolean existsByArtistId(Long artistId);
     boolean existsByPromoterId(Long promoterId);
+    Optional<Concert> findByTitleIgnoreCase(String title);
 
     @Query("SELECT c FROM Concert c JOIN FETCH c.options")
     List<Concert> findAllWithOptions();

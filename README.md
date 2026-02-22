@@ -116,6 +116,12 @@ make test-auth-social-real-provider
 - 운영 오버라이드 가능한 핵심 설정:
   - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
   - `APP_PAYMENT_PROVIDER` (기본 `wallet`)
+- 초기 시드 전략:
+  - 관리 계정 시드: `APP_SEED_ADMIN_ENABLED` (기본 `true`, `admin` 계정 1회 생성)
+  - 포트폴리오 샘플 시드: `APP_PORTFOLIO_SEED_ENABLED=true`일 때만 실행
+  - 포트폴리오 시드 허용 프로필: `APP_PORTFOLIO_SEED_PROFILES` (기본 `local,demo`)
+  - idempotent 마커 키: `APP_PORTFOLIO_SEED_MARKER_KEY` (기본 `portfolio_seed_marker_v1`)
+  - 프로덕션 안전성: 허용 프로필 외에서는 포트폴리오 시드가 비활성화됩니다.
 - WebSocket STOMP 엔드포인트: `/ws` (`/topic/waiting-queue/{concertId}/{userId}`, `/topic/reservations/{seatId}/{userId}`)
 - WebSocket 구독 등록 API:
   - `POST /api/push/websocket/waiting-queue/subscriptions`
