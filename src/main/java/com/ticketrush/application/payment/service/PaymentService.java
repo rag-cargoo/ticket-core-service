@@ -1,18 +1,6 @@
 package com.ticketrush.application.payment.service;
 
-import com.ticketrush.domain.payment.entity.PaymentTransaction;
+import com.ticketrush.application.payment.port.inbound.PaymentUseCase;
 
-import java.util.List;
-
-public interface PaymentService {
-
-    PaymentTransaction chargeWallet(Long userId, Long amount, String idempotencyKey, String description);
-
-    PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey);
-
-    PaymentTransaction refundReservation(Long userId, Long reservationId, String idempotencyKey);
-
-    long getWalletBalance(Long userId);
-
-    List<PaymentTransaction> getTransactions(Long userId, int limit);
+public interface PaymentService extends PaymentUseCase {
 }

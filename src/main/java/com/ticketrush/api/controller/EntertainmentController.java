@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.EntertainmentResponse;
 import com.ticketrush.api.dto.EntertainmentSearchPageResponse;
 import com.ticketrush.api.dto.EntertainmentUpsertRequest;
-import com.ticketrush.application.catalog.service.EntertainmentService;
+import com.ticketrush.application.catalog.port.inbound.EntertainmentUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,18 +17,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EntertainmentController {
 
-    private final EntertainmentService entertainmentService;
+    private final EntertainmentUseCase entertainmentUseCase;
 
     @PostMapping
     public ResponseEntity<EntertainmentResponse> create(@RequestBody EntertainmentUpsertRequest request) {
         return ResponseEntity.status(201).body(EntertainmentResponse.from(
-                entertainmentService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
+                entertainmentUseCase.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @GetMapping
     public ResponseEntity<List<EntertainmentResponse>> getAll() {
-        return ResponseEntity.ok(entertainmentService.getAll().stream()
+        return ResponseEntity.ok(entertainmentUseCase.getAll().stream()
                 .map(EntertainmentResponse::from)
                 .toList());
     }
@@ -45,25 +45,25 @@ public class EntertainmentController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = entertainmentService.search(keyword, pageable).map(EntertainmentResponse::from);
+        var result = entertainmentUseCase.search(keyword, pageable).map(EntertainmentResponse::from);
         return ResponseEntity.ok(EntertainmentSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EntertainmentResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(EntertainmentResponse.from(entertainmentService.getById(id)));
+        return ResponseEntity.ok(EntertainmentResponse.from(entertainmentUseCase.getById(id)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<EntertainmentResponse> update(@PathVariable Long id, @RequestBody EntertainmentUpsertRequest request) {
         return ResponseEntity.ok(EntertainmentResponse.from(
-                entertainmentService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
+                entertainmentUseCase.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        entertainmentService.delete(id);
+        entertainmentUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 

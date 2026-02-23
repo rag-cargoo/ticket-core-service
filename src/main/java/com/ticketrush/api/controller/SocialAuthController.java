@@ -3,8 +3,8 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.auth.SocialAuthorizeUrlResponse;
 import com.ticketrush.api.dto.auth.SocialLoginRequest;
 import com.ticketrush.api.dto.auth.SocialLoginResponse;
-import com.ticketrush.application.auth.service.AuthSessionService;
-import com.ticketrush.application.auth.service.SocialAuthService;
+import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
+import com.ticketrush.application.auth.port.inbound.SocialAuthUseCase;
 import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
 import com.ticketrush.domain.auth.model.SocialLoginResult;
@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SocialAuthController {
 
-    private final SocialAuthService socialAuthService;
-    private final AuthSessionService authSessionService;
+    private final SocialAuthUseCase socialAuthUseCase;
+    private final AuthSessionUseCase authSessionUseCase;
 
     @GetMapping("/{provider}/authorize-url")
     public ResponseEntity<SocialAuthorizeUrlResponse> getAuthorizeUrl(
@@ -27,7 +27,7 @@ public class SocialAuthController {
             @RequestParam(required = false) String state
     ) {
         SocialProvider socialProvider = SocialProvider.from(provider);
-        SocialAuthorizeInfo info = socialAuthService.getAuthorizeInfo(socialProvider, state);
+        SocialAuthorizeInfo info = socialAuthUseCase.getAuthorizeInfo(socialProvider, state);
         return ResponseEntity.ok(SocialAuthorizeUrlResponse.from(info));
     }
 
@@ -37,8 +37,8 @@ public class SocialAuthController {
             @RequestBody SocialLoginRequest request
     ) {
         SocialProvider socialProvider = SocialProvider.from(provider);
-        SocialLoginResult result = socialAuthService.login(socialProvider, request.getCode(), request.getState());
-        AuthTokenPair tokenPair = authSessionService.issueFor(result.getUser());
+        SocialLoginResult result = socialAuthUseCase.login(socialProvider, request.getCode(), request.getState());
+        AuthTokenPair tokenPair = authSessionUseCase.issueFor(result.getUser());
         return ResponseEntity.ok(SocialLoginResponse.from(result, tokenPair));
     }
 }

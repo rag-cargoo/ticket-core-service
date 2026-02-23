@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.VenueResponse;
 import com.ticketrush.api.dto.VenueSearchPageResponse;
 import com.ticketrush.api.dto.VenueUpsertRequest;
-import com.ticketrush.application.catalog.service.VenueService;
+import com.ticketrush.application.catalog.port.inbound.VenueUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,12 +17,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VenueController {
 
-    private final VenueService venueService;
+    private final VenueUseCase venueUseCase;
 
     @PostMapping
     public ResponseEntity<VenueResponse> create(@RequestBody VenueUpsertRequest request) {
         return ResponseEntity.status(201).body(VenueResponse.from(
-                venueService.create(
+                venueUseCase.create(
                         request.getName(),
                         request.getCity(),
                         request.getCountryCode(),
@@ -33,7 +33,7 @@ public class VenueController {
 
     @GetMapping
     public ResponseEntity<List<VenueResponse>> getAll() {
-        return ResponseEntity.ok(venueService.getAll().stream()
+        return ResponseEntity.ok(venueUseCase.getAll().stream()
                 .map(VenueResponse::from)
                 .toList());
     }
@@ -50,19 +50,19 @@ public class VenueController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = venueService.search(keyword, pageable).map(VenueResponse::from);
+        var result = venueUseCase.search(keyword, pageable).map(VenueResponse::from);
         return ResponseEntity.ok(VenueSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<VenueResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(VenueResponse.from(venueService.getById(id)));
+        return ResponseEntity.ok(VenueResponse.from(venueUseCase.getById(id)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<VenueResponse> update(@PathVariable Long id, @RequestBody VenueUpsertRequest request) {
         return ResponseEntity.ok(VenueResponse.from(
-                venueService.update(
+                venueUseCase.update(
                         id,
                         request.getName(),
                         request.getCity(),
@@ -74,7 +74,7 @@ public class VenueController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        venueService.delete(id);
+        venueUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 

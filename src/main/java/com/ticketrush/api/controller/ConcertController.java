@@ -1,7 +1,7 @@
 package com.ticketrush.api.controller;
 
 import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
-import com.ticketrush.application.concert.service.ConcertService;
+import com.ticketrush.application.concert.port.inbound.ConcertUseCase;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.ConcertSearchPageResponse;
@@ -9,7 +9,7 @@ import com.ticketrush.api.dto.ConcertSetupRequest;
 import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
-import com.ticketrush.application.reservation.service.SalesPolicyService;
+import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,15 +25,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ConcertController {
 
-    private final ConcertService concertService;
-    private final SalesPolicyService salesPolicyService;
+    private final ConcertUseCase concertUseCase;
+    private final SalesPolicyUseCase salesPolicyUseCase;
 
     /**
      * [Admin/Test] 공연 및 좌석 일괄 생성
      */
     @PostMapping("/setup")
     public ResponseEntity<String> setupConcert(@RequestBody ConcertSetupRequest request) {
-        var concert = concertService.createConcert(
+        var concert = concertUseCase.createConcert(
                 request.getTitle(),
                 request.getArtistName(),
                 request.getEntertainmentName(),
@@ -46,8 +46,8 @@ public class ConcertController {
                 request.getPromoterCountryCode(),
                 request.getPromoterHomepageUrl()
         );
-        var option = concertService.addOption(concert.getId(), request.getConcertDate(), null);
-        concertService.createSeats(option.getId(), request.getSeatCount());
+        var option = concertUseCase.addOption(concert.getId(), request.getConcertDate(), null);
+        concertUseCase.createSeats(option.getId(), request.getSeatCount());
 
         return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
     }
@@ -57,7 +57,7 @@ public class ConcertController {
      */
     @DeleteMapping("/cleanup/{concertId}")
     public ResponseEntity<String> cleanupConcert(@PathVariable Long concertId) {
-        concertService.deleteConcert(concertId);
+        concertUseCase.deleteConcert(concertId);
         return ResponseEntity.ok("Cleanup completed for ConcertID: " + concertId);
     }
 
@@ -66,7 +66,7 @@ public class ConcertController {
      */
     @GetMapping
     public ResponseEntity<List<ConcertResponse>> getConcerts() {
-        return ResponseEntity.ok(concertService.getConcerts().stream()
+        return ResponseEntity.ok(concertUseCase.getConcerts().stream()
                 .map(ConcertResponse::from)
                 .collect(Collectors.toList()));
     }
@@ -88,7 +88,7 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertService.searchConcerts(keyword, artistName, entertainmentName, pageable)
+        var result = concertUseCase.searchConcerts(keyword, artistName, entertainmentName, pageable)
                 .map(ConcertResponse::from);
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
@@ -99,14 +99,14 @@ public class ConcertController {
      */
     @GetMapping("/{id}/options")
     public ResponseEntity<List<ConcertOptionResponse>> getOptions(@PathVariable Long id) {
-        return ResponseEntity.ok(concertService.getConcertOptions(id).stream()
+        return ResponseEntity.ok(concertUseCase.getConcertOptions(id).stream()
                 .map(ConcertOptionResponse::from)
                 .collect(Collectors.toList()));
     }
 
     @GetMapping("/{concertId}/thumbnail")
     public ResponseEntity<byte[]> getThumbnail(@PathVariable Long concertId) {
-        ConcertService.ConcertThumbnail thumbnail = concertService.getThumbnail(concertId);
+        ConcertUseCase.ConcertThumbnail thumbnail = concertUseCase.getThumbnail(concertId);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(thumbnail.contentType()))
                 .body(thumbnail.bytes());
@@ -117,7 +117,7 @@ public class ConcertController {
      */
     @GetMapping("/options/{optionId}/seats")
     public ResponseEntity<List<SeatResponse>> getAvailableSeats(@PathVariable Long optionId) {
-        return ResponseEntity.ok(concertService.getAvailableSeats(optionId).stream()
+        return ResponseEntity.ok(concertUseCase.getAvailableSeats(optionId).stream()
                 .map(SeatResponse::from)
                 .collect(Collectors.toList()));
     }
@@ -137,7 +137,7 @@ public class ConcertController {
                 request.getGeneralSaleStartAt(),
                 request.getMaxReservationsPerUser()
         );
-        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.upsert(concertId, command)));
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyUseCase.upsert(concertId, command)));
     }
 
     /**
@@ -145,7 +145,7 @@ public class ConcertController {
      */
     @GetMapping("/{concertId}/sales-policy")
     public ResponseEntity<SalesPolicyResponse> getSalesPolicy(@PathVariable Long concertId) {
-        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.getByConcertId(concertId)));
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyUseCase.getByConcertId(concertId)));
     }
 
     private String resolveSortField(String candidate) {

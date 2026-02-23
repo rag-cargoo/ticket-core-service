@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.payment.PaymentTransactionResponse;
 import com.ticketrush.api.dto.payment.WalletBalanceResponse;
 import com.ticketrush.api.dto.payment.WalletChargeRequest;
-import com.ticketrush.application.payment.service.PaymentService;
+import com.ticketrush.application.payment.port.inbound.PaymentUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +21,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WalletController {
 
-    private final PaymentService paymentService;
+    private final PaymentUseCase paymentUseCase;
 
     @GetMapping
     public ResponseEntity<WalletBalanceResponse> getWalletBalance(@PathVariable Long userId) {
-        return ResponseEntity.ok(new WalletBalanceResponse(userId, paymentService.getWalletBalance(userId)));
+        return ResponseEntity.ok(new WalletBalanceResponse(userId, paymentUseCase.getWalletBalance(userId)));
     }
 
     @PostMapping("/charges")
@@ -33,7 +33,7 @@ public class WalletController {
             @PathVariable Long userId,
             @RequestBody WalletChargeRequest request
     ) {
-        return ResponseEntity.ok(PaymentTransactionResponse.from(paymentService.chargeWallet(
+        return ResponseEntity.ok(PaymentTransactionResponse.from(paymentUseCase.chargeWallet(
                 userId,
                 request.getAmount(),
                 request.getIdempotencyKey(),
@@ -47,7 +47,7 @@ public class WalletController {
             @RequestParam(defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(
-                paymentService.getTransactions(userId, limit).stream()
+                paymentUseCase.getTransactions(userId, limit).stream()
                         .map(PaymentTransactionResponse::from)
                         .toList()
         );

@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto.reservation;
 
-import com.ticketrush.application.reservation.service.SeatSoftLockService;
+import com.ticketrush.application.reservation.port.inbound.SeatSoftLockUseCase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,7 +13,7 @@ public class SeatSoftLockReleaseResponse {
     private String status;
     private boolean released;
 
-    public static SeatSoftLockReleaseResponse from(SeatSoftLockService.SeatSoftLockReleaseResult result) {
+    public static SeatSoftLockReleaseResponse from(SeatSoftLockUseCase.SeatSoftLockReleaseResult result) {
         return new SeatSoftLockReleaseResponse(
                 result.optionId(),
                 result.seatId(),

@@ -5,8 +5,8 @@ import com.ticketrush.api.dto.auth.AuthTokenResponse;
 import com.ticketrush.api.dto.auth.TokenLogoutRequest;
 import com.ticketrush.api.dto.auth.TokenRefreshRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
-import com.ticketrush.application.auth.service.AuthSessionService;
-import com.ticketrush.application.user.service.UserService;
+import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
+import com.ticketrush.application.user.port.inbound.UserUseCase;
 import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.user.User;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +28,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthSessionService authSessionService;
-    private final UserService userService;
+    private final AuthSessionUseCase authSessionUseCase;
+    private final UserUseCase userUseCase;
 
     @PostMapping("/token/refresh")
     public ResponseEntity<AuthTokenResponse> refresh(@RequestBody TokenRefreshRequest request) {
-        AuthTokenPair tokenPair = authSessionService.refresh(request.getRefreshToken());
+        AuthTokenPair tokenPair = authSessionUseCase.refresh(request.getRefreshToken());
         return ResponseEntity.ok(AuthTokenResponse.from(tokenPair));
     }
 
@@ -42,7 +42,7 @@ public class AuthController {
             @RequestBody TokenLogoutRequest request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
     ) {
-        authSessionService.logout(request.getRefreshToken(), resolveBearerToken(authorizationHeader));
+        authSessionUseCase.logout(request.getRefreshToken(), resolveBearerToken(authorizationHeader));
         return ResponseEntity.ok(Map.of("message", "logged out"));
     }
 
@@ -51,7 +51,7 @@ public class AuthController {
         if (principal == null) {
             throw new IllegalArgumentException("authenticated user is required");
         }
-        User user = userService.getUser(principal.getUserId());
+        User user = userUseCase.getUser(principal.getUserId());
         return ResponseEntity.ok(AuthMeResponse.from(user));
     }
 

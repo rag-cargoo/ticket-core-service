@@ -4,7 +4,7 @@ import com.ticketrush.api.dto.payment.PgReadyWebhookRequest;
 import com.ticketrush.api.dto.payment.PgReadyWebhookResponse;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
-import com.ticketrush.application.payment.webhook.PgReadyWebhookService;
+import com.ticketrush.application.payment.webhook.port.inbound.PgReadyWebhookUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,13 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PaymentWebhookController {
 
-    private final PgReadyWebhookService pgReadyWebhookService;
+    private final PgReadyWebhookUseCase pgReadyWebhookUseCase;
 
     @PostMapping("/pg-ready")
     public ResponseEntity<PgReadyWebhookResponse> receivePgReadyWebhook(
             @RequestBody PgReadyWebhookRequest request
     ) {
-        PgReadyWebhookResult result = pgReadyWebhookService.handle(
+        PgReadyWebhookResult result = pgReadyWebhookUseCase.handle(
                 new PgReadyWebhookCommand(
                         request.getProviderEventId(),
                         request.getEventType(),

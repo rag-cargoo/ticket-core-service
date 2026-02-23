@@ -1,7 +1,7 @@
 package com.ticketrush.api.controller;
 
 import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
-import com.ticketrush.application.concert.service.ConcertService;
+import com.ticketrush.application.concert.port.inbound.ConcertUseCase;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.admin.AdminConcertOptionCreateRequest;
@@ -9,7 +9,7 @@ import com.ticketrush.api.dto.admin.AdminConcertOptionUpdateRequest;
 import com.ticketrush.api.dto.admin.AdminConcertUpsertRequest;
 import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
-import com.ticketrush.application.reservation.service.SalesPolicyService;
+import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +24,14 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class AdminConcertController {
 
-    private final ConcertService concertService;
-    private final SalesPolicyService salesPolicyService;
+    private final ConcertUseCase concertUseCase;
+    private final SalesPolicyUseCase salesPolicyUseCase;
 
     @PostMapping
     public ResponseEntity<ConcertResponse> create(@RequestBody AdminConcertUpsertRequest request) {
         if (request.getArtistId() != null) {
             return ResponseEntity.status(201).body(ConcertResponse.from(
-                    concertService.createConcertByReferences(
+                    concertUseCase.createConcertByReferences(
                             request.getTitle(),
                             request.getArtistId(),
                             request.getPromoterId(),
@@ -41,7 +41,7 @@ public class AdminConcertController {
         }
 
         return ResponseEntity.status(201).body(ConcertResponse.from(
-                concertService.createConcert(
+                concertUseCase.createConcert(
                         request.getTitle(),
                         request.getArtistName(),
                         request.getEntertainmentName(),
@@ -60,7 +60,7 @@ public class AdminConcertController {
 
     @GetMapping("/{concertId}")
     public ResponseEntity<ConcertResponse> getById(@PathVariable Long concertId) {
-        return ResponseEntity.ok(ConcertResponse.from(concertService.getConcert(concertId)));
+        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.getConcert(concertId)));
     }
 
     @PutMapping("/{concertId}")
@@ -70,7 +70,7 @@ public class AdminConcertController {
     ) {
         if (request.getArtistId() != null) {
             return ResponseEntity.ok(ConcertResponse.from(
-                    concertService.updateConcertByReferences(
+                    concertUseCase.updateConcertByReferences(
                             concertId,
                             request.getTitle(),
                             request.getArtistId(),
@@ -81,7 +81,7 @@ public class AdminConcertController {
         }
 
         return ResponseEntity.ok(ConcertResponse.from(
-                concertService.updateConcert(
+                concertUseCase.updateConcert(
                         concertId,
                         request.getTitle(),
                         request.getArtistName(),
@@ -101,7 +101,7 @@ public class AdminConcertController {
 
     @DeleteMapping("/{concertId}")
     public ResponseEntity<Void> delete(@PathVariable Long concertId) {
-        concertService.deleteConcert(concertId);
+        concertUseCase.deleteConcert(concertId);
         return ResponseEntity.noContent().build();
     }
 
@@ -114,7 +114,7 @@ public class AdminConcertController {
             throw new IllegalArgumentException("concertDate is required");
         }
         ConcertOptionResponse response = ConcertOptionResponse.from(
-                concertService.addOption(
+                concertUseCase.addOption(
                         concertId,
                         request.getConcertDate(),
                         request.getVenueId(),
@@ -123,7 +123,7 @@ public class AdminConcertController {
         );
         int seatCount = request.getSeatCount() == null ? 0 : request.getSeatCount();
         if (seatCount > 0) {
-            concertService.createSeats(response.getId(), seatCount);
+            concertUseCase.createSeats(response.getId(), seatCount);
         }
         return ResponseEntity.status(201).body(response);
     }
@@ -134,7 +134,7 @@ public class AdminConcertController {
             @RequestBody AdminConcertOptionUpdateRequest request
     ) {
         return ResponseEntity.ok(ConcertOptionResponse.from(
-                concertService.updateOption(
+                concertUseCase.updateOption(
                         optionId,
                         request.getConcertDate(),
                         request.getVenueId(),
@@ -145,7 +145,7 @@ public class AdminConcertController {
 
     @DeleteMapping("/options/{optionId}")
     public ResponseEntity<Void> deleteOption(@PathVariable Long optionId) {
-        concertService.deleteOption(optionId);
+        concertUseCase.deleteOption(optionId);
         return ResponseEntity.noContent().build();
     }
 
@@ -164,12 +164,12 @@ public class AdminConcertController {
         } catch (IOException e) {
             throw new IllegalArgumentException("failed to read thumbnail image");
         }
-        return ResponseEntity.ok(ConcertResponse.from(concertService.updateThumbnail(concertId, imageBytes, contentType)));
+        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.updateThumbnail(concertId, imageBytes, contentType)));
     }
 
     @DeleteMapping("/{concertId}/thumbnail")
     public ResponseEntity<Void> deleteThumbnail(@PathVariable Long concertId) {
-        concertService.deleteThumbnail(concertId);
+        concertUseCase.deleteThumbnail(concertId);
         return ResponseEntity.noContent().build();
     }
 
@@ -185,7 +185,7 @@ public class AdminConcertController {
                 request.getGeneralSaleStartAt(),
                 request.getMaxReservationsPerUser()
         );
-        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.upsert(concertId, command)));
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyUseCase.upsert(concertId, command)));
     }
 
     private String resolveImageContentType(MultipartFile image) {

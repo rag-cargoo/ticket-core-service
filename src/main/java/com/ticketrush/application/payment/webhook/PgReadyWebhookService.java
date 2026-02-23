@@ -2,6 +2,7 @@ package com.ticketrush.application.payment.webhook;
 
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
+import com.ticketrush.application.payment.webhook.port.inbound.PgReadyWebhookUseCase;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -21,7 +22,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PgReadyWebhookService {
+public class PgReadyWebhookService implements PgReadyWebhookUseCase {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final ReservationRepository reservationRepository;
@@ -33,6 +34,7 @@ public class PgReadyWebhookService {
     private static final String STATUS_FAILED = "FAILED";
 
     @Transactional
+    @Override
     public PgReadyWebhookResult handle(PgReadyWebhookCommand command) {
         String eventType = normalizeUpper(command.getEventType());
         String status = normalizeUpper(command.getStatus());

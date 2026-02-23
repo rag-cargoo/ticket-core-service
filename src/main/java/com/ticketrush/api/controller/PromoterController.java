@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.PromoterResponse;
 import com.ticketrush.api.dto.PromoterSearchPageResponse;
 import com.ticketrush.api.dto.PromoterUpsertRequest;
-import com.ticketrush.application.catalog.service.PromoterService;
+import com.ticketrush.application.catalog.port.inbound.PromoterUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,18 +17,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PromoterController {
 
-    private final PromoterService promoterService;
+    private final PromoterUseCase promoterUseCase;
 
     @PostMapping
     public ResponseEntity<PromoterResponse> create(@RequestBody PromoterUpsertRequest request) {
         return ResponseEntity.status(201).body(PromoterResponse.from(
-                promoterService.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
+                promoterUseCase.create(request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @GetMapping
     public ResponseEntity<List<PromoterResponse>> getAll() {
-        return ResponseEntity.ok(promoterService.getAll().stream()
+        return ResponseEntity.ok(promoterUseCase.getAll().stream()
                 .map(PromoterResponse::from)
                 .toList());
     }
@@ -45,25 +45,25 @@ public class PromoterController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = promoterService.search(keyword, pageable).map(PromoterResponse::from);
+        var result = promoterUseCase.search(keyword, pageable).map(PromoterResponse::from);
         return ResponseEntity.ok(PromoterSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PromoterResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(PromoterResponse.from(promoterService.getById(id)));
+        return ResponseEntity.ok(PromoterResponse.from(promoterUseCase.getById(id)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PromoterResponse> update(@PathVariable Long id, @RequestBody PromoterUpsertRequest request) {
         return ResponseEntity.ok(PromoterResponse.from(
-                promoterService.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
+                promoterUseCase.update(id, request.getName(), request.getCountryCode(), request.getHomepageUrl())
         ));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        promoterService.delete(id);
+        promoterUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 

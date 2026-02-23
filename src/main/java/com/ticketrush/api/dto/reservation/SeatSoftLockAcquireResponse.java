@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto.reservation;
 
-import com.ticketrush.application.reservation.service.SeatSoftLockService;
+import com.ticketrush.application.reservation.port.inbound.SeatSoftLockUseCase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -16,7 +16,7 @@ public class SeatSoftLockAcquireResponse {
     private String expiresAt;
     private Long ttlSeconds;
 
-    public static SeatSoftLockAcquireResponse from(SeatSoftLockService.SeatSoftLockAcquireResult result) {
+    public static SeatSoftLockAcquireResponse from(SeatSoftLockUseCase.SeatSoftLockAcquireResult result) {
         return new SeatSoftLockAcquireResponse(
                 result.optionId(),
                 result.seatId(),

@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.ArtistResponse;
 import com.ticketrush.api.dto.ArtistSearchPageResponse;
 import com.ticketrush.api.dto.ArtistUpsertRequest;
-import com.ticketrush.application.catalog.service.ArtistService;
+import com.ticketrush.application.catalog.port.inbound.ArtistUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,12 +17,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ArtistController {
 
-    private final ArtistService artistService;
+    private final ArtistUseCase artistUseCase;
 
     @PostMapping
     public ResponseEntity<ArtistResponse> create(@RequestBody ArtistUpsertRequest request) {
         return ResponseEntity.status(201).body(ArtistResponse.from(
-                artistService.create(
+                artistUseCase.create(
                         request.getName(),
                         request.getEntertainmentId(),
                         request.getDisplayName(),
@@ -34,7 +34,7 @@ public class ArtistController {
 
     @GetMapping
     public ResponseEntity<List<ArtistResponse>> getAll() {
-        return ResponseEntity.ok(artistService.getAll().stream()
+        return ResponseEntity.ok(artistUseCase.getAll().stream()
                 .map(ArtistResponse::from)
                 .toList());
     }
@@ -52,19 +52,19 @@ public class ArtistController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "desc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = artistService.search(keyword, entertainmentId, pageable).map(ArtistResponse::from);
+        var result = artistUseCase.search(keyword, entertainmentId, pageable).map(ArtistResponse::from);
         return ResponseEntity.ok(ArtistSearchPageResponse.from(result));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ArtistResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ArtistResponse.from(artistService.getById(id)));
+        return ResponseEntity.ok(ArtistResponse.from(artistUseCase.getById(id)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ArtistResponse> update(@PathVariable Long id, @RequestBody ArtistUpsertRequest request) {
         return ResponseEntity.ok(ArtistResponse.from(
-                artistService.update(
+                artistUseCase.update(
                         id,
                         request.getName(),
                         request.getEntertainmentId(),
@@ -77,7 +77,7 @@ public class ArtistController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        artistService.delete(id);
+        artistUseCase.delete(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -1,6 +1,6 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.application.user.service.UserService;
+import com.ticketrush.application.user.port.inbound.UserUseCase;
 import com.ticketrush.api.dto.UserRequest;
 import com.ticketrush.api.dto.UserResponse;
 import com.ticketrush.api.dto.UserUpdateRequest;
@@ -15,14 +15,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final UserUseCase userUseCase;
 
     /**
      * 유저 생성 (회원가입 기반)
      */
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest request) {
-        return ResponseEntity.ok(UserResponse.from(userService.createUser(request.getUsername(), request.getTier())));
+        return ResponseEntity.ok(UserResponse.from(userUseCase.createUser(request.getUsername(), request.getTier())));
     }
 
     /**
@@ -30,7 +30,7 @@ public class UserController {
      */
     @GetMapping
     public ResponseEntity<List<UserResponse>> getUsers() {
-        return ResponseEntity.ok(userService.getUsers().stream()
+        return ResponseEntity.ok(userUseCase.getUsers().stream()
                 .map(UserResponse::from)
                 .toList());
     }
@@ -40,7 +40,7 @@ public class UserController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok(UserResponse.from(userService.getUser(id)));
+        return ResponseEntity.ok(UserResponse.from(userUseCase.getUser(id)));
     }
 
     /**
@@ -49,7 +49,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(UserResponse.from(
-                userService.updateUser(id, request.getUsername(), request.getTier(), request.getEmail(), request.getDisplayName())
+                userUseCase.updateUser(id, request.getUsername(), request.getTier(), request.getEmail(), request.getDisplayName())
         ));
     }
 
@@ -58,7 +58,7 @@ public class UserController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+        userUseCase.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 }

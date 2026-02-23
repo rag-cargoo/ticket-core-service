@@ -9,13 +9,13 @@ import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
 import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
 import com.ticketrush.application.realtime.port.inbound.RealtimeSubscriptionUseCase;
+import com.ticketrush.application.reservation.port.inbound.AbuseAuditUseCase;
+import com.ticketrush.application.reservation.port.inbound.AdminRefundAuditUseCase;
 import com.ticketrush.application.reservation.port.inbound.DistributedReservationUseCase;
+import com.ticketrush.application.reservation.port.inbound.ReservationLifecycleUseCase;
 import com.ticketrush.application.reservation.port.inbound.ReservationQueueOrchestrationUseCase;
-import com.ticketrush.application.reservation.service.ReservationService;
-import com.ticketrush.application.reservation.service.AbuseAuditService;
-import com.ticketrush.application.reservation.service.AdminRefundAuditService;
-import com.ticketrush.application.reservation.service.ReservationLifecycleService;
-import com.ticketrush.application.reservation.service.SeatSoftLockService;
+import com.ticketrush.application.reservation.port.inbound.ReservationUseCase;
+import com.ticketrush.application.reservation.port.inbound.SeatSoftLockUseCase;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
@@ -45,21 +45,21 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ReservationController {
 
-    private final ReservationService reservationService;
+    private final ReservationUseCase reservationUseCase;
     private final DistributedReservationUseCase distributedReservationUseCase;
     private final RealtimeSubscriptionUseCase realtimeSubscriptionUseCase;
     private final ReservationQueueOrchestrationUseCase reservationQueueOrchestrationUseCase;
-    private final ReservationLifecycleService reservationLifecycleService;
-    private final SeatSoftLockService seatSoftLockService;
-    private final AbuseAuditService abuseAuditService;
-    private final AdminRefundAuditService adminRefundAuditService;
+    private final ReservationLifecycleUseCase reservationLifecycleUseCase;
+    private final SeatSoftLockUseCase seatSoftLockUseCase;
+    private final AbuseAuditUseCase abuseAuditUseCase;
+    private final AdminRefundAuditUseCase adminRefundAuditUseCase;
 
     /**
      * [v1] 낙관적 락 버전
      */
     @PostMapping("/v1/optimistic")
     public ResponseEntity<ReservationResponse> createOptimisticReservation(@RequestBody ReservationRequest request) {
-        ReservationResult result = reservationService.createReservation(toCreateCommand(request));
+        ReservationResult result = reservationUseCase.createReservation(toCreateCommand(request));
         return ResponseEntity.ok(ReservationResponse.from(result));
     }
 
@@ -68,7 +68,7 @@ public class ReservationController {
      */
     @PostMapping("/v2/pessimistic")
     public ResponseEntity<ReservationResponse> createPessimisticReservation(@RequestBody ReservationRequest request) {
-        ReservationResult result = reservationService.createReservationWithPessimisticLock(toCreateCommand(request));
+        ReservationResult result = reservationUseCase.createReservationWithPessimisticLock(toCreateCommand(request));
         return ResponseEntity.ok(ReservationResponse.from(result));
     }
 
@@ -131,7 +131,7 @@ public class ReservationController {
      */
     @PostMapping("/v6/holds")
     public ResponseEntity<ReservationLifecycleResponse> createHold(@RequestBody ReservationRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleService.createHold(toCreateCommand(request));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.createHold(toCreateCommand(request));
         return ResponseEntity.status(201).body(ReservationLifecycleResponse.from(result));
     }
 
@@ -142,7 +142,7 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> startPaying(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleService.startPaying(reservationId, request.getUserId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.startPaying(reservationId, request.getUserId());
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -153,7 +153,7 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> confirm(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleService.confirm(reservationId, request.getUserId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(reservationId, request.getUserId());
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -164,7 +164,7 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> cancel(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleService.cancel(reservationId, request.getUserId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.cancel(reservationId, request.getUserId());
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -175,7 +175,7 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> refund(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleService.refund(reservationId, request.getUserId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.refund(reservationId, request.getUserId());
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -186,7 +186,7 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> getReservation(
             @PathVariable Long reservationId,
             @RequestParam Long userId) {
-        ReservationLifecycleResult result = reservationLifecycleService.getReservation(reservationId, userId);
+        ReservationLifecycleResult result = reservationLifecycleUseCase.getReservation(reservationId, userId);
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -205,7 +205,7 @@ public class ReservationController {
             @RequestParam(required = false) Integer limit
     ) {
         return ResponseEntity.ok(
-                abuseAuditService.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
+                abuseAuditUseCase.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
                         .stream()
                         .map(AbuseAuditResponse::from)
                         .toList()
@@ -224,7 +224,7 @@ public class ReservationController {
         String requestId = request == null ? null : request.getRequestId();
         return ResponseEntity.ok(
                 SeatSoftLockAcquireResponse.from(
-                        seatSoftLockService.acquire(requiredUserId(principal), seatId, requestId)
+                        seatSoftLockUseCase.acquire(requiredUserId(principal), seatId, requestId)
                 )
         );
     }
@@ -239,7 +239,7 @@ public class ReservationController {
     ) {
         return ResponseEntity.ok(
                 SeatSoftLockReleaseResponse.from(
-                        seatSoftLockService.release(requiredUserId(principal), seatId)
+                        seatSoftLockUseCase.release(requiredUserId(principal), seatId)
                 )
         );
     }
@@ -253,11 +253,11 @@ public class ReservationController {
             @RequestBody AuthenticatedHoldRequest request
     ) {
         Long userId = requiredUserId(principal);
-        seatSoftLockService.ensureHoldableByUser(userId, request.getSeatId());
-        ReservationLifecycleResult result = reservationLifecycleService.createHold(
+        seatSoftLockUseCase.ensureHoldableByUser(userId, request.getSeatId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.createHold(
                 toCreateCommand(request.toReservationRequest(userId))
         );
-        seatSoftLockService.promoteToHold(userId, result.getSeatId(), result.getHoldExpiresAt());
+        seatSoftLockUseCase.promoteToHold(userId, result.getSeatId(), result.getHoldExpiresAt());
         return ResponseEntity.status(201).body(ReservationLifecycleResponse.from(result));
     }
 
@@ -269,7 +269,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.startPaying(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.startPaying(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -281,7 +281,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.confirm(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -293,7 +293,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.cancel(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.cancel(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -305,7 +305,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.refund(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.refund(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -318,7 +318,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.refundAsAdmin(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.refundAsAdmin(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -330,7 +330,7 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        ReservationLifecycleResult result = reservationLifecycleService.getReservation(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.getReservation(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -341,7 +341,7 @@ public class ReservationController {
     public ResponseEntity<List<ReservationResponse>> getMyReservationsV7(
             @AuthenticationPrincipal AuthUserPrincipal principal
     ) {
-        List<ReservationResponse> responses = reservationService.getReservationsByUserId(requiredUserId(principal))
+        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(requiredUserId(principal))
                 .stream()
                 .map(ReservationResponse::from)
                 .toList();
@@ -363,7 +363,7 @@ public class ReservationController {
             @RequestParam(required = false) Integer limit
     ) {
         return ResponseEntity.ok(
-                abuseAuditService.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
+                abuseAuditUseCase.getAuditLogs(action, result, reason, userId, concertId, fromAt, toAt, limit)
                         .stream()
                         .map(AbuseAuditResponse::from)
                         .toList()
@@ -384,7 +384,7 @@ public class ReservationController {
             @RequestParam(required = false) Integer limit
     ) {
         return ResponseEntity.ok(
-                adminRefundAuditService.getAuditLogs(reservationId, actorUserId, result, fromAt, toAt, limit)
+                adminRefundAuditUseCase.getAuditLogs(reservationId, actorUserId, result, fromAt, toAt, limit)
                         .stream()
                         .map(AdminRefundAuditResponse::from)
                         .toList()
@@ -411,7 +411,7 @@ public class ReservationController {
      */
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<ReservationResponse>> getMyReservations(@PathVariable Long userId) {
-        List<ReservationResponse> responses = reservationService.getReservationsByUserId(userId)
+        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(userId)
                 .stream()
                 .map(ReservationResponse::from)
                 .toList();
@@ -423,7 +423,7 @@ public class ReservationController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
-        reservationService.cancelReservation(id);
+        reservationUseCase.cancelReservation(id);
         return ResponseEntity.noContent().build();
     }
 

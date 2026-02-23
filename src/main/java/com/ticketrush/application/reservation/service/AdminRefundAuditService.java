@@ -2,6 +2,7 @@ package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.model.AdminRefundAuditRecord;
 import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
+import com.ticketrush.application.reservation.port.inbound.AdminRefundAuditUseCase;
 import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.domain.reservation.repository.AdminRefundAuditLogRepository;
 import com.ticketrush.domain.user.UserRole;
@@ -16,11 +17,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class AdminRefundAuditService {
+public class AdminRefundAuditService implements AdminRefundAuditUseCase {
 
     private final AdminRefundAuditLogRepository adminRefundAuditLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
     public void recordSuccess(
             Long reservationId,
             Long targetUserId,
@@ -34,6 +36,7 @@ public class AdminRefundAuditService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
     public void recordDenied(
             Long reservationId,
             Long targetUserId,
@@ -47,6 +50,7 @@ public class AdminRefundAuditService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
     public void recordFailed(
             Long reservationId,
             Long targetUserId,
@@ -60,6 +64,7 @@ public class AdminRefundAuditService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public List<AdminRefundAuditRecord> getAuditLogs(
             Long reservationId,
             Long actorUserId,

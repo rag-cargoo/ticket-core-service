@@ -1,12 +1,6 @@
 package com.ticketrush.application.auth.service;
 
-import com.ticketrush.domain.auth.model.AuthTokenPair;
-import com.ticketrush.domain.user.User;
+import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
 
-public interface AuthSessionService {
-    AuthTokenPair issueFor(User user);
-
-    AuthTokenPair refresh(String refreshTokenValue);
-
-    void logout(String refreshTokenValue, String accessTokenValue);
+public interface AuthSessionService extends AuthSessionUseCase {
 }

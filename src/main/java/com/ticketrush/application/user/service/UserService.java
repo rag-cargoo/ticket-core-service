@@ -1,14 +1,6 @@
 package com.ticketrush.application.user.service;
 
-import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.UserTier;
+import com.ticketrush.application.user.port.inbound.UserUseCase;
 
-import java.util.List;
-
-public interface UserService {
-    User createUser(String username, UserTier tier);
-    List<User> getUsers();
-    User getUser(Long id);
-    User updateUser(Long id, String username, UserTier tier, String email, String displayName);
-    void deleteUser(Long id);
+public interface UserService extends UserUseCase {
 }

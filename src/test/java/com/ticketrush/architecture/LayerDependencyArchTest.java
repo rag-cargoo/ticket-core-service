@@ -187,6 +187,19 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().haveSimpleNameEndingWith("Repository");
 
     @ArchTest
+    static final ArchRule rest_controllers_should_not_depend_on_application_service_package_directly =
+            noClasses()
+                    .that().areAnnotatedWith(RestController.class)
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.application..service..");
+
+    @ArchTest
+    static final ArchRule payment_webhook_controller_should_not_depend_on_pg_ready_webhook_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.PaymentWebhookController")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.payment.webhook.PgReadyWebhookService");
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
