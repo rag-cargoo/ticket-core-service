@@ -4,7 +4,7 @@ import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.SeatRepository;
-import com.ticketrush.domain.concert.service.ConcertService;
+import com.ticketrush.application.concert.service.ConcertService;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
