@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.ArtistResponse;
 import com.ticketrush.api.dto.ArtistSearchPageResponse;
 import com.ticketrush.api.dto.ArtistUpsertRequest;
-import com.ticketrush.domain.artist.service.ArtistService;
+import com.ticketrush.application.catalog.service.ArtistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;

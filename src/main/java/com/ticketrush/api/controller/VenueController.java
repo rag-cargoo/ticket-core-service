@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.VenueResponse;
 import com.ticketrush.api.dto.VenueSearchPageResponse;
 import com.ticketrush.api.dto.VenueUpsertRequest;
-import com.ticketrush.domain.venue.service.VenueService;
+import com.ticketrush.application.catalog.service.VenueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;

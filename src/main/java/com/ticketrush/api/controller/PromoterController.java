@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.PromoterResponse;
 import com.ticketrush.api.dto.PromoterSearchPageResponse;
 import com.ticketrush.api.dto.PromoterUpsertRequest;
-import com.ticketrush.domain.promoter.service.PromoterService;
+import com.ticketrush.application.catalog.service.PromoterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;

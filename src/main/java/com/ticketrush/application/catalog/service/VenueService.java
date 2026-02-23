@@ -1,4 +1,4 @@
-package com.ticketrush.domain.venue.service;
+package com.ticketrush.application.catalog.service;
 
 import com.ticketrush.domain.venue.Venue;
 import org.springframework.data.domain.Page;
