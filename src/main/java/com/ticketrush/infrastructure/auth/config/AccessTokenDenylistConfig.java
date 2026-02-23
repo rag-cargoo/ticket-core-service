@@ -1,8 +1,8 @@
-package com.ticketrush.domain.auth.config;
+package com.ticketrush.infrastructure.auth.config;
 
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
-import com.ticketrush.domain.auth.service.InMemoryAccessTokenDenylistService;
-import com.ticketrush.domain.auth.service.RedisAccessTokenDenylistService;
+import com.ticketrush.infrastructure.auth.denylist.InMemoryAccessTokenDenylistService;
+import com.ticketrush.infrastructure.auth.denylist.RedisAccessTokenDenylistService;
 import com.ticketrush.global.config.AuthJwtProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

@@ -1,6 +1,6 @@
 package com.ticketrush.global.config;
 
-import com.ticketrush.domain.auth.security.JwtAuthenticationFilter;
+import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.global.auth.AuthErrorClassifier;
 import com.ticketrush.global.auth.AuthErrorCode;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,4 +1,6 @@
-package com.ticketrush.domain.auth.service;
+package com.ticketrush.infrastructure.auth.denylist;
+
+import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 
 import java.time.Instant;
 import java.util.Iterator;

@@ -1,4 +1,4 @@
-package com.ticketrush.domain.auth.security;
+package com.ticketrush.application.auth.model;
 
 import com.ticketrush.domain.user.UserRole;
 import lombok.AllArgsConstructor;
