@@ -1,4 +1,4 @@
-package com.ticketrush.domain.concert.service;
+package com.ticketrush.application.concert.service;
 
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;

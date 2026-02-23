@@ -1,4 +1,4 @@
-package com.ticketrush.domain.concert.service;
+package com.ticketrush.application.concert.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.domain.concert.entity.Seat;
