@@ -4,8 +4,8 @@ import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
+import com.ticketrush.application.waitingqueue.port.inbound.WaitingQueueRuntimeUseCase;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
-import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class WaitingQueueSchedulerTest {
 
     @Mock
-    private WaitingQueueService waitingQueueService;
+    private WaitingQueueRuntimeUseCase waitingQueueRuntimeUseCase;
 
     @Mock
     private WaitingQueueConfigPort properties;
@@ -52,10 +52,10 @@ class WaitingQueueSchedulerTest {
         when(properties.getActivationConcertId()).thenReturn(1L);
         when(properties.getActivationBatchSize()).thenReturn(10L);
 
-        when(waitingQueueService.activateUsers(1L, 10L)).thenReturn(List.of(101L));
-        when(waitingQueueService.getActiveTtlSeconds(101L)).thenReturn(280L);
+        when(waitingQueueRuntimeUseCase.activateUsers(1L, 10L)).thenReturn(List.of(101L));
+        when(waitingQueueRuntimeUseCase.getActiveTtlSeconds(101L)).thenReturn(280L);
         when(pushNotifier.getSubscribedQueueUsers(1L)).thenReturn(Set.of(101L, 102L));
-        when(waitingQueueService.getStatus(new WaitingQueueStatusQuery(102L, 1L))).thenReturn(
+        when(waitingQueueRuntimeUseCase.getStatus(new WaitingQueueStatusQuery(102L, 1L))).thenReturn(
                 WaitingQueueStatusResult.builder()
                         .userId(102L)
                         .concertId(1L)
@@ -69,7 +69,7 @@ class WaitingQueueSchedulerTest {
         verify(schedulerLockService).runWithLock(eq("scheduler:waiting-queue:activate:1"), any());
         verify(pushNotifier).sendQueueActivated(eq(101L), eq(1L), any());
         verify(pushNotifier).sendQueueRankUpdate(eq(102L), eq(1L), any());
-        verify(waitingQueueService, never()).getStatus(new WaitingQueueStatusQuery(101L, 1L));
+        verify(waitingQueueRuntimeUseCase, never()).getStatus(new WaitingQueueStatusQuery(101L, 1L));
     }
 
     @Test
@@ -94,7 +94,7 @@ class WaitingQueueSchedulerTest {
 
         waitingQueueScheduler.activateWaitingUsers();
 
-        verify(waitingQueueService, never()).activateUsers(any(), anyLong());
+        verify(waitingQueueRuntimeUseCase, never()).activateUsers(any(), anyLong());
         verify(pushNotifier, never()).sendQueueActivated(any(), any(), any());
     }
 }

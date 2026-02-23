@@ -1,6 +1,6 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
-import com.ticketrush.application.payment.service.PaymentService;
+import com.ticketrush.application.payment.port.inbound.PaymentUseCase;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import lombok.RequiredArgsConstructor;
@@ -13,17 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WalletPaymentGateway implements PaymentGateway {
 
-    private final PaymentService paymentService;
+    private final PaymentUseCase paymentUseCase;
 
     @Override
     @Transactional
     public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
-        return paymentService.payForReservation(userId, reservationId, amount, idempotencyKey);
+        return paymentUseCase.payForReservation(userId, reservationId, amount, idempotencyKey);
     }
 
     @Override
     @Transactional
     public PaymentTransaction refundReservation(Long userId, Long reservationId, String idempotencyKey) {
-        return paymentService.refundReservation(userId, reservationId, idempotencyKey);
+        return paymentUseCase.refundReservation(userId, reservationId, idempotencyKey);
     }
 }

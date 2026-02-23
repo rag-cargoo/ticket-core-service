@@ -200,6 +200,50 @@ class LayerDependencyArchTest {
                     .haveFullyQualifiedName("com.ticketrush.application.payment.webhook.PgReadyWebhookService");
 
     @ArchTest
+    static final ArchRule waiting_queue_scheduler_should_not_depend_on_waiting_queue_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.global.scheduler.WaitingQueueScheduler")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.waitingqueue.service.WaitingQueueService");
+
+    @ArchTest
+    static final ArchRule reservation_lifecycle_scheduler_should_not_depend_on_reservation_lifecycle_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.global.scheduler.ReservationLifecycleScheduler")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationLifecycleService");
+
+    @ArchTest
+    static final ArchRule redisson_lock_facade_should_not_depend_on_reservation_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.global.lock.RedissonLockFacade")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationService");
+
+    @ArchTest
+    static final ArchRule wallet_payment_gateway_should_not_depend_on_payment_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.payment.gateway.WalletPaymentGateway")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.payment.service.PaymentService");
+
+    @ArchTest
+    static final ArchRule reservation_waiting_queue_adapter_should_not_depend_on_waiting_queue_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.reservation.adapter.outbound.ReservationWaitingQueuePortAdapter")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.waitingqueue.service.WaitingQueueService");
+
+    @ArchTest
+    static final ArchRule kafka_reservation_consumer_should_not_depend_on_reservation_services_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.messaging.KafkaReservationConsumer")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationService")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationQueueService");
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")

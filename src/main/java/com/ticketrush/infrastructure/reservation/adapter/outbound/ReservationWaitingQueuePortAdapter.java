@@ -1,7 +1,7 @@
 package com.ticketrush.infrastructure.reservation.adapter.outbound;
 
+import com.ticketrush.application.waitingqueue.port.inbound.WaitingQueueRuntimeUseCase;
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
-import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +11,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReservationWaitingQueuePortAdapter implements ReservationWaitingQueuePort {
 
-    private final WaitingQueueService waitingQueueService;
+    private final WaitingQueueRuntimeUseCase waitingQueueRuntimeUseCase;
 
     @Override
     public List<Long> activateUsers(Long concertId, long count) {
-        return waitingQueueService.activateUsers(concertId, count);
+        return waitingQueueRuntimeUseCase.activateUsers(concertId, count);
     }
 
     @Override
     public Long getActiveTtlSeconds(Long userId) {
-        return waitingQueueService.getActiveTtlSeconds(userId);
+        return waitingQueueRuntimeUseCase.getActiveTtlSeconds(userId);
     }
 }

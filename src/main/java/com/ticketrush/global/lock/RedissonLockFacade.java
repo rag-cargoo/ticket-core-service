@@ -3,7 +3,7 @@ package com.ticketrush.global.lock;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.application.reservation.port.inbound.DistributedReservationUseCase;
-import com.ticketrush.application.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.port.inbound.ReservationUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class RedissonLockFacade implements DistributedReservationUseCase {
 
     private final RedissonClient redissonClient;
-    private final ReservationService reservationService;
+    private final ReservationUseCase reservationUseCase;
 
     // 비즈니스 정책: 사용자는 최대 10초까지 대기할 수 있음 (상수로 관리하거나 설정에서 주입)
     private static final long WAIT_TIME = 10L;
@@ -39,7 +39,7 @@ public class RedissonLockFacade implements DistributedReservationUseCase {
                 throw new RuntimeException("현재 예약 요청이 많습니다. 잠시 후 다시 시도해주세요.");
             }
 
-            return reservationService.createReservation(command);
+            return reservationUseCase.createReservation(command);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

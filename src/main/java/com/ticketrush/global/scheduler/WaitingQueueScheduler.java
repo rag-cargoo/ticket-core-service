@@ -6,7 +6,7 @@ import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
-import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.port.inbound.WaitingQueueRuntimeUseCase;
 import com.ticketrush.global.monitoring.PushMonitoringMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class WaitingQueueScheduler {
     private static final String ACTIVATE_LOCK_KEY_PREFIX = "scheduler:waiting-queue:activate:";
     private static final String HEARTBEAT_LOCK_KEY = "scheduler:waiting-queue:heartbeat";
 
-    private final WaitingQueueService waitingQueueService;
+    private final WaitingQueueRuntimeUseCase waitingQueueRuntimeUseCase;
     private final WaitingQueueConfigPort properties;
     private final QueueRuntimePushPort pushNotifier;
     private final SchedulerLockService schedulerLockService;
@@ -49,7 +49,7 @@ public class WaitingQueueScheduler {
         log.info(">>>> [Scheduler] 대기열 유저 활성화 시작 (Concert: {}, Count: {})",
                 concertId, properties.getActivationBatchSize());
 
-        List<Long> activatedUsers = waitingQueueService.activateUsers(concertId, properties.getActivationBatchSize());
+        List<Long> activatedUsers = waitingQueueRuntimeUseCase.activateUsers(concertId, properties.getActivationBatchSize());
         if (activatedUsers.isEmpty()) {
             PushMonitoringMetrics.increment("queue", "scheduler", "activation_empty_runs");
             return;
@@ -65,7 +65,7 @@ public class WaitingQueueScheduler {
         Set<Long> activatedUserSet = new HashSet<>(activatedUsers);
 
         for (Long userId : activatedUsers) {
-            Long activeTtlSeconds = waitingQueueService.getActiveTtlSeconds(userId);
+            Long activeTtlSeconds = waitingQueueRuntimeUseCase.getActiveTtlSeconds(userId);
             pushNotifier.sendQueueActivated(
                     userId,
                     concertId,
@@ -97,9 +97,9 @@ public class WaitingQueueScheduler {
                 continue;
             }
 
-            WaitingQueueStatusResult status = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
+            WaitingQueueStatusResult status = waitingQueueRuntimeUseCase.getStatus(new WaitingQueueStatusQuery(userId, concertId));
             Long activeTtlSeconds = status.getStatus() == WaitingQueueStatusType.ACTIVE
-                    ? waitingQueueService.getActiveTtlSeconds(userId)
+                    ? waitingQueueRuntimeUseCase.getActiveTtlSeconds(userId)
                     : 0L;
             QueuePushPayload payload = buildPayload(
                     userId,

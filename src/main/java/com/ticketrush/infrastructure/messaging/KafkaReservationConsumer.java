@@ -4,8 +4,8 @@ import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationQueueEvent;
 import com.ticketrush.application.reservation.model.ReservationQueueLockType;
-import com.ticketrush.application.reservation.service.ReservationQueueService;
-import com.ticketrush.application.reservation.service.ReservationService;
+import com.ticketrush.application.reservation.port.inbound.ReservationQueueRuntimeUseCase;
+import com.ticketrush.application.reservation.port.inbound.ReservationUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class KafkaReservationConsumer {
 
-    private final ReservationService reservationService;
-    private final ReservationQueueService queueService;
+    private final ReservationUseCase reservationUseCase;
+    private final ReservationQueueRuntimeUseCase queueRuntimeUseCase;
     private final ReservationStatusPushPort pushNotifier;
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
@@ -26,18 +26,18 @@ public class KafkaReservationConsumer {
                 event.getUserId(), event.getSeatId(), event.getLockType());
 
         try {
-            queueService.setStatus(event.getUserId(), event.getSeatId(), "PROCESSING");
+            queueRuntimeUseCase.setStatus(event.getUserId(), event.getSeatId(), "PROCESSING");
 
             ReservationCreateCommand command = new ReservationCreateCommand(event.getUserId(), event.getSeatId(), null, null);
             
             // 이벤트에 지정된 락 전략에 따라 실제 예약 처리
             if (event.getLockType() == ReservationQueueLockType.PESSIMISTIC) {
-                reservationService.createReservationWithPessimisticLock(command);
+                reservationUseCase.createReservationWithPessimisticLock(command);
             } else {
-                reservationService.createReservation(command);
+                reservationUseCase.createReservation(command);
             }
 
-            queueService.setStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
+            queueRuntimeUseCase.setStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
             pushNotifier.sendReservationStatus(event.getUserId(), event.getSeatId(), "SUCCESS");
             log.info("Reservation SUCCESS - UserId: {}, SeatId: {}", event.getUserId(), event.getSeatId());
 
@@ -54,7 +54,7 @@ public class KafkaReservationConsumer {
                 status = "FAIL_DATA_NOT_FOUND";
             }
             
-            queueService.setStatus(event.getUserId(), event.getSeatId(), status);
+            queueRuntimeUseCase.setStatus(event.getUserId(), event.getSeatId(), status);
             pushNotifier.sendReservationStatus(event.getUserId(), event.getSeatId(), status);
         }
     }

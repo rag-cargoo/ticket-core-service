@@ -1,6 +1,6 @@
 package com.ticketrush.global.scheduler;
 
-import com.ticketrush.application.reservation.service.ReservationLifecycleService;
+import com.ticketrush.application.reservation.port.inbound.ReservationLifecycleUseCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 class ReservationLifecycleSchedulerTest {
 
     @Mock
-    private ReservationLifecycleService reservationLifecycleService;
+    private ReservationLifecycleUseCase reservationLifecycleUseCase;
 
     @Mock
     private SchedulerLockService schedulerLockService;
@@ -38,7 +38,7 @@ class ReservationLifecycleSchedulerTest {
         reservationLifecycleScheduler.expireTimedOutHolds();
 
         verify(schedulerLockService).runWithLock(eq("scheduler:reservation-lifecycle:expire-holds"), any());
-        verify(reservationLifecycleService).expireTimedOutHolds();
+        verify(reservationLifecycleUseCase).expireTimedOutHolds();
     }
 
     @Test
@@ -47,6 +47,6 @@ class ReservationLifecycleSchedulerTest {
 
         reservationLifecycleScheduler.expireTimedOutHolds();
 
-        verify(reservationLifecycleService, never()).expireTimedOutHolds();
+        verify(reservationLifecycleUseCase, never()).expireTimedOutHolds();
     }
 }
