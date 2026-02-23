@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.payment.PaymentTransactionResponse;
 import com.ticketrush.api.dto.payment.WalletBalanceResponse;
 import com.ticketrush.api.dto.payment.WalletChargeRequest;
-import com.ticketrush.domain.payment.service.PaymentService;
+import com.ticketrush.application.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

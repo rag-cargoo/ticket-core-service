@@ -1,7 +1,8 @@
-package com.ticketrush.domain.payment.gateway;
+package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.application.payment.service.PaymentService;
+import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
-import com.ticketrush.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
