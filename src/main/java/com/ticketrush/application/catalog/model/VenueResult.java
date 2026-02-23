@@ -1,6 +1,6 @@
-package com.ticketrush.api.dto;
+package com.ticketrush.application.catalog.model;
 
-import com.ticketrush.application.catalog.model.VenueResult;
+import com.ticketrush.domain.venue.Venue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,15 +8,15 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class VenueResponse {
+public class VenueResult {
     private Long id;
     private String name;
     private String city;
     private String countryCode;
     private String address;
 
-    public static VenueResponse from(VenueResult venue) {
-        return new VenueResponse(
+    public static VenueResult from(Venue venue) {
+        return new VenueResult(
                 venue.getId(),
                 venue.getName(),
                 venue.getCity(),

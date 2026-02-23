@@ -329,6 +329,25 @@ class LayerDependencyArchTest {
                     );
 
     @ArchTest
+    static final ArchRule catalog_api_should_not_depend_on_domain_catalog_models =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.EntertainmentController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.EntertainmentCatalogController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.ArtistController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.PromoterController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.VenueController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.EntertainmentResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.ArtistResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.PromoterResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.VenueResponse")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "com.ticketrush.domain.entertainment..",
+                            "com.ticketrush.domain.artist..",
+                            "com.ticketrush.domain.promoter..",
+                            "com.ticketrush.domain.venue.."
+                    );
+
+    @ArchTest
     static final ArchRule auth_and_user_controllers_should_not_depend_on_domain_auth_user_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.AuthController")

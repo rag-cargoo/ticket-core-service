@@ -1,5 +1,6 @@
 package com.ticketrush.application.catalog.service;
 
+import com.ticketrush.application.catalog.model.PromoterResult;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.promoter.Promoter;
 import com.ticketrush.domain.promoter.PromoterRepository;
@@ -20,37 +21,40 @@ public class PromoterServiceImpl implements PromoterService {
 
     @Override
     @Transactional
-    public Promoter create(String name, String countryCode, String homepageUrl) {
+    public PromoterResult create(String name, String countryCode, String homepageUrl) {
         String normalizedName = normalizeRequired(name, "name");
         promoterRepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -> {
             throw new IllegalArgumentException("Promoter already exists: " + existing.getName());
         });
-        return promoterRepository.save(new Promoter(normalizedName, countryCode, homepageUrl));
+        Promoter saved = promoterRepository.save(new Promoter(normalizedName, countryCode, homepageUrl));
+        return PromoterResult.from(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Promoter> search(String keyword, Pageable pageable) {
-        return promoterRepository.searchPaged(normalize(keyword), pageable);
+    public Page<PromoterResult> search(String keyword, Pageable pageable) {
+        return promoterRepository.searchPaged(normalize(keyword), pageable)
+                .map(PromoterResult::from);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Promoter> getAll() {
-        return promoterRepository.findAll();
+    public List<PromoterResult> getAll() {
+        return promoterRepository.findAll().stream()
+                .map(PromoterResult::from)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Promoter getById(Long id) {
-        return promoterRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Promoter not found: " + id));
+    public PromoterResult getById(Long id) {
+        return PromoterResult.from(requirePromoter(id));
     }
 
     @Override
     @Transactional
-    public Promoter update(Long id, String name, String countryCode, String homepageUrl) {
-        Promoter promoter = getById(id);
+    public PromoterResult update(Long id, String name, String countryCode, String homepageUrl) {
+        Promoter promoter = requirePromoter(id);
         String normalizedName = normalizeRequired(name, "name");
         promoterRepository.findByNameIgnoreCase(normalizedName)
                 .filter(existing -> !existing.getId().equals(id))
@@ -58,7 +62,7 @@ public class PromoterServiceImpl implements PromoterService {
                     throw new IllegalArgumentException("Promoter already exists: " + existing.getName());
                 });
         promoter.update(normalizedName, countryCode, homepageUrl);
-        return promoter;
+        return PromoterResult.from(promoter);
     }
 
     @Override
@@ -71,6 +75,11 @@ public class PromoterServiceImpl implements PromoterService {
             throw new IllegalArgumentException("Promoter is referenced by concerts: " + id);
         }
         promoterRepository.deleteById(id);
+    }
+
+    private Promoter requirePromoter(Long id) {
+        return promoterRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Promoter not found: " + id));
     }
 
     private String normalizeRequired(String value, String fieldName) {

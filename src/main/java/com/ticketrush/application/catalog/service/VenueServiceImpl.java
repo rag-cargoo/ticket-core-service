@@ -1,5 +1,6 @@
 package com.ticketrush.application.catalog.service;
 
+import com.ticketrush.application.catalog.model.VenueResult;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.venue.Venue;
 import com.ticketrush.domain.venue.VenueRepository;
@@ -20,37 +21,40 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     @Transactional
-    public Venue create(String name, String city, String countryCode, String address) {
+    public VenueResult create(String name, String city, String countryCode, String address) {
         String normalizedName = normalizeRequired(name, "name");
         venueRepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -> {
             throw new IllegalArgumentException("Venue already exists: " + existing.getName());
         });
-        return venueRepository.save(new Venue(normalizedName, city, countryCode, address));
+        Venue saved = venueRepository.save(new Venue(normalizedName, city, countryCode, address));
+        return VenueResult.from(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Venue> search(String keyword, Pageable pageable) {
-        return venueRepository.searchPaged(normalize(keyword), pageable);
+    public Page<VenueResult> search(String keyword, Pageable pageable) {
+        return venueRepository.searchPaged(normalize(keyword), pageable)
+                .map(VenueResult::from);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Venue> getAll() {
-        return venueRepository.findAll();
+    public List<VenueResult> getAll() {
+        return venueRepository.findAll().stream()
+                .map(VenueResult::from)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Venue getById(Long id) {
-        return venueRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Venue not found: " + id));
+    public VenueResult getById(Long id) {
+        return VenueResult.from(requireVenue(id));
     }
 
     @Override
     @Transactional
-    public Venue update(Long id, String name, String city, String countryCode, String address) {
-        Venue venue = getById(id);
+    public VenueResult update(Long id, String name, String city, String countryCode, String address) {
+        Venue venue = requireVenue(id);
         String normalizedName = normalizeRequired(name, "name");
         venueRepository.findByNameIgnoreCase(normalizedName)
                 .filter(existing -> !existing.getId().equals(id))
@@ -58,7 +62,7 @@ public class VenueServiceImpl implements VenueService {
                     throw new IllegalArgumentException("Venue already exists: " + existing.getName());
                 });
         venue.update(normalizedName, city, countryCode, address);
-        return venue;
+        return VenueResult.from(venue);
     }
 
     @Override
@@ -71,6 +75,11 @@ public class VenueServiceImpl implements VenueService {
             throw new IllegalArgumentException("Venue is referenced by concert options: " + id);
         }
         venueRepository.deleteById(id);
+    }
+
+    private Venue requireVenue(Long id) {
+        return venueRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Venue not found: " + id));
     }
 
     private String normalizeRequired(String value, String fieldName) {

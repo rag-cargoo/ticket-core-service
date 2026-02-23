@@ -1,5 +1,6 @@
 package com.ticketrush.application.catalog.service;
 
+import com.ticketrush.application.catalog.model.EntertainmentResult;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.ArtistRepository;
@@ -20,37 +21,40 @@ public class EntertainmentServiceImpl implements EntertainmentService {
 
     @Override
     @Transactional
-    public Entertainment create(String name, String countryCode, String homepageUrl) {
+    public EntertainmentResult create(String name, String countryCode, String homepageUrl) {
         String normalizedName = normalizeRequired(name, "name");
         entertainmentRepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -> {
             throw new IllegalArgumentException("Entertainment already exists: " + existing.getName());
         });
-        return entertainmentRepository.save(new Entertainment(normalizedName, countryCode, homepageUrl));
+        Entertainment saved = entertainmentRepository.save(new Entertainment(normalizedName, countryCode, homepageUrl));
+        return EntertainmentResult.from(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Entertainment> search(String keyword, Pageable pageable) {
-        return entertainmentRepository.searchPaged(normalize(keyword), pageable);
+    public Page<EntertainmentResult> search(String keyword, Pageable pageable) {
+        return entertainmentRepository.searchPaged(normalize(keyword), pageable)
+                .map(EntertainmentResult::from);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Entertainment> getAll() {
-        return entertainmentRepository.findAll();
+    public List<EntertainmentResult> getAll() {
+        return entertainmentRepository.findAll().stream()
+                .map(EntertainmentResult::from)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Entertainment getById(Long id) {
-        return entertainmentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Entertainment not found: " + id));
+    public EntertainmentResult getById(Long id) {
+        return EntertainmentResult.from(requireEntertainment(id));
     }
 
     @Override
     @Transactional
-    public Entertainment update(Long id, String name, String countryCode, String homepageUrl) {
-        Entertainment entertainment = getById(id);
+    public EntertainmentResult update(Long id, String name, String countryCode, String homepageUrl) {
+        Entertainment entertainment = requireEntertainment(id);
         String normalizedName = normalizeRequired(name, "name");
         entertainmentRepository.findByNameIgnoreCase(normalizedName)
                 .filter(existing -> !existing.getId().equals(id))
@@ -59,7 +63,7 @@ public class EntertainmentServiceImpl implements EntertainmentService {
                 });
         entertainment.rename(normalizedName);
         entertainment.updateMetadata(countryCode, homepageUrl);
-        return entertainment;
+        return EntertainmentResult.from(entertainment);
     }
 
     @Override
@@ -72,6 +76,11 @@ public class EntertainmentServiceImpl implements EntertainmentService {
             throw new IllegalArgumentException("Entertainment is referenced by artists: " + id);
         }
         entertainmentRepository.deleteById(id);
+    }
+
+    private Entertainment requireEntertainment(Long id) {
+        return entertainmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entertainment not found: " + id));
     }
 
     private String normalizeRequired(String value, String fieldName) {

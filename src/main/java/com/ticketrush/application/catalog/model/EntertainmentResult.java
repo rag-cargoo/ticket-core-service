@@ -1,6 +1,6 @@
-package com.ticketrush.api.dto;
+package com.ticketrush.application.catalog.model;
 
-import com.ticketrush.application.catalog.model.EntertainmentResult;
+import com.ticketrush.domain.entertainment.Entertainment;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,14 +8,14 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntertainmentResponse {
+public class EntertainmentResult {
     private Long id;
     private String name;
     private String countryCode;
     private String homepageUrl;
 
-    public static EntertainmentResponse from(EntertainmentResult entertainment) {
-        return new EntertainmentResponse(
+    public static EntertainmentResult from(Entertainment entertainment) {
+        return new EntertainmentResult(
                 entertainment.getId(),
                 entertainment.getName(),
                 entertainment.getCountryCode(),

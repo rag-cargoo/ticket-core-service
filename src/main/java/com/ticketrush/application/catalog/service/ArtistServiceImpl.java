@@ -1,5 +1,6 @@
 package com.ticketrush.application.catalog.service;
 
+import com.ticketrush.application.catalog.model.ArtistResult;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
@@ -24,38 +25,41 @@ public class ArtistServiceImpl implements ArtistService {
 
     @Override
     @Transactional
-    public Artist create(String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
+    public ArtistResult create(String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
         String normalizedName = normalizeRequired(name, "name");
         Entertainment entertainment = getEntertainment(entertainmentId);
         artistRepository.findByNameIgnoreCase(normalizedName).ifPresent(existing -> {
             throw new IllegalArgumentException("Artist already exists: " + existing.getName());
         });
-        return artistRepository.save(new Artist(normalizedName, entertainment, displayName, genre, debutDate));
+        Artist saved = artistRepository.save(new Artist(normalizedName, entertainment, displayName, genre, debutDate));
+        return ArtistResult.from(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Artist> search(String keyword, Long entertainmentId, Pageable pageable) {
-        return artistRepository.searchPaged(normalize(keyword), entertainmentId, pageable);
+    public Page<ArtistResult> search(String keyword, Long entertainmentId, Pageable pageable) {
+        return artistRepository.searchPaged(normalize(keyword), entertainmentId, pageable)
+                .map(ArtistResult::from);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Artist> getAll() {
-        return artistRepository.findAll();
+    public List<ArtistResult> getAll() {
+        return artistRepository.findAll().stream()
+                .map(ArtistResult::from)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Artist getById(Long id) {
-        return artistRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Artist not found: " + id));
+    public ArtistResult getById(Long id) {
+        return ArtistResult.from(requireArtist(id));
     }
 
     @Override
     @Transactional
-    public Artist update(Long id, String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
-        Artist artist = getById(id);
+    public ArtistResult update(Long id, String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate) {
+        Artist artist = requireArtist(id);
         String normalizedName = normalizeRequired(name, "name");
         Entertainment entertainment = getEntertainment(entertainmentId);
         artistRepository.findByNameIgnoreCase(normalizedName)
@@ -66,7 +70,7 @@ public class ArtistServiceImpl implements ArtistService {
 
         artist.rename(normalizedName);
         artist.updateProfile(entertainment, displayName, genre, debutDate);
-        return artist;
+        return ArtistResult.from(artist);
     }
 
     @Override
@@ -79,6 +83,11 @@ public class ArtistServiceImpl implements ArtistService {
             throw new IllegalArgumentException("Artist is referenced by concerts: " + id);
         }
         artistRepository.deleteById(id);
+    }
+
+    private Artist requireArtist(Long id) {
+        return artistRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Artist not found: " + id));
     }
 
     private Entertainment getEntertainment(Long entertainmentId) {

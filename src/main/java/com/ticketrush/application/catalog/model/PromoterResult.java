@@ -1,6 +1,6 @@
-package com.ticketrush.api.dto;
+package com.ticketrush.application.catalog.model;
 
-import com.ticketrush.application.catalog.model.PromoterResult;
+import com.ticketrush.domain.promoter.Promoter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,14 +8,14 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PromoterResponse {
+public class PromoterResult {
     private Long id;
     private String name;
     private String countryCode;
     private String homepageUrl;
 
-    public static PromoterResponse from(PromoterResult promoter) {
-        return new PromoterResponse(
+    public static PromoterResult from(Promoter promoter) {
+        return new PromoterResult(
                 promoter.getId(),
                 promoter.getName(),
                 promoter.getCountryCode(),

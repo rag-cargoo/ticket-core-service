@@ -46,7 +46,7 @@ class EntertainmentArtistCrudDataJpaTest {
                 null
         );
 
-        assertThat(updated.getEntertainment().getId()).isEqualTo(entertainment.getId());
+        assertThat(updated.getEntertainmentId()).isEqualTo(entertainment.getId());
         assertThat(updated.getDisplayName()).isEqualTo("NewJeans");
         assertThat(updated.getGenre()).isEqualTo("Pop");
     }

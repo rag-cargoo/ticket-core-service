@@ -1,6 +1,6 @@
 package com.ticketrush.application.catalog.port.inbound;
 
-import com.ticketrush.domain.artist.Artist;
+import com.ticketrush.application.catalog.model.ArtistResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -9,15 +9,15 @@ import java.util.List;
 
 public interface ArtistUseCase {
 
-    Artist create(String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate);
+    ArtistResult create(String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate);
 
-    Page<Artist> search(String keyword, Long entertainmentId, Pageable pageable);
+    Page<ArtistResult> search(String keyword, Long entertainmentId, Pageable pageable);
 
-    List<Artist> getAll();
+    List<ArtistResult> getAll();
 
-    Artist getById(Long id);
+    ArtistResult getById(Long id);
 
-    Artist update(Long id, String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate);
+    ArtistResult update(Long id, String name, Long entertainmentId, String displayName, String genre, LocalDate debutDate);
 
     void delete(Long id);
 }
