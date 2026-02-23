@@ -1,4 +1,4 @@
-package com.ticketrush.domain.user.service;
+package com.ticketrush.application.user.service;
 
 import com.ticketrush.domain.user.UserTier;
 import org.junit.jupiter.api.Test;

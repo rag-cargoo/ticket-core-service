@@ -1,13 +1,13 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.auth.service.AuthSessionService;
+import com.ticketrush.application.user.service.UserService;
 import com.ticketrush.domain.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
-import com.ticketrush.domain.auth.service.AuthSessionService;
 import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserTier;
-import com.ticketrush.domain.user.service.UserService;
 import com.ticketrush.global.config.AuthJwtProperties;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;

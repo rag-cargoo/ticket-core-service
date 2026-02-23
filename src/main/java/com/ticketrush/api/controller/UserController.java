@@ -1,6 +1,6 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.domain.user.service.UserService;
+import com.ticketrush.application.user.service.UserService;
 import com.ticketrush.api.dto.UserRequest;
 import com.ticketrush.api.dto.UserResponse;
 import com.ticketrush.api.dto.UserUpdateRequest;

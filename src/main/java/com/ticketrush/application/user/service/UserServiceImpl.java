@@ -1,4 +1,4 @@
-package com.ticketrush.domain.user.service;
+package com.ticketrush.application.user.service;
 
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
