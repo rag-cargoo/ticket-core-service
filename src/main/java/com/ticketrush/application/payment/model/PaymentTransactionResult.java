@@ -1,6 +1,6 @@
-package com.ticketrush.api.dto.payment;
+package com.ticketrush.application.payment.model;
 
-import com.ticketrush.application.payment.model.PaymentTransactionResult;
+import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentTransactionResponse {
+public class PaymentTransactionResult {
     private Long id;
     private Long userId;
     private Long reservationId;
@@ -22,13 +22,13 @@ public class PaymentTransactionResponse {
     private String description;
     private LocalDateTime createdAt;
 
-    public static PaymentTransactionResponse from(PaymentTransactionResult transaction) {
-        return new PaymentTransactionResponse(
+    public static PaymentTransactionResult from(PaymentTransaction transaction) {
+        return new PaymentTransactionResult(
                 transaction.getId(),
-                transaction.getUserId(),
+                transaction.getUser().getId(),
                 transaction.getReservationId(),
-                transaction.getType(),
-                transaction.getStatus(),
+                transaction.getType() == null ? null : transaction.getType().name(),
+                transaction.getStatus() == null ? null : transaction.getStatus().name(),
                 transaction.getAmount(),
                 transaction.getBalanceAfterAmount(),
                 transaction.getIdempotencyKey(),

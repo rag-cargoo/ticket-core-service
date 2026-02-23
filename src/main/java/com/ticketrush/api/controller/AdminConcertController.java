@@ -31,7 +31,7 @@ public class AdminConcertController {
     public ResponseEntity<ConcertResponse> create(@RequestBody AdminConcertUpsertRequest request) {
         if (request.getArtistId() != null) {
             return ResponseEntity.status(201).body(ConcertResponse.from(
-                    concertUseCase.createConcertByReferences(
+                    concertUseCase.createConcertByReferencesResult(
                             request.getTitle(),
                             request.getArtistId(),
                             request.getPromoterId(),
@@ -41,7 +41,7 @@ public class AdminConcertController {
         }
 
         return ResponseEntity.status(201).body(ConcertResponse.from(
-                concertUseCase.createConcert(
+                concertUseCase.createConcertResult(
                         request.getTitle(),
                         request.getArtistName(),
                         request.getEntertainmentName(),
@@ -60,7 +60,7 @@ public class AdminConcertController {
 
     @GetMapping("/{concertId}")
     public ResponseEntity<ConcertResponse> getById(@PathVariable Long concertId) {
-        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.getConcert(concertId)));
+        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.getConcertResult(concertId)));
     }
 
     @PutMapping("/{concertId}")
@@ -70,7 +70,7 @@ public class AdminConcertController {
     ) {
         if (request.getArtistId() != null) {
             return ResponseEntity.ok(ConcertResponse.from(
-                    concertUseCase.updateConcertByReferences(
+                    concertUseCase.updateConcertByReferencesResult(
                             concertId,
                             request.getTitle(),
                             request.getArtistId(),
@@ -81,7 +81,7 @@ public class AdminConcertController {
         }
 
         return ResponseEntity.ok(ConcertResponse.from(
-                concertUseCase.updateConcert(
+                concertUseCase.updateConcertResult(
                         concertId,
                         request.getTitle(),
                         request.getArtistName(),
@@ -114,7 +114,7 @@ public class AdminConcertController {
             throw new IllegalArgumentException("concertDate is required");
         }
         ConcertOptionResponse response = ConcertOptionResponse.from(
-                concertUseCase.addOption(
+                concertUseCase.addOptionResult(
                         concertId,
                         request.getConcertDate(),
                         request.getVenueId(),
@@ -134,7 +134,7 @@ public class AdminConcertController {
             @RequestBody AdminConcertOptionUpdateRequest request
     ) {
         return ResponseEntity.ok(ConcertOptionResponse.from(
-                concertUseCase.updateOption(
+                concertUseCase.updateOptionResult(
                         optionId,
                         request.getConcertDate(),
                         request.getVenueId(),
@@ -164,7 +164,7 @@ public class AdminConcertController {
         } catch (IOException e) {
             throw new IllegalArgumentException("failed to read thumbnail image");
         }
-        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.updateThumbnail(concertId, imageBytes, contentType)));
+        return ResponseEntity.ok(ConcertResponse.from(concertUseCase.updateThumbnailResult(concertId, imageBytes, contentType)));
     }
 
     @DeleteMapping("/{concertId}/thumbnail")

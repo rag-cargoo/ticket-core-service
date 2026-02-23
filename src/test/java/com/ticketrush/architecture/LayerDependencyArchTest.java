@@ -285,6 +285,21 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.user..");
 
     @ArchTest
+    static final ArchRule reservation_and_payment_api_dto_should_not_depend_on_domain_models =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.dto.ReservationResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.reservation.ReservationLifecycleResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.reservation.SalesPolicyResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.reservation.AdminRefundAuditResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.payment.PaymentTransactionResponse")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "com.ticketrush.domain.payment..",
+                            "com.ticketrush.domain.reservation..",
+                            "com.ticketrush.domain.user.."
+                    );
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")

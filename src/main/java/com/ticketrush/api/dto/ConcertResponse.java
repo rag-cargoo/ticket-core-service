@@ -1,12 +1,11 @@
 package com.ticketrush.api.dto;
 
-import com.ticketrush.domain.concert.entity.Concert;
+import com.ticketrush.application.concert.model.ConcertResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 @Getter
 @NoArgsConstructor
@@ -29,39 +28,24 @@ public class ConcertResponse {
     private String promoterCountryCode;
     private String promoterHomepageUrl;
 
-    public static ConcertResponse from(Concert concert) {
-        var artist = concert.getArtist();
-        var entertainment = artist.getEntertainment();
-        var promoter = concert.getPromoter();
+    public static ConcertResponse from(ConcertResult concert) {
         return new ConcertResponse(
                 concert.getId(),
                 concert.getTitle(),
-                artist.getName(),
-                artist.getId(),
-                artist.getDisplayName(),
-                artist.getGenre(),
-                artist.getDebutDate(),
-                entertainment != null ? entertainment.getName() : null,
-                entertainment != null ? entertainment.getCountryCode() : null,
-                entertainment != null ? entertainment.getHomepageUrl() : null,
+                concert.getArtistName(),
+                concert.getArtistId(),
+                concert.getArtistDisplayName(),
+                concert.getArtistGenre(),
+                concert.getArtistDebutDate(),
+                concert.getEntertainmentName(),
+                concert.getEntertainmentCountryCode(),
+                concert.getEntertainmentHomepageUrl(),
                 concert.getYoutubeVideoUrl(),
-                resolveThumbnailUrl(concert),
-                promoter != null ? promoter.getId() : null,
-                promoter != null ? promoter.getName() : null,
-                promoter != null ? promoter.getCountryCode() : null,
-                promoter != null ? promoter.getHomepageUrl() : null
+                concert.getThumbnailUrl(),
+                concert.getPromoterId(),
+                concert.getPromoterName(),
+                concert.getPromoterCountryCode(),
+                concert.getPromoterHomepageUrl()
         );
-    }
-
-    private static String resolveThumbnailUrl(Concert concert) {
-        if (!concert.hasThumbnail()) {
-            return null;
-        }
-        String base = "/api/concerts/" + concert.getId() + "/thumbnail";
-        if (concert.getThumbnailUpdatedAt() == null) {
-            return base;
-        }
-        long ts = concert.getThumbnailUpdatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
-        return base + "?ts=" + ts;
     }
 }

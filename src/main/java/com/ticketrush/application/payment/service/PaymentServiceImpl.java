@@ -1,5 +1,6 @@
 package com.ticketrush.application.payment.service;
 
+import com.ticketrush.application.payment.model.PaymentTransactionResult;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -113,6 +114,20 @@ public class PaymentServiceImpl implements PaymentService {
     public List<PaymentTransaction> getTransactions(Long userId, int limit) {
         int normalizedLimit = normalizeLimit(limit);
         return paymentTransactionRepository.findByUserIdOrderByIdDesc(userId, PageRequest.of(0, normalizedLimit));
+    }
+
+    @Override
+    @Transactional
+    public PaymentTransactionResult chargeWalletResult(Long userId, Long amount, String idempotencyKey, String description) {
+        return PaymentTransactionResult.from(chargeWallet(userId, amount, idempotencyKey, description));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentTransactionResult> getTransactionResults(Long userId, int limit) {
+        return getTransactions(userId, limit).stream()
+                .map(PaymentTransactionResult::from)
+                .toList();
     }
 
     private PaymentTransaction findByIdempotencyKey(String idempotencyKey) {

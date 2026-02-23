@@ -33,7 +33,7 @@ public class ConcertController {
      */
     @PostMapping("/setup")
     public ResponseEntity<String> setupConcert(@RequestBody ConcertSetupRequest request) {
-        var concert = concertUseCase.createConcert(
+        var concert = concertUseCase.createConcertResult(
                 request.getTitle(),
                 request.getArtistName(),
                 request.getEntertainmentName(),
@@ -46,7 +46,7 @@ public class ConcertController {
                 request.getPromoterCountryCode(),
                 request.getPromoterHomepageUrl()
         );
-        var option = concertUseCase.addOption(concert.getId(), request.getConcertDate(), null);
+        var option = concertUseCase.addOptionResult(concert.getId(), request.getConcertDate(), null);
         concertUseCase.createSeats(option.getId(), request.getSeatCount());
 
         return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
@@ -66,7 +66,7 @@ public class ConcertController {
      */
     @GetMapping
     public ResponseEntity<List<ConcertResponse>> getConcerts() {
-        return ResponseEntity.ok(concertUseCase.getConcerts().stream()
+        return ResponseEntity.ok(concertUseCase.getConcertResults().stream()
                 .map(ConcertResponse::from)
                 .collect(Collectors.toList()));
     }
@@ -88,7 +88,7 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertUseCase.searchConcerts(keyword, artistName, entertainmentName, pageable)
+        var result = concertUseCase.searchConcertResults(keyword, artistName, entertainmentName, pageable)
                 .map(ConcertResponse::from);
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
@@ -99,7 +99,7 @@ public class ConcertController {
      */
     @GetMapping("/{id}/options")
     public ResponseEntity<List<ConcertOptionResponse>> getOptions(@PathVariable Long id) {
-        return ResponseEntity.ok(concertUseCase.getConcertOptions(id).stream()
+        return ResponseEntity.ok(concertUseCase.getConcertOptionResults(id).stream()
                 .map(ConcertOptionResponse::from)
                 .collect(Collectors.toList()));
     }
@@ -117,7 +117,7 @@ public class ConcertController {
      */
     @GetMapping("/options/{optionId}/seats")
     public ResponseEntity<List<SeatResponse>> getAvailableSeats(@PathVariable Long optionId) {
-        return ResponseEntity.ok(concertUseCase.getAvailableSeats(optionId).stream()
+        return ResponseEntity.ok(concertUseCase.getAvailableSeatResults(optionId).stream()
                 .map(SeatResponse::from)
                 .collect(Collectors.toList()));
     }

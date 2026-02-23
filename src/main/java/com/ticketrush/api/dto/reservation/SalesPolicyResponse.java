@@ -1,8 +1,6 @@
 package com.ticketrush.api.dto.reservation;
 
 import com.ticketrush.application.reservation.model.SalesPolicyResult;
-import com.ticketrush.domain.reservation.entity.SalesPolicy;
-import com.ticketrush.domain.user.UserTier;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,21 +15,9 @@ public class SalesPolicyResponse {
     private Long concertId;
     private LocalDateTime presaleStartAt;
     private LocalDateTime presaleEndAt;
-    private UserTier presaleMinimumTier;
+    private String presaleMinimumTier;
     private LocalDateTime generalSaleStartAt;
     private int maxReservationsPerUser;
-
-    public static SalesPolicyResponse from(SalesPolicy policy) {
-        return new SalesPolicyResponse(
-                policy.getId(),
-                policy.getConcert().getId(),
-                policy.getPresaleStartAt(),
-                policy.getPresaleEndAt(),
-                policy.getPresaleMinimumTier(),
-                policy.getGeneralSaleStartAt(),
-                policy.getMaxReservationsPerUser()
-        );
-    }
 
     public static SalesPolicyResponse from(SalesPolicyResult result) {
         return new SalesPolicyResponse(

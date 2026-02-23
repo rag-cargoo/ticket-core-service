@@ -1,7 +1,5 @@
 package com.ticketrush.application.reservation.model;
 
-import com.ticketrush.domain.user.UserRole;
-
 import java.time.LocalDateTime;
 
 public record AdminRefundAuditRecord(
@@ -9,7 +7,7 @@ public record AdminRefundAuditRecord(
         Long reservationId,
         Long targetUserId,
         Long actorUserId,
-        UserRole actorRole,
+        String actorRole,
         AdminRefundAuditResultType result,
         String detailMessage,
         LocalDateTime occurredAt

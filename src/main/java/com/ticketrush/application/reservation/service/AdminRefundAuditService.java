@@ -106,7 +106,7 @@ public class AdminRefundAuditService implements AdminRefundAuditUseCase {
                 log.getReservationId(),
                 log.getTargetUserId(),
                 log.getActorUserId(),
-                log.getActorRole(),
+                log.getActorRole() == null ? null : log.getActorRole().name(),
                 AdminRefundAuditResultType.valueOf(log.getResult().name()),
                 log.getDetailMessage(),
                 log.getOccurredAt()

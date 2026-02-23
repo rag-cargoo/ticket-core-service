@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto;
 
-import com.ticketrush.domain.concert.entity.ConcertOption;
+import com.ticketrush.application.concert.model.ConcertOptionResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,17 +20,16 @@ public class ConcertOptionResponse {
     private String venueCountryCode;
     private String venueAddress;
 
-    public static ConcertOptionResponse from(ConcertOption option) {
-        var venue = option.getVenue();
+    public static ConcertOptionResponse from(ConcertOptionResult option) {
         return new ConcertOptionResponse(
                 option.getId(),
                 option.getConcertDate(),
                 option.getTicketPriceAmount(),
-                venue != null ? venue.getId() : null,
-                venue != null ? venue.getName() : null,
-                venue != null ? venue.getCity() : null,
-                venue != null ? venue.getCountryCode() : null,
-                venue != null ? venue.getAddress() : null
+                option.getVenueId(),
+                option.getVenueName(),
+                option.getVenueCity(),
+                option.getVenueCountryCode(),
+                option.getVenueAddress()
         );
     }
 }

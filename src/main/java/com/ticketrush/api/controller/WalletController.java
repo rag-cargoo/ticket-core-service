@@ -33,7 +33,7 @@ public class WalletController {
             @PathVariable Long userId,
             @RequestBody WalletChargeRequest request
     ) {
-        return ResponseEntity.ok(PaymentTransactionResponse.from(paymentUseCase.chargeWallet(
+        return ResponseEntity.ok(PaymentTransactionResponse.from(paymentUseCase.chargeWalletResult(
                 userId,
                 request.getAmount(),
                 request.getIdempotencyKey(),
@@ -47,7 +47,7 @@ public class WalletController {
             @RequestParam(defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(
-                paymentUseCase.getTransactions(userId, limit).stream()
+                paymentUseCase.getTransactionResults(userId, limit).stream()
                         .map(PaymentTransactionResponse::from)
                         .toList()
         );

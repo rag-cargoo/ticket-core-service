@@ -10,12 +10,14 @@ import com.ticketrush.domain.reservation.entity.SalesPolicy;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.user.User;
+import com.ticketrush.domain.user.UserTier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +44,7 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
                     concert,
                     command.getPresaleStartAt(),
                     command.getPresaleEndAt(),
-                    command.getPresaleMinimumTier(),
+                    resolvePresaleMinimumTier(command.getPresaleMinimumTier()),
                     command.getGeneralSaleStartAt(),
                     command.getMaxReservationsPerUser()
             );
@@ -50,7 +52,7 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
             policy.update(
                     command.getPresaleStartAt(),
                     command.getPresaleEndAt(),
-                    command.getPresaleMinimumTier(),
+                    resolvePresaleMinimumTier(command.getPresaleMinimumTier()),
                     command.getGeneralSaleStartAt(),
                     command.getMaxReservationsPerUser()
             );
@@ -87,6 +89,17 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
                             + ", concertId=" + concertId
                             + ", limit=" + policy.getMaxReservationsPerUser()
             );
+        }
+    }
+
+    private UserTier resolvePresaleMinimumTier(String rawTier) {
+        if (rawTier == null || rawTier.isBlank()) {
+            return null;
+        }
+        try {
+            return UserTier.valueOf(rawTier.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid presale minimum tier: " + rawTier);
         }
     }
 }

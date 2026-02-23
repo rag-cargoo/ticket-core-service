@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto;
 
-import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.application.concert.model.SeatResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ public class SeatResponse {
     private String seatNumber;
     private String status;
 
-    public static SeatResponse from(Seat seat) {
-        return new SeatResponse(seat.getId(), seat.getSeatNumber(), seat.getStatus().name());
+    public static SeatResponse from(SeatResult seat) {
+        return new SeatResponse(seat.getId(), seat.getSeatNumber(), seat.getStatus());
     }
 }
