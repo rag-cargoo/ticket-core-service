@@ -8,7 +8,6 @@ import com.ticketrush.application.auth.model.AuthUserPrincipal;
 import com.ticketrush.application.auth.model.AuthTokenResult;
 import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
 import com.ticketrush.application.user.port.inbound.UserUseCase;
-import com.ticketrush.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
@@ -51,8 +50,7 @@ public class AuthController {
         if (principal == null) {
             throw new IllegalArgumentException("authenticated user is required");
         }
-        User user = userUseCase.getUser(principal.getUserId());
-        return ResponseEntity.ok(AuthMeResponse.from(user));
+        return ResponseEntity.ok(AuthMeResponse.from(userUseCase.getUser(principal.getUserId())));
     }
 
     private String resolveBearerToken(String authorizationHeader) {

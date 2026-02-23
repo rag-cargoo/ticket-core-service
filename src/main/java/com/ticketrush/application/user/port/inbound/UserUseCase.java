@@ -1,19 +1,18 @@
 package com.ticketrush.application.user.port.inbound;
 
-import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.UserTier;
+import com.ticketrush.application.user.model.UserResult;
 
 import java.util.List;
 
 public interface UserUseCase {
 
-    User createUser(String username, UserTier tier);
+    UserResult createUser(String username, String tier);
 
-    List<User> getUsers();
+    List<UserResult> getUsers();
 
-    User getUser(Long id);
+    UserResult getUser(Long id);
 
-    User updateUser(Long id, String username, UserTier tier, String email, String displayName);
+    UserResult updateUser(Long id, String username, String tier, String email, String displayName);
 
     void deleteUser(Long id);
 }

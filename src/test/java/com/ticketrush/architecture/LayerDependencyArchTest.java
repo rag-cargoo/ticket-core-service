@@ -274,6 +274,17 @@ class LayerDependencyArchTest {
                     .haveFullyQualifiedName("com.ticketrush.domain.user.SocialProvider");
 
     @ArchTest
+    static final ArchRule user_api_should_not_depend_on_domain_user_models =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.UserController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.AuthController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.UserRequest")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.UserUpdateRequest")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.UserResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.auth.AuthMeResponse")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.user..");
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")

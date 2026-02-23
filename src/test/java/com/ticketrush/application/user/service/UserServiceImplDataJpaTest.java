@@ -1,6 +1,5 @@
 package com.ticketrush.application.user.service;
 
-import com.ticketrush.domain.user.UserTier;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -18,26 +17,26 @@ class UserServiceImplDataJpaTest {
 
     @Test
     void updateUser_updatesTierAndProfileFields() {
-        var created = userService.createUser("alpha", UserTier.BASIC);
+        var created = userService.createUser("alpha", "BASIC");
 
         var updated = userService.updateUser(
                 created.getId(),
                 "alpha-updated",
-                UserTier.VIP,
+                "VIP",
                 "alpha@example.com",
                 "Alpha User"
         );
 
         assertThat(updated.getUsername()).isEqualTo("alpha-updated");
-        assertThat(updated.getTier()).isEqualTo(UserTier.VIP);
+        assertThat(updated.getTier()).isEqualTo("VIP");
         assertThat(updated.getEmail()).isEqualTo("alpha@example.com");
         assertThat(updated.getDisplayName()).isEqualTo("Alpha User");
     }
 
     @Test
     void updateUser_throwsWhenUsernameDuplicated() {
-        var first = userService.createUser("first-user", UserTier.BASIC);
-        var second = userService.createUser("second-user", UserTier.BASIC);
+        var first = userService.createUser("first-user", "BASIC");
+        var second = userService.createUser("second-user", "BASIC");
 
         assertThatThrownBy(() -> userService.updateUser(
                 second.getId(),
@@ -48,5 +47,12 @@ class UserServiceImplDataJpaTest {
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Username already exists");
+    }
+
+    @Test
+    void createUser_throwsWhenTierIsInvalid() {
+        assertThatThrownBy(() -> userService.createUser("invalid-tier-user", "gold-plus"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid user tier");
     }
 }

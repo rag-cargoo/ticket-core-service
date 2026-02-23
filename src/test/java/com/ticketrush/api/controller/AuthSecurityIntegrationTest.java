@@ -3,11 +3,10 @@ package com.ticketrush.api.controller;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
 import com.ticketrush.application.auth.port.inbound.AuthTokenAuthenticationUseCase;
 import com.ticketrush.application.auth.service.AuthSessionService;
+import com.ticketrush.application.user.model.UserResult;
 import com.ticketrush.application.user.service.UserService;
 import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
-import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
-import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.when;
@@ -54,8 +52,17 @@ class AuthSecurityIntegrationTest {
 
     @Test
     void me_shouldReturnProfileWhenAccessTokenIsValid() throws Exception {
-        User user = new User("token-user", UserTier.BASIC, UserRole.USER);
-        ReflectionTestUtils.setField(user, "id", 101L);
+        UserResult user = new UserResult(
+                101L,
+                "token-user",
+                "BASIC",
+                "USER",
+                null,
+                null,
+                null,
+                null,
+                200_000L
+        );
         when(userService.getUser(101L)).thenReturn(user);
         when(authTokenAuthenticationUseCase.authenticateAccessToken("valid-access-token"))
                 .thenReturn(new AuthUserPrincipal(101L, "token-user", UserRole.USER));
