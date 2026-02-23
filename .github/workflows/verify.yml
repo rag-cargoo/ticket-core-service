@@ -21,7 +21,21 @@ jobs:
           cache: gradle
 
       - name: Ensure executable bits
-        run: chmod +x ./gradlew
+        run: |
+          chmod +x ./gradlew
+          chmod +x ./scripts/api/*.sh
+          chmod +x ./scripts/ops/*.sh
+          chmod +x ./scripts/perf/*.sh
 
-      - name: Run architecture guardrail tests
-        run: ./gradlew --no-daemon test --tests 'com.ticketrush.architecture.LayerDependencyArchTest'
+      - name: Compile
+        run: ./gradlew --no-daemon compileJava compileTestJava
+
+      - name: Run architecture + core regression tests
+        run: |
+          ./gradlew --no-daemon test \
+            --tests 'com.ticketrush.architecture.LayerDependencyArchTest' \
+            --tests 'com.ticketrush.api.controller.AuthSecurityIntegrationTest' \
+            --tests 'com.ticketrush.api.controller.SocialAuthControllerIntegrationTest' \
+            --tests 'com.ticketrush.application.payment.service.PaymentServiceIntegrationTest' \
+            --tests 'com.ticketrush.application.reservation.service.ReservationLifecycleServiceIntegrationTest' \
+            --tests 'com.ticketrush.infrastructure.messaging.KafkaPushEventConsumerTest'

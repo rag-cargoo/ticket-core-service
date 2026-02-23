@@ -8,8 +8,8 @@ import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import com.ticketrush.application.waitingqueue.port.inbound.WaitingQueueRuntimeUseCase;
 import com.ticketrush.global.monitoring.PushMonitoringMetrics;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +19,6 @@ import java.util.Set;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WaitingQueueScheduler {
 
     private static final String ACTIVATE_LOCK_KEY_PREFIX = "scheduler:waiting-queue:activate:";
@@ -29,6 +28,18 @@ public class WaitingQueueScheduler {
     private final WaitingQueueConfigPort properties;
     private final QueueRuntimePushPort pushNotifier;
     private final SchedulerLockService schedulerLockService;
+
+    public WaitingQueueScheduler(
+            WaitingQueueRuntimeUseCase waitingQueueRuntimeUseCase,
+            WaitingQueueConfigPort properties,
+            @Qualifier("queueRuntimePushNotifier") QueueRuntimePushPort pushNotifier,
+            SchedulerLockService schedulerLockService
+    ) {
+        this.waitingQueueRuntimeUseCase = waitingQueueRuntimeUseCase;
+        this.properties = properties;
+        this.pushNotifier = pushNotifier;
+        this.schedulerLockService = schedulerLockService;
+    }
 
     // 대기열 상위 유저를 주기적으로 활성화
     @Scheduled(fixedDelayString = "${app.waiting-queue.activation-delay-millis}")

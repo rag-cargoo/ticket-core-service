@@ -5,7 +5,7 @@ import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.application.reservation.port.outbound.ReservationConfigPort;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -15,7 +15,6 @@ import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class SeatSoftLockServiceImpl implements SeatSoftLockService {
 
     private static final String STATUS_SELECTING = "SELECTING";
@@ -26,6 +25,18 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
     private final ReservationSeatPort reservationSeatPort;
     private final ReservationConfigPort reservationProperties;
     private final SeatMapPushPort pushNotifier;
+
+    public SeatSoftLockServiceImpl(
+            SeatSoftLockStore seatSoftLockStore,
+            ReservationSeatPort reservationSeatPort,
+            ReservationConfigPort reservationProperties,
+            @Qualifier("seatMapPushNotifier") SeatMapPushPort pushNotifier
+    ) {
+        this.seatSoftLockStore = seatSoftLockStore;
+        this.reservationSeatPort = reservationSeatPort;
+        this.reservationProperties = reservationProperties;
+        this.pushNotifier = pushNotifier;
+    }
 
     @Override
     public SeatSoftLockAcquireResult acquire(Long userId, Long seatId, String requestId) {

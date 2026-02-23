@@ -11,8 +11,8 @@ import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PgReadyWebhookService implements PgReadyWebhookUseCase {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -32,6 +31,18 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
     private static final String EVENT_PAYMENT = "PAYMENT";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_FAILED = "FAILED";
+
+    public PgReadyWebhookService(
+            PaymentTransactionRepository paymentTransactionRepository,
+            ReservationRepository reservationRepository,
+            @Qualifier("reservationStatusPushNotifier") ReservationStatusPushPort pushNotifier,
+            ConcertReadCacheEvictPort concertReadCacheEvictor
+    ) {
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.reservationRepository = reservationRepository;
+        this.pushNotifier = pushNotifier;
+        this.concertReadCacheEvictor = concertReadCacheEvictor;
+    }
 
     @Transactional
     @Override

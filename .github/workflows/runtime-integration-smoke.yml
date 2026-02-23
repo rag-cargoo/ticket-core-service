@@ -1,0 +1,45 @@
+name: runtime-integration-smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker-compose.yml'
+      - 'scripts/ops/run-runtime-integration-tests.sh'
+      - 'src/test/java/com/ticketrush/application/concert/service/ConcertExplorerIntegrationTest.java'
+      - 'src/test/java/com/ticketrush/application/reservation/service/ReservationLifecycleServiceIntegrationTest.java'
+      - 'src/test/java/com/ticketrush/infrastructure/messaging/KafkaPushEventConsumerTest.java'
+      - '.github/workflows/runtime-integration-smoke.yml'
+
+jobs:
+  runtime-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Ensure executable bits
+        run: |
+          chmod +x ./gradlew
+          chmod +x ./scripts/ops/*.sh
+
+      - name: Run runtime integration test suite
+        run: IT_COMPOSE_PROJECT=tcsitci bash ./scripts/ops/run-runtime-integration-tests.sh
+
+      - name: Upload runtime integration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-integration-report
+          path: |
+            .codex/tmp/ticket-core-service/integration/latest/runtime-integration-latest.md
+            .codex/tmp/ticket-core-service/integration/**/runtime-integration.log
+          if-no-files-found: warn

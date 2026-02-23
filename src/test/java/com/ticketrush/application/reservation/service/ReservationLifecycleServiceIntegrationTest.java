@@ -116,7 +116,7 @@ class ReservationLifecycleServiceIntegrationTest {
             return mock(WaitingQueueService.class);
         }
 
-        @Bean
+        @Bean(name = {"queuePushNotifier", "queueRuntimePushNotifier"})
         QueueRuntimePushPort queuePushNotifier() {
             return mock(QueueRuntimePushPort.class);
         }

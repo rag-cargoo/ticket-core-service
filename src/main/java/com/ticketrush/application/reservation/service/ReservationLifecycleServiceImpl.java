@@ -23,8 +23,8 @@ import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +35,6 @@ import java.util.Set;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ReservationLifecycleServiceImpl implements ReservationLifecycleService {
 
     private final ReservationRepository reservationRepository;
@@ -52,6 +51,38 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ReservationStatusPushPort reservationStatusPushNotifier;
     private final SeatMapPushPort seatMapPushNotifier;
     private final ConcertReadCacheEvictPort concertReadCacheEvictor;
+
+    public ReservationLifecycleServiceImpl(
+            ReservationRepository reservationRepository,
+            ReservationSeatPort reservationSeatPort,
+            ReservationUserPort reservationUserPort,
+            ReservationWaitingQueuePort reservationWaitingQueuePort,
+            ReservationConfigPort reservationProperties,
+            PaymentConfigPort paymentProperties,
+            SalesPolicyService salesPolicyService,
+            AbuseAuditService abuseAuditService,
+            AdminRefundAuditService adminRefundAuditService,
+            ReservationPaymentPort reservationPaymentPort,
+            @Qualifier("queueRuntimePushNotifier") QueueRuntimePushPort queuePushNotifier,
+            @Qualifier("reservationStatusPushNotifier") ReservationStatusPushPort reservationStatusPushNotifier,
+            @Qualifier("seatMapPushNotifier") SeatMapPushPort seatMapPushNotifier,
+            ConcertReadCacheEvictPort concertReadCacheEvictor
+    ) {
+        this.reservationRepository = reservationRepository;
+        this.reservationSeatPort = reservationSeatPort;
+        this.reservationUserPort = reservationUserPort;
+        this.reservationWaitingQueuePort = reservationWaitingQueuePort;
+        this.reservationProperties = reservationProperties;
+        this.paymentProperties = paymentProperties;
+        this.salesPolicyService = salesPolicyService;
+        this.abuseAuditService = abuseAuditService;
+        this.adminRefundAuditService = adminRefundAuditService;
+        this.reservationPaymentPort = reservationPaymentPort;
+        this.queuePushNotifier = queuePushNotifier;
+        this.reservationStatusPushNotifier = reservationStatusPushNotifier;
+        this.seatMapPushNotifier = seatMapPushNotifier;
+        this.concertReadCacheEvictor = concertReadCacheEvictor;
+    }
 
     @Transactional
     public ReservationLifecycleResult createHold(ReservationCreateCommand command) {

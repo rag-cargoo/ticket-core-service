@@ -3,7 +3,7 @@
 <!-- DOC_META_START -->
 > [!NOTE]
 > - **Created At**: `2026-02-09 00:33:02`
-> - **Updated At**: `2026-02-22 22:23:50`
+> - **Updated At**: `2026-02-24 06:37:00`
 <!-- DOC_META_END -->
 
 <!-- DOC_TOC_START -->
@@ -66,22 +66,37 @@ docker-compose --profile frontend up -d --build --scale app=1
 make test-suite
 ```
 
-### 4. k6 부하 테스트 실행
+### 4. 런타임 의존 통합 테스트 실행 (Redis/Kafka/Postgres 포함)
+```bash
+make test-integration-runtime
+```
+
+### 5. 릴리즈 게이트 실행 (compile + 핵심 verify)
+```bash
+make test-release-gate
+```
+
+### 6. k6 부하 테스트 실행
 ```bash
 make test-k6
 ```
 
-### 4-1. 분산 k6 실행
+### 6-1. k6 기준선 평가 실행
+```bash
+make test-k6-baseline
+```
+
+### 6-2. 분산 k6 실행
 ```bash
 make test-k6-distributed
 ```
 
-### 5. Auth-Social CI-safe 파이프라인 테스트
+### 7. Auth-Social CI-safe 파이프라인 테스트
 ```bash
 make test-auth-social-pipeline
 ```
 
-### 6. Auth-Social Real Provider E2E 테스트 (선택)
+### 8. Auth-Social Real Provider E2E 테스트 (선택)
 ```bash
 APP_AUTH_SOCIAL_REAL_E2E_ENABLED=true \
 AUTH_REAL_E2E_PROVIDER=kakao \
@@ -102,6 +117,11 @@ make test-auth-social-real-provider
 - auth-social 파이프라인 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-e2e-latest.md`
 - auth-social real provider e2e 리포트 기본 경로: `.codex/tmp/ticket-core-service/api-test/auth-social-real-provider-e2e-latest.md`
 - k6 실행 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-latest.md`
+- k6 기준선 리포트 기본 경로: `.codex/tmp/ticket-core-service/k6/latest/k6-baseline-latest.md`
+- 런타임 통합테스트 리포트 기본 경로: `.codex/tmp/ticket-core-service/integration/latest/runtime-integration-latest.md`
+- 릴리즈 게이트 리포트 기본 경로: `.codex/tmp/ticket-core-service/release-gate/latest/release-gate-latest.md`
+- 런타임 헬스 스냅샷 리포트 기본 경로: `.codex/tmp/ticket-core-service/ops/latest/runtime-health-check-latest.md`
+- 런타임 모니터 스냅샷 리포트 기본 경로: `.codex/tmp/ticket-core-service/ops/latest/runtime-monitor-snapshot-latest.md`
 - 분산/단일 공통 compose 경로: `docker-compose.yml`
 - 실시간 푸시 모드 스위치: `APP_PUSH_MODE=sse|websocket` (기본값 `websocket`)
 - WS broker 모드 스위치: `APP_WS_BROKER_MODE=simple|relay` (기본값 `simple`)

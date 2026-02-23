@@ -1,6 +1,6 @@
 # Makefile for TicketRush API Testing
 
-.PHONY: help compose-up compose-up-frontend compose-down test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-k6-distributed test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
+.PHONY: help compose-up compose-up-frontend compose-down test-v1 test-v2 test-v3 test-v4 test-v5 test-v6 test-v7 test-v9 test-k6 test-k6-dashboard test-k6-baseline test-k6-distributed test-integration-runtime ops-health-check ops-monitor-snapshot test-release-gate test-suite test-auth-social-pipeline test-auth-social-real-provider test-all setup-perms
 
 COMPOSE_FILE ?= docker-compose.yml
 COMPOSE_PROJECT ?= tcs
@@ -22,9 +22,14 @@ help:
 	@echo " make test-v6    : [v6] 유입량 제어(Throttling) 테스트"
 	@echo " make test-v7    : [v7] SSE 순번 자동 푸시 테스트"
 	@echo " make test-v9    : [v9] Step10 취소/환불/재판매 연계 테스트"
+	@echo " make test-integration-runtime : [ops] redis/kafka/postgres 포함 통합 테스트"
+	@echo " make ops-health-check : [ops] 런타임 포트/헬스 스모크 점검"
+	@echo " make ops-monitor-snapshot : [ops] AUTH/QUEUE/PUSH 모니터 로그 스냅샷 수집"
 	@echo " make test-k6    : [perf] k6 대기열 부하 테스트"
 	@echo " make test-k6-dashboard : [perf] k6 + 웹 대시보드(5665) 실행"
+	@echo " make test-k6-baseline : [perf] k6 기준선 평가 리포트"
 	@echo " make test-k6-distributed : [perf] 다중 app + nginx LB 분산 k6 테스트"
+	@echo " make test-release-gate : [release] compile + 핵심 verify 게이트"
 	@echo " make test-suite : 변경된 API 스크립트 실행 + 리포트 생성"
 	@echo " make test-auth-social-pipeline : auth-social CI-safe 파이프라인 테스트"
 	@echo " make test-auth-social-real-provider : auth-social real provider E2E (선택 실행)"
@@ -70,14 +75,29 @@ test-v7:
 test-v9:
 	/bin/bash ./scripts/api/v9-cancel-refund-resale.sh
 
+test-integration-runtime:
+	bash ./scripts/ops/run-runtime-integration-tests.sh
+
+ops-health-check:
+	bash ./scripts/ops/runtime-health-check.sh
+
+ops-monitor-snapshot:
+	bash ./scripts/ops/collect-runtime-monitor-snapshot.sh
+
 test-k6:
 	bash ./scripts/perf/run-k6-waiting-queue.sh
 
 test-k6-dashboard:
 	K6_WEB_DASHBOARD=true K6_DURATION=$${K6_DURATION:-30s} bash ./scripts/perf/run-k6-waiting-queue.sh
 
+test-k6-baseline:
+	bash ./scripts/perf/run-k6-baseline.sh
+
 test-k6-distributed:
 	bash ./scripts/perf/run-k6-waiting-queue-distributed.sh
+
+test-release-gate:
+	bash ./scripts/ops/run-release-gate.sh
 
 test-suite:
 	bash ./scripts/api/run-api-script-tests.sh

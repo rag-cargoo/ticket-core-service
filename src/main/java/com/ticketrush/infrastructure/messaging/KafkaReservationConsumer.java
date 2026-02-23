@@ -6,19 +6,28 @@ import com.ticketrush.application.reservation.model.ReservationQueueEvent;
 import com.ticketrush.application.reservation.model.ReservationQueueLockType;
 import com.ticketrush.application.reservation.port.inbound.ReservationQueueRuntimeUseCase;
 import com.ticketrush.application.reservation.port.inbound.ReservationUseCase;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class KafkaReservationConsumer {
 
     private final ReservationUseCase reservationUseCase;
     private final ReservationQueueRuntimeUseCase queueRuntimeUseCase;
     private final ReservationStatusPushPort pushNotifier;
+
+    public KafkaReservationConsumer(
+            ReservationUseCase reservationUseCase,
+            ReservationQueueRuntimeUseCase queueRuntimeUseCase,
+            @Qualifier("reservationStatusPushNotifier") ReservationStatusPushPort pushNotifier
+    ) {
+        this.reservationUseCase = reservationUseCase;
+        this.queueRuntimeUseCase = queueRuntimeUseCase;
+        this.pushNotifier = pushNotifier;
+    }
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
     public void consume(ReservationQueueEvent event) {
