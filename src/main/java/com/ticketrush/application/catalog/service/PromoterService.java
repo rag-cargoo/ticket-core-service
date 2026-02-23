@@ -1,4 +1,4 @@
-package com.ticketrush.domain.promoter.service;
+package com.ticketrush.application.catalog.service;
 
 import com.ticketrush.domain.promoter.Promoter;
 import org.springframework.data.domain.Page;

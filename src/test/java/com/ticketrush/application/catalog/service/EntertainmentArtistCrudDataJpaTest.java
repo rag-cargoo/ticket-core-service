@@ -1,9 +1,9 @@
-package com.ticketrush.domain.catalog.service;
+package com.ticketrush.application.catalog.service;
 
-import com.ticketrush.domain.entertainment.service.EntertainmentService;
-import com.ticketrush.domain.entertainment.service.EntertainmentServiceImpl;
-import com.ticketrush.domain.artist.service.ArtistService;
-import com.ticketrush.domain.artist.service.ArtistServiceImpl;
+import com.ticketrush.application.catalog.service.EntertainmentService;
+import com.ticketrush.application.catalog.service.EntertainmentServiceImpl;
+import com.ticketrush.application.catalog.service.ArtistService;
+import com.ticketrush.application.catalog.service.ArtistServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

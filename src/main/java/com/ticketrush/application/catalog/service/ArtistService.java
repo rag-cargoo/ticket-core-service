@@ -1,4 +1,4 @@
-package com.ticketrush.domain.artist.service;
+package com.ticketrush.application.catalog.service;
 
 import com.ticketrush.domain.artist.Artist;
 import org.springframework.data.domain.Page;
