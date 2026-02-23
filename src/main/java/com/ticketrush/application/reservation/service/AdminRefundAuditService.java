@@ -27,11 +27,11 @@ public class AdminRefundAuditService implements AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     ) {
         adminRefundAuditLogRepository.save(
-                AdminRefundAuditLog.success(reservationId, targetUserId, actorUserId, actorRole, detailMessage)
+                AdminRefundAuditLog.success(reservationId, targetUserId, actorUserId, toDomainRole(actorRole), detailMessage)
         );
     }
 
@@ -41,11 +41,11 @@ public class AdminRefundAuditService implements AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     ) {
         adminRefundAuditLogRepository.save(
-                AdminRefundAuditLog.denied(reservationId, targetUserId, actorUserId, actorRole, detailMessage)
+                AdminRefundAuditLog.denied(reservationId, targetUserId, actorUserId, toDomainRole(actorRole), detailMessage)
         );
     }
 
@@ -55,11 +55,11 @@ public class AdminRefundAuditService implements AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     ) {
         adminRefundAuditLogRepository.save(
-                AdminRefundAuditLog.failed(reservationId, targetUserId, actorUserId, actorRole, detailMessage)
+                AdminRefundAuditLog.failed(reservationId, targetUserId, actorUserId, toDomainRole(actorRole), detailMessage)
         );
     }
 
@@ -111,5 +111,16 @@ public class AdminRefundAuditService implements AdminRefundAuditUseCase {
                 log.getDetailMessage(),
                 log.getOccurredAt()
         );
+    }
+
+    private UserRole toDomainRole(String actorRole) {
+        if (actorRole == null || actorRole.isBlank()) {
+            throw new IllegalArgumentException("actorRole is required");
+        }
+        try {
+            return UserRole.valueOf(actorRole.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid actor role: " + actorRole, exception);
+        }
     }
 }

@@ -2,7 +2,6 @@ package com.ticketrush.application.reservation.port.inbound;
 
 import com.ticketrush.application.reservation.model.AdminRefundAuditRecord;
 import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
-import com.ticketrush.domain.user.UserRole;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,7 +12,7 @@ public interface AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     );
 
@@ -21,7 +20,7 @@ public interface AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     );
 
@@ -29,7 +28,7 @@ public interface AdminRefundAuditUseCase {
             Long reservationId,
             Long targetUserId,
             Long actorUserId,
-            UserRole actorRole,
+            String actorRole,
             String detailMessage
     );
 

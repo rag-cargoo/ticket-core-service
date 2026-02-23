@@ -159,7 +159,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     reservationId,
                     null,
                     adminUserId,
-                    adminUser.getRole(),
+                    adminUser.getRole().name(),
                     "Admin override refund requires ADMIN role"
             );
             throw new IllegalStateException("Admin override refund requires ADMIN role. userId=" + adminUserId);
@@ -172,7 +172,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     reservationId,
                     reservationOwnerId,
                     adminUserId,
-                    adminUser.getRole(),
+                    adminUser.getRole().name(),
                     "Admin override refund completed"
             );
             return response;
@@ -181,7 +181,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                     reservationId,
                     reservationOwnerId,
                     adminUserId,
-                    adminUser.getRole(),
+                    adminUser.getRole().name(),
                     exception.getMessage()
             );
             throw exception;

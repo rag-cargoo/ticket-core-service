@@ -54,6 +54,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.global..");
 
     @ArchTest
+    static final ArchRule inbound_ports_should_not_depend_on_domain_models =
+            noClasses()
+                    .that().resideInAnyPackage("com.ticketrush.application..port.inbound..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain..");
+
+    @ArchTest
     static final ArchRule api_layer_should_not_depend_on_global_layer =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.api..")
