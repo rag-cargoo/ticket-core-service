@@ -1,9 +1,9 @@
 package com.ticketrush.global.messaging;
 
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.ReservationService;
-import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +27,13 @@ public class KafkaReservationConsumer {
         try {
             queueService.setStatus(event.getUserId(), event.getSeatId(), "PROCESSING");
 
-            ReservationRequest request = new ReservationRequest(event.getUserId(), event.getSeatId());
+            ReservationCreateCommand command = new ReservationCreateCommand(event.getUserId(), event.getSeatId(), null, null);
             
             // 이벤트에 지정된 락 전략에 따라 실제 예약 처리
             if (event.getLockType() == ReservationEvent.LockType.PESSIMISTIC) {
-                reservationService.createReservationWithPessimisticLock(request);
+                reservationService.createReservationWithPessimisticLock(command);
             } else {
-                reservationService.createReservation(request);
+                reservationService.createReservation(command);
             }
 
             queueService.setStatus(event.getUserId(), event.getSeatId(), "SUCCESS");

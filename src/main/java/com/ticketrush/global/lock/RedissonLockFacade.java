@@ -1,5 +1,7 @@
 package com.ticketrush.global.lock;
 
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
@@ -37,7 +39,15 @@ public class RedissonLockFacade {
                 throw new RuntimeException("현재 예약 요청이 많습니다. 잠시 후 다시 시도해주세요.");
             }
 
-            return reservationService.createReservation(request);
+            ReservationResult result = reservationService.createReservation(
+                    new ReservationCreateCommand(
+                            request.getUserId(),
+                            request.getSeatId(),
+                            request.getRequestFingerprint(),
+                            request.getDeviceFingerprint()
+                    )
+            );
+            return ReservationResponse.from(result);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

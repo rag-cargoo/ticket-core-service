@@ -3,8 +3,8 @@ package com.ticketrush.domain.reservation.service;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleServiceImpl;
 import com.ticketrush.application.reservation.service.SalesPolicyServiceImpl;
-import com.ticketrush.api.dto.ReservationRequest;
-import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
@@ -171,17 +171,17 @@ class ReservationLifecycleServiceIntegrationTest {
         User user = userRepository.save(new User("step9-integration-user-" + System.nanoTime()));
         Seat seat = saveSeat("A-101");
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         assertThat(hold.getStatus()).isEqualTo(Reservation.ReservationStatus.HOLD.name());
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.TEMP_RESERVED);
 
-        ReservationLifecycleResponse paying = reservationLifecycleService.startPaying(hold.getId(), user.getId());
+        ReservationLifecycleResult paying = reservationLifecycleService.startPaying(hold.getId(), user.getId());
         assertThat(paying.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING.name());
 
-        ReservationLifecycleResponse confirmed = reservationLifecycleService.confirm(hold.getId(), user.getId());
+        ReservationLifecycleResult confirmed = reservationLifecycleService.confirm(hold.getId(), user.getId());
         assertThat(confirmed.getStatus()).isEqualTo(Reservation.ReservationStatus.CONFIRMED.name());
         assertThat(confirmed.getConfirmedAt()).isNotNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
@@ -208,8 +208,8 @@ class ReservationLifecycleServiceIntegrationTest {
         User user = userRepository.save(new User("step9-expire-user-" + System.nanoTime()));
         Seat seat = saveSeat("A-102");
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
 
         reservationRepository.updateHoldExpiresAt(hold.getId(), LocalDateTime.now().minusSeconds(1));
@@ -237,8 +237,8 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat seat = saveSeat("A-103");
         Long concertId = seat.getConcertOption().getConcert().getId();
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId());
@@ -246,7 +246,7 @@ class ReservationLifecycleServiceIntegrationTest {
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of(999L));
         when(waitingQueueService.getActiveTtlSeconds(999L)).thenReturn(240L);
 
-        ReservationLifecycleResponse cancelled = reservationLifecycleService.cancel(hold.getId(), user.getId());
+        ReservationLifecycleResult cancelled = reservationLifecycleService.cancel(hold.getId(), user.getId());
 
         assertThat(cancelled.getStatus()).isEqualTo(Reservation.ReservationStatus.CANCELLED.name());
         assertThat(cancelled.getCancelledAt()).isNotNull();
@@ -271,15 +271,15 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat seat = saveSeat("A-104");
         Long concertId = seat.getConcertOption().getConcert().getId();
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId());
 
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
-        ReservationLifecycleResponse refunded = reservationLifecycleService.refund(hold.getId(), user.getId());
+        ReservationLifecycleResult refunded = reservationLifecycleService.refund(hold.getId(), user.getId());
 
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
@@ -292,8 +292,8 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat seat = saveSeatWithConcertDate("A-104-2", LocalDateTime.now().plusHours(2));
         Long concertId = seat.getConcertOption().getConcert().getId();
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId());
@@ -312,15 +312,15 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat seat = saveSeatWithConcertDate("A-104-3", LocalDateTime.now().plusHours(2));
         Long concertId = seat.getConcertOption().getConcert().getId();
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId());
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
 
-        ReservationLifecycleResponse refunded = reservationLifecycleService.refundAsAdmin(hold.getId(), admin.getId());
+        ReservationLifecycleResult refunded = reservationLifecycleService.refundAsAdmin(hold.getId(), admin.getId());
 
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
@@ -340,8 +340,8 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat seat = saveSeatWithConcertDate("A-104-4", LocalDateTime.now().plusHours(2));
         Long concertId = seat.getConcertOption().getConcert().getId();
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId());
@@ -363,8 +363,8 @@ class ReservationLifecycleServiceIntegrationTest {
         User user = userRepository.save(new User("step10-insufficient-user-" + System.nanoTime()));
         Seat seat = saveSeat("A-104-1");
 
-        ReservationLifecycleResponse hold = reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), seat.getId())
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
 
@@ -404,7 +404,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 1
         ));
 
-        assertThatThrownBy(() -> reservationLifecycleService.createHold(new ReservationRequest(basicUser.getId(), seat.getId())))
+        assertThatThrownBy(() -> reservationLifecycleService.createHold(new ReservationCreateCommand(basicUser.getId(), seat.getId())))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Presale tier not eligible");
 
@@ -431,13 +431,13 @@ class ReservationLifecycleServiceIntegrationTest {
                 1
         ));
 
-        ReservationLifecycleResponse firstHold = reservationLifecycleService.createHold(
-                new ReservationRequest(vipUser.getId(), firstSeat.getId())
+        ReservationLifecycleResult firstHold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(vipUser.getId(), firstSeat.getId())
         );
         assertThat(firstHold.getStatus()).isEqualTo(Reservation.ReservationStatus.HOLD.name());
 
         assertThatThrownBy(() -> reservationLifecycleService.createHold(
-                new ReservationRequest(vipUser.getId(), secondSeat.getId())
+                new ReservationCreateCommand(vipUser.getId(), secondSeat.getId())
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Per-user reservation limit exceeded");
     }
@@ -462,7 +462,7 @@ class ReservationLifecycleServiceIntegrationTest {
         }
 
         assertThatThrownBy(() -> reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), firstSeat.getId(), "rate-new", "device-rate")
+                new ReservationCreateCommand(user.getId(), firstSeat.getId(), "rate-new", "device-rate")
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Rate limit exceeded");
 
@@ -479,10 +479,10 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat firstSeat = saveSeat("A-204");
         Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-205"));
 
-        reservationLifecycleService.createHold(new ReservationRequest(user.getId(), firstSeat.getId(), "dup-req-1", "device-dup"));
+        reservationLifecycleService.createHold(new ReservationCreateCommand(user.getId(), firstSeat.getId(), "dup-req-1", "device-dup"));
 
         assertThatThrownBy(() -> reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), secondSeat.getId(), "dup-req-1", "device-dup")
+                new ReservationCreateCommand(user.getId(), secondSeat.getId(), "dup-req-1", "device-dup")
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate request fingerprint detected");
     }
@@ -494,10 +494,10 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat firstSeat = saveSeat("A-206");
         Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-207"));
 
-        reservationLifecycleService.createHold(new ReservationRequest(userA.getId(), firstSeat.getId(), "dev-req-a", "shared-device-1"));
+        reservationLifecycleService.createHold(new ReservationCreateCommand(userA.getId(), firstSeat.getId(), "dev-req-a", "shared-device-1"));
 
         assertThatThrownBy(() -> reservationLifecycleService.createHold(
-                new ReservationRequest(userB.getId(), secondSeat.getId(), "dev-req-b", "shared-device-1")
+                new ReservationCreateCommand(userB.getId(), secondSeat.getId(), "dev-req-b", "shared-device-1")
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Device fingerprint used by multiple accounts");
     }
@@ -508,9 +508,9 @@ class ReservationLifecycleServiceIntegrationTest {
         Seat firstSeat = saveSeat("A-208");
         Seat secondSeat = seatRepository.save(new Seat(firstSeat.getConcertOption(), "A-209"));
 
-        reservationLifecycleService.createHold(new ReservationRequest(user.getId(), firstSeat.getId(), "audit-dup-1", "audit-device"));
+        reservationLifecycleService.createHold(new ReservationCreateCommand(user.getId(), firstSeat.getId(), "audit-dup-1", "audit-device"));
         assertThatThrownBy(() -> reservationLifecycleService.createHold(
-                new ReservationRequest(user.getId(), secondSeat.getId(), "audit-dup-1", "audit-device")
+                new ReservationCreateCommand(user.getId(), secondSeat.getId(), "audit-dup-1", "audit-device")
         )).isInstanceOf(IllegalStateException.class);
 
         List<AbuseAuditLog> blockedLogs = abuseAuditService.getAuditLogs(

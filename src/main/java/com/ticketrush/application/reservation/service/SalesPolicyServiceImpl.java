@@ -1,6 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
-import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
+import com.ticketrush.application.reservation.model.SalesPolicyResult;
+import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
@@ -31,7 +32,7 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
     private final ConcertRepository concertRepository;
 
     @Transactional
-    public SalesPolicy upsert(Long concertId, SalesPolicyUpsertRequest request) {
+    public SalesPolicyResult upsert(Long concertId, SalesPolicyUpsertCommand command) {
         Concert concert = concertRepository.findById(concertId)
                 .orElseThrow(() -> new IllegalArgumentException("Concert not found: " + concertId));
 
@@ -39,29 +40,30 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
         if (policy == null) {
             policy = SalesPolicy.create(
                     concert,
-                    request.getPresaleStartAt(),
-                    request.getPresaleEndAt(),
-                    request.getPresaleMinimumTier(),
-                    request.getGeneralSaleStartAt(),
-                    request.getMaxReservationsPerUser()
+                    command.getPresaleStartAt(),
+                    command.getPresaleEndAt(),
+                    command.getPresaleMinimumTier(),
+                    command.getGeneralSaleStartAt(),
+                    command.getMaxReservationsPerUser()
             );
         } else {
             policy.update(
-                    request.getPresaleStartAt(),
-                    request.getPresaleEndAt(),
-                    request.getPresaleMinimumTier(),
-                    request.getGeneralSaleStartAt(),
-                    request.getMaxReservationsPerUser()
+                    command.getPresaleStartAt(),
+                    command.getPresaleEndAt(),
+                    command.getPresaleMinimumTier(),
+                    command.getGeneralSaleStartAt(),
+                    command.getMaxReservationsPerUser()
             );
         }
 
-        return salesPolicyRepository.save(policy);
+        return SalesPolicyResult.from(salesPolicyRepository.save(policy));
     }
 
     @Transactional(readOnly = true)
-    public SalesPolicy getByConcertId(Long concertId) {
-        return salesPolicyRepository.findByConcertId(concertId)
+    public SalesPolicyResult getByConcertId(Long concertId) {
+        SalesPolicy policy = salesPolicyRepository.findByConcertId(concertId)
                 .orElseThrow(() -> new IllegalArgumentException("Sales policy not found for concert: " + concertId));
+        return SalesPolicyResult.from(policy);
     }
 
     @Transactional(readOnly = true)

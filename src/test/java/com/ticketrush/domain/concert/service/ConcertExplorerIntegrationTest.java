@@ -1,6 +1,6 @@
 package com.ticketrush.domain.concert.service;
 
-import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.user.User;
@@ -106,7 +106,7 @@ class ConcertExplorerIntegrationTest {
         assertThat(seatCache.get(option.getId())).isNotNull();
 
         Long selectedSeatId = firstRead.get(0).getId();
-        reservationService.createReservation(new ReservationRequest(user.getId(), selectedSeatId));
+        reservationService.createReservation(new ReservationCreateCommand(user.getId(), selectedSeatId));
 
         List<Seat> secondRead = concertService.getAvailableSeats(option.getId());
         assertThat(secondRead).hasSize(2);

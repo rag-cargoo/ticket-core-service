@@ -1,16 +1,16 @@
 package com.ticketrush.application.reservation.service;
 
-import com.ticketrush.api.dto.ReservationRequest;
-import com.ticketrush.api.dto.ReservationResponse;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationResult;
 
 import java.util.List;
 
 public interface ReservationService {
-    ReservationResponse createReservation(ReservationRequest request);
+    ReservationResult createReservation(ReservationCreateCommand command);
 
-    ReservationResponse createReservationWithPessimisticLock(ReservationRequest request);
+    ReservationResult createReservationWithPessimisticLock(ReservationCreateCommand command);
 
-    List<ReservationResponse> getReservationsByUserId(Long userId);
+    List<ReservationResult> getReservationsByUserId(Long userId);
 
     void cancelReservation(Long reservationId);
 }

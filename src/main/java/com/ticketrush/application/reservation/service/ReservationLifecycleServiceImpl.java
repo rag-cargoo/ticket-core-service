@@ -1,9 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
-import com.ticketrush.api.dto.ReservationRequest;
-import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueStatus;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
@@ -30,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -51,13 +50,13 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ConcertReadCacheEvictor concertReadCacheEvictor;
 
     @Transactional
-    public ReservationLifecycleResponse createHold(ReservationRequest request) {
-        User user = reservationUserPort.getUser(request.getUserId());
-        Seat seat = reservationSeatPort.getSeatWithPessimisticLock(request.getSeatId());
+    public ReservationLifecycleResult createHold(ReservationCreateCommand command) {
+        User user = reservationUserPort.getUser(command.getUserId());
+        Seat seat = reservationSeatPort.getSeatWithPessimisticLock(command.getSeatId());
 
         LocalDateTime now = LocalDateTime.now();
         salesPolicyService.validateHoldRequest(user, seat, now);
-        abuseAuditService.validateHoldRequest(request.getRequestFingerprint(), request.getDeviceFingerprint(), user, seat, now);
+        abuseAuditService.validateHoldRequest(command.getRequestFingerprint(), command.getDeviceFingerprint(), user, seat, now);
         seat.hold();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
@@ -65,8 +64,8 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = Reservation.hold(user, seat, now, holdExpiresAt);
         reservationRepository.save(reservation);
         abuseAuditService.recordAllowedHold(
-                request.getRequestFingerprint(),
-                request.getDeviceFingerprint(),
+                command.getRequestFingerprint(),
+                command.getDeviceFingerprint(),
                 user,
                 seat,
                 reservation.getId(),
@@ -79,25 +78,25 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 user.getId(),
                 holdExpiresAt.toString()
         );
-        return ReservationLifecycleResponse.from(reservation);
+        return ReservationLifecycleResult.from(reservation);
     }
 
     @Transactional
-    public ReservationLifecycleResponse startPaying(Long reservationId, Long userId) {
+    public ReservationLifecycleResult startPaying(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
         reservation.startPaying(now);
-        return ReservationLifecycleResponse.from(reservation);
+        return ReservationLifecycleResult.from(reservation);
     }
 
     @Transactional
-    public ReservationLifecycleResponse confirm(Long reservationId, Long userId) {
+    public ReservationLifecycleResult confirm(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
         if (reservation.getStatus() == Reservation.ReservationStatus.CONFIRMED) {
-            return ReservationLifecycleResponse.from(reservation);
+            return ReservationLifecycleResult.from(reservation);
         }
         if (reservation.getStatus() != Reservation.ReservationStatus.PAYING) {
             throw new IllegalStateException(
@@ -117,11 +116,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             confirmReservationAndSeat(reservation, now);
         }
 
-        return ReservationLifecycleResponse.from(reservation);
+        return ReservationLifecycleResult.from(reservation);
     }
 
     @Transactional
-    public ReservationLifecycleResponse cancel(Long reservationId, Long userId) {
+    public ReservationLifecycleResult cancel(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         reservation.cancel(now);
@@ -139,17 +138,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         List<Long> activatedUsers = reservationWaitingQueuePort.activateUsers(concertId, 1);
         notifyActivatedUsers(concertId, activatedUsers);
 
-        return ReservationLifecycleResponse.from(reservation, activatedUsers);
+        return ReservationLifecycleResult.from(reservation, activatedUsers);
     }
 
     @Transactional
-    public ReservationLifecycleResponse refund(Long reservationId, Long userId) {
+    public ReservationLifecycleResult refund(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         return refundInternal(reservation, userId, userId, false);
     }
 
     @Transactional
-    public ReservationLifecycleResponse refundAsAdmin(Long reservationId, Long adminUserId) {
+    public ReservationLifecycleResult refundAsAdmin(Long reservationId, Long adminUserId) {
         User adminUser = reservationUserPort.getUser(adminUserId);
         if (adminUser.getRole() != UserRole.ADMIN) {
             adminRefundAuditService.recordDenied(
@@ -164,7 +163,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Reservation reservation = getReservation(reservationId);
         Long reservationOwnerId = reservation.getUser().getId();
         try {
-            ReservationLifecycleResponse response = refundInternal(reservation, reservationOwnerId, adminUserId, true);
+            ReservationLifecycleResult response = refundInternal(reservation, reservationOwnerId, adminUserId, true);
             adminRefundAuditService.recordSuccess(
                     reservationId,
                     reservationOwnerId,
@@ -186,9 +185,9 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     @Transactional(readOnly = true)
-    public ReservationLifecycleResponse getReservation(Long reservationId, Long userId) {
+    public ReservationLifecycleResult getReservation(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
-        return ReservationLifecycleResponse.from(reservation);
+        return ReservationLifecycleResult.from(reservation);
     }
 
     @Transactional
@@ -248,19 +247,19 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private void notifyActivatedUsers(Long concertId, List<Long> activatedUsers) {
         for (Long activatedUserId : activatedUsers) {
             Long activeTtlSeconds = reservationWaitingQueuePort.getActiveTtlSeconds(activatedUserId);
-            WaitingQueueSsePayload payload = WaitingQueueSsePayload.builder()
-                    .userId(activatedUserId)
-                    .concertId(concertId)
-                    .status(WaitingQueueStatus.ACTIVE.name())
-                    .rank(0L)
-                    .activeTtlSeconds(activeTtlSeconds)
-                    .timestamp(Instant.now().toString())
-                    .build();
+            Object payload = Map.of(
+                    "userId", activatedUserId,
+                    "concertId", concertId,
+                    "status", "ACTIVE",
+                    "rank", 0L,
+                    "activeTtlSeconds", activeTtlSeconds,
+                    "timestamp", Instant.now().toString()
+            );
             pushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
         }
     }
 
-    private ReservationLifecycleResponse refundInternal(
+    private ReservationLifecycleResult refundInternal(
             Reservation reservation,
             Long paymentUserId,
             Long actorUserId,
@@ -280,7 +279,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             );
         }
         reservation.refund(now);
-        return ReservationLifecycleResponse.from(reservation);
+        return ReservationLifecycleResult.from(reservation);
     }
 
     private void validateRefundCutoff(

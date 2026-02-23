@@ -1,13 +1,13 @@
 package com.ticketrush.application.reservation.service;
 
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.api.dto.ReservationRequest;
-import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,12 +29,12 @@ public class ReservationServiceImpl implements ReservationService {
      * [v1] 낙관적 락(Optimistic Lock)을 사용한 예약 생성
      */
     @Transactional
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResult createReservation(ReservationCreateCommand command) {
         // 1. 유저 조회 (Reservation boundary port 위임)
-        User user = reservationUserPort.getUser(request.getUserId());
+        User user = reservationUserPort.getUser(command.getUserId());
 
         // 2. 좌석 조회 (Reservation boundary port 위임)
-        Seat seat = reservationSeatPort.getSeat(request.getSeatId());
+        Seat seat = reservationSeatPort.getSeat(command.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();
@@ -44,19 +44,19 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
-        return ReservationResponse.from(reservation);
+        return ReservationResult.from(reservation);
     }
 
     /**
      * [v2] 비관적 락(Pessimistic Lock)을 사용한 예약 생성
      */
     @Transactional
-    public ReservationResponse createReservationWithPessimisticLock(ReservationRequest request) {
+    public ReservationResult createReservationWithPessimisticLock(ReservationCreateCommand command) {
         // 1. 유저 조회
-        User user = reservationUserPort.getUser(request.getUserId());
+        User user = reservationUserPort.getUser(command.getUserId());
 
         // 2. 좌석 조회 (비관적 락 적용)
-        Seat seat = reservationSeatPort.getSeatWithPessimisticLock(request.getSeatId());
+        Seat seat = reservationSeatPort.getSeatWithPessimisticLock(command.getSeatId());
 
         // 3. 좌석 점유 시도
         seat.reserve();
@@ -66,16 +66,16 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(seat.getConcertOption().getId());
 
-        return ReservationResponse.from(reservation);
+        return ReservationResult.from(reservation);
     }
 
     /**
      * [Read] 유저별 예약 내역 조회
      */
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getReservationsByUserId(Long userId) {
+    public List<ReservationResult> getReservationsByUserId(Long userId) {
         return reservationRepository.findByUserId(userId).stream()
-                .map(ReservationResponse::from)
+                .map(ReservationResult::from)
                 .collect(Collectors.toList());
     }
 

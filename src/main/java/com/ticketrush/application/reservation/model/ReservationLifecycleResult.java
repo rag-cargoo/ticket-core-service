@@ -1,6 +1,5 @@
-package com.ticketrush.api.dto.reservation;
+package com.ticketrush.application.reservation.model;
 
-import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +12,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReservationLifecycleResponse {
+public class ReservationLifecycleResult {
     private Long id;
     private Long userId;
     private Long seatId;
@@ -26,12 +25,12 @@ public class ReservationLifecycleResponse {
     private LocalDateTime refundedAt;
     private List<Long> resaleActivatedUserIds;
 
-    public static ReservationLifecycleResponse from(Reservation reservation) {
+    public static ReservationLifecycleResult from(Reservation reservation) {
         return from(reservation, Collections.emptyList());
     }
 
-    public static ReservationLifecycleResponse from(Reservation reservation, List<Long> resaleActivatedUserIds) {
-        return new ReservationLifecycleResponse(
+    public static ReservationLifecycleResult from(Reservation reservation, List<Long> resaleActivatedUserIds) {
+        return new ReservationLifecycleResult(
                 reservation.getId(),
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),
@@ -43,22 +42,6 @@ public class ReservationLifecycleResponse {
                 reservation.getCancelledAt(),
                 reservation.getRefundedAt(),
                 List.copyOf(resaleActivatedUserIds)
-        );
-    }
-
-    public static ReservationLifecycleResponse from(ReservationLifecycleResult result) {
-        return new ReservationLifecycleResponse(
-                result.getId(),
-                result.getUserId(),
-                result.getSeatId(),
-                result.getStatus(),
-                result.getReservedAt(),
-                result.getHoldExpiresAt(),
-                result.getConfirmedAt(),
-                result.getExpiredAt(),
-                result.getCancelledAt(),
-                result.getRefundedAt(),
-                List.copyOf(result.getResaleActivatedUserIds())
         );
     }
 }

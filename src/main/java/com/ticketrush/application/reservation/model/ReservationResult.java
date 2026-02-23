@@ -1,6 +1,5 @@
-package com.ticketrush.api.dto;
+package com.ticketrush.application.reservation.model;
 
-import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,27 +10,18 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReservationResponse {
+public class ReservationResult {
     private Long id;
     private Long userId;
     private Long seatId;
     private LocalDateTime reservationTime;
 
-    public static ReservationResponse from(Reservation reservation) {
-        return new ReservationResponse(
+    public static ReservationResult from(Reservation reservation) {
+        return new ReservationResult(
                 reservation.getId(),
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),
                 reservation.getReservedAt()
-        );
-    }
-
-    public static ReservationResponse from(ReservationResult result) {
-        return new ReservationResponse(
-                result.getId(),
-                result.getUserId(),
-                result.getSeatId(),
-                result.getReservationTime()
         );
     }
 }

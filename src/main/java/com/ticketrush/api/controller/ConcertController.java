@@ -1,5 +1,6 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.ConcertSearchPageResponse;
@@ -129,7 +130,14 @@ public class ConcertController {
             @PathVariable Long concertId,
             @RequestBody SalesPolicyUpsertRequest request
     ) {
-        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.upsert(concertId, request)));
+        SalesPolicyUpsertCommand command = new SalesPolicyUpsertCommand(
+                request.getPresaleStartAt(),
+                request.getPresaleEndAt(),
+                request.getPresaleMinimumTier(),
+                request.getGeneralSaleStartAt(),
+                request.getMaxReservationsPerUser()
+        );
+        return ResponseEntity.ok(SalesPolicyResponse.from(salesPolicyService.upsert(concertId, command)));
     }
 
     /**

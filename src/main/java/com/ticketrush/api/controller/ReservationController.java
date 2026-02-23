@@ -1,5 +1,8 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
+import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.reservation.service.ReservationQueueService;
 import com.ticketrush.domain.reservation.service.AbuseAuditService;
@@ -56,7 +59,8 @@ public class ReservationController {
      */
     @PostMapping("/v1/optimistic")
     public ResponseEntity<ReservationResponse> createOptimisticReservation(@RequestBody ReservationRequest request) {
-        return ResponseEntity.ok(reservationService.createReservation(request));
+        ReservationResult result = reservationService.createReservation(toCreateCommand(request));
+        return ResponseEntity.ok(ReservationResponse.from(result));
     }
 
     /**
@@ -64,7 +68,8 @@ public class ReservationController {
      */
     @PostMapping("/v2/pessimistic")
     public ResponseEntity<ReservationResponse> createPessimisticReservation(@RequestBody ReservationRequest request) {
-        return ResponseEntity.ok(reservationService.createReservationWithPessimisticLock(request));
+        ReservationResult result = reservationService.createReservationWithPessimisticLock(toCreateCommand(request));
+        return ResponseEntity.ok(ReservationResponse.from(result));
     }
 
     /**
@@ -125,7 +130,8 @@ public class ReservationController {
      */
     @PostMapping("/v6/holds")
     public ResponseEntity<ReservationLifecycleResponse> createHold(@RequestBody ReservationRequest request) {
-        return ResponseEntity.status(201).body(reservationLifecycleService.createHold(request));
+        ReservationLifecycleResult result = reservationLifecycleService.createHold(toCreateCommand(request));
+        return ResponseEntity.status(201).body(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -135,7 +141,8 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> startPaying(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        return ResponseEntity.ok(reservationLifecycleService.startPaying(reservationId, request.getUserId()));
+        ReservationLifecycleResult result = reservationLifecycleService.startPaying(reservationId, request.getUserId());
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -145,7 +152,8 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> confirm(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        return ResponseEntity.ok(reservationLifecycleService.confirm(reservationId, request.getUserId()));
+        ReservationLifecycleResult result = reservationLifecycleService.confirm(reservationId, request.getUserId());
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -155,7 +163,8 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> cancel(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        return ResponseEntity.ok(reservationLifecycleService.cancel(reservationId, request.getUserId()));
+        ReservationLifecycleResult result = reservationLifecycleService.cancel(reservationId, request.getUserId());
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -165,7 +174,8 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> refund(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        return ResponseEntity.ok(reservationLifecycleService.refund(reservationId, request.getUserId()));
+        ReservationLifecycleResult result = reservationLifecycleService.refund(reservationId, request.getUserId());
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -175,7 +185,8 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> getReservation(
             @PathVariable Long reservationId,
             @RequestParam Long userId) {
-        return ResponseEntity.ok(reservationLifecycleService.getReservation(reservationId, userId));
+        ReservationLifecycleResult result = reservationLifecycleService.getReservation(reservationId, userId);
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -242,11 +253,11 @@ public class ReservationController {
     ) {
         Long userId = requiredUserId(principal);
         seatSoftLockService.ensureHoldableByUser(userId, request.getSeatId());
-        ReservationLifecycleResponse response = reservationLifecycleService.createHold(
-                request.toReservationRequest(userId)
+        ReservationLifecycleResult result = reservationLifecycleService.createHold(
+                toCreateCommand(request.toReservationRequest(userId))
         );
-        seatSoftLockService.promoteToHold(userId, response.getSeatId(), response.getHoldExpiresAt());
-        return ResponseEntity.status(201).body(response);
+        seatSoftLockService.promoteToHold(userId, result.getSeatId(), result.getHoldExpiresAt());
+        return ResponseEntity.status(201).body(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -257,7 +268,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.startPaying(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.startPaying(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -268,7 +280,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.confirm(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.confirm(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -279,7 +292,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.cancel(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.cancel(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -290,7 +304,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.refund(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.refund(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -302,7 +317,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.refundAsAdmin(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.refundAsAdmin(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -313,7 +329,8 @@ public class ReservationController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(reservationLifecycleService.getReservation(reservationId, requiredUserId(principal)));
+        ReservationLifecycleResult result = reservationLifecycleService.getReservation(reservationId, requiredUserId(principal));
+        return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
     /**
@@ -323,7 +340,11 @@ public class ReservationController {
     public ResponseEntity<List<ReservationResponse>> getMyReservationsV7(
             @AuthenticationPrincipal AuthUserPrincipal principal
     ) {
-        return ResponseEntity.ok(reservationService.getReservationsByUserId(requiredUserId(principal)));
+        List<ReservationResponse> responses = reservationService.getReservationsByUserId(requiredUserId(principal))
+                .stream()
+                .map(ReservationResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -390,7 +411,11 @@ public class ReservationController {
      */
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<ReservationResponse>> getMyReservations(@PathVariable Long userId) {
-        return ResponseEntity.ok(reservationService.getReservationsByUserId(userId));
+        List<ReservationResponse> responses = reservationService.getReservationsByUserId(userId)
+                .stream()
+                .map(ReservationResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -400,5 +425,14 @@ public class ReservationController {
     public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
         reservationService.cancelReservation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private ReservationCreateCommand toCreateCommand(ReservationRequest request) {
+        return new ReservationCreateCommand(
+                request.getUserId(),
+                request.getSeatId(),
+                request.getRequestFingerprint(),
+                request.getDeviceFingerprint()
+        );
     }
 }

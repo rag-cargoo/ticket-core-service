@@ -1,6 +1,5 @@
-package com.ticketrush.api.dto.reservation;
+package com.ticketrush.application.reservation.model;
 
-import com.ticketrush.application.reservation.model.SalesPolicyResult;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
 import com.ticketrush.domain.user.UserTier;
 import lombok.AllArgsConstructor;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SalesPolicyResponse {
+public class SalesPolicyResult {
     private Long id;
     private Long concertId;
     private LocalDateTime presaleStartAt;
@@ -21,8 +20,8 @@ public class SalesPolicyResponse {
     private LocalDateTime generalSaleStartAt;
     private int maxReservationsPerUser;
 
-    public static SalesPolicyResponse from(SalesPolicy policy) {
-        return new SalesPolicyResponse(
+    public static SalesPolicyResult from(SalesPolicy policy) {
+        return new SalesPolicyResult(
                 policy.getId(),
                 policy.getConcert().getId(),
                 policy.getPresaleStartAt(),
@@ -30,18 +29,6 @@ public class SalesPolicyResponse {
                 policy.getPresaleMinimumTier(),
                 policy.getGeneralSaleStartAt(),
                 policy.getMaxReservationsPerUser()
-        );
-    }
-
-    public static SalesPolicyResponse from(SalesPolicyResult result) {
-        return new SalesPolicyResponse(
-                result.getId(),
-                result.getConcertId(),
-                result.getPresaleStartAt(),
-                result.getPresaleEndAt(),
-                result.getPresaleMinimumTier(),
-                result.getGeneralSaleStartAt(),
-                result.getMaxReservationsPerUser()
         );
     }
 }

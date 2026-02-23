@@ -9,7 +9,7 @@ import com.ticketrush.domain.concert.service.ConcertService;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
-import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ class 동시성_테스트_2_비관적_락 {
             executorService.submit(() -> {
                 try {
                     // 비관적 락 메서드 호출
-                    reservationService.createReservationWithPessimisticLock(new ReservationRequest(targetUserId, targetSeatId));
+                    reservationService.createReservationWithPessimisticLock(new ReservationCreateCommand(targetUserId, targetSeatId));
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     // 대기하다가 들어왔지만 이미 예약된 상태라면 실패 처리

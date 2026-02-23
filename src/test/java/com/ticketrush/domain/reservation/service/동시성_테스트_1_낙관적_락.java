@@ -9,7 +9,7 @@ import com.ticketrush.domain.concert.service.ConcertService;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
-import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,7 +92,7 @@ class 동시성_테스트_1_낙관적_락 {
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
-                    reservationService.createReservation(new ReservationRequest(targetUserId, targetSeatId));
+                    reservationService.createReservation(new ReservationCreateCommand(targetUserId, targetSeatId));
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     // ObjectOptimisticLockingFailureException 발생 예상
