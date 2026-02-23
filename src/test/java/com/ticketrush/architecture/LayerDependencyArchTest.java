@@ -34,4 +34,10 @@ class LayerDependencyArchTest {
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.reservation..");
+
+    @ArchTest
+    static final ArchRule global_messaging_should_not_depend_on_domain_reservation_events =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.global.messaging..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.reservation.event..");
 }

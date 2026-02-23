@@ -1,7 +1,8 @@
 package com.ticketrush.global.messaging;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
-import com.ticketrush.domain.reservation.event.ReservationEvent;
+import com.ticketrush.application.reservation.model.ReservationQueueEvent;
+import com.ticketrush.application.reservation.model.ReservationQueueLockType;
 import com.ticketrush.application.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.global.push.PushNotifier;
@@ -20,7 +21,7 @@ public class KafkaReservationConsumer {
     private final PushNotifier pushNotifier;
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
-    public void consume(ReservationEvent event) {
+    public void consume(ReservationQueueEvent event) {
         log.info("Consumed reservation event - UserId: {}, SeatId: {}, Strategy: {}", 
                 event.getUserId(), event.getSeatId(), event.getLockType());
 
@@ -30,7 +31,7 @@ public class KafkaReservationConsumer {
             ReservationCreateCommand command = new ReservationCreateCommand(event.getUserId(), event.getSeatId(), null, null);
             
             // 이벤트에 지정된 락 전략에 따라 실제 예약 처리
-            if (event.getLockType() == ReservationEvent.LockType.PESSIMISTIC) {
+            if (event.getLockType() == ReservationQueueLockType.PESSIMISTIC) {
                 reservationService.createReservationWithPessimisticLock(command);
             } else {
                 reservationService.createReservation(command);
