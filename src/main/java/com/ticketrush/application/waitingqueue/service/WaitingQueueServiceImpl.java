@@ -4,9 +4,8 @@ import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueStore;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,72 +16,12 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class WaitingQueueServiceImpl implements WaitingQueueService {
 
-    private final StringRedisTemplate redisTemplate;
+    private final WaitingQueueStore waitingQueueStore;
     private final com.ticketrush.global.config.WaitingQueueProperties properties;
     private static final long JOIN_RESULT_ACTIVE = 1L;
     private static final long JOIN_RESULT_REJECTED = 2L;
     private static final long JOIN_RESULT_WAITING = 3L;
     private static final long JOIN_RESULT_UNKNOWN = 4L;
-    private static final DefaultRedisScript<List> JOIN_AND_RANK_SCRIPT;
-    private static final DefaultRedisScript<List> ACTIVATE_USERS_SCRIPT;
-
-    static {
-        JOIN_AND_RANK_SCRIPT = new DefaultRedisScript<>();
-        JOIN_AND_RANK_SCRIPT.setResultType(List.class);
-        JOIN_AND_RANK_SCRIPT.setScriptText("""
-                local queueKey = KEYS[1]
-                local activeKey = KEYS[2]
-                local userId = ARGV[1]
-                local score = tonumber(ARGV[2])
-                local maxQueueSize = tonumber(ARGV[3])
-
-                if redis.call('EXISTS', activeKey) == 1 then
-                    return {1, 0}
-                end
-
-                local existingRank = redis.call('ZRANK', queueKey, userId)
-                if existingRank then
-                    return {3, existingRank + 1}
-                end
-
-                local currentQueueSize = redis.call('ZCARD', queueKey)
-                if currentQueueSize >= maxQueueSize then
-                    return {2, -1}
-                end
-
-                redis.call('ZADD', queueKey, score, userId)
-                local addedRank = redis.call('ZRANK', queueKey, userId)
-                if addedRank then
-                    return {3, addedRank + 1}
-                end
-
-                return {4, -1}
-                """);
-
-        ACTIVATE_USERS_SCRIPT = new DefaultRedisScript<>();
-        ACTIVATE_USERS_SCRIPT.setResultType(List.class);
-        ACTIVATE_USERS_SCRIPT.setScriptText("""
-                local queueKey = KEYS[1]
-                local activeKeyPrefix = ARGV[1]
-                local ttlSeconds = tonumber(ARGV[2])
-                local count = tonumber(ARGV[3])
-
-                if count <= 0 then
-                    return {}
-                end
-
-                local popped = redis.call('ZPOPMIN', queueKey, count)
-                local activatedUsers = {}
-
-                for i = 1, #popped, 2 do
-                    local userId = popped[i]
-                    redis.call('SET', activeKeyPrefix .. userId, 'true', 'EX', ttlSeconds)
-                    table.insert(activatedUsers, userId)
-                end
-
-                return activatedUsers
-                """);
-    }
 
     @Override
     public WaitingQueueStatusResult join(WaitingQueueJoinCommand command) {
@@ -91,19 +30,19 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
         String activeKey = properties.getActiveKeyPrefix() + userIdStr;
 
         // Redis round trip을 줄이기 위해 join/throttling/rank 계산을 Lua 스크립트로 원자 처리한다.
-        List<?> scriptResult = redisTemplate.execute(
-                JOIN_AND_RANK_SCRIPT,
-                List.of(queueKey, activeKey),
+        WaitingQueueStore.JoinAndRankResult scriptResult = waitingQueueStore.joinAndRank(
+                queueKey,
+                activeKey,
                 userIdStr,
-                String.valueOf(System.currentTimeMillis()),
-                String.valueOf(properties.getMaxQueueSize())
+                System.currentTimeMillis(),
+                properties.getMaxQueueSize()
         );
-        if (scriptResult == null || scriptResult.size() < 2) {
+        if (scriptResult == null) {
             return getStatus(new WaitingQueueStatusQuery(command.getUserId(), command.getConcertId()));
         }
 
-        long resultCode = toLong(scriptResult.get(0), JOIN_RESULT_UNKNOWN);
-        long rank = toLong(scriptResult.get(1), -1L);
+        long resultCode = scriptResult.resultCode();
+        long rank = scriptResult.rank();
 
         if (resultCode == JOIN_RESULT_ACTIVE) {
             return buildResponse(command.getUserId(), command.getConcertId(), WaitingQueueStatusType.ACTIVE, 0L);
@@ -123,13 +62,13 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
         String userIdStr = String.valueOf(query.getUserId());
 
         // 1. 활성 상태 확인
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(properties.getActiveKeyPrefix() + userIdStr))) {
+        if (waitingQueueStore.hasActiveUser(properties.getActiveKeyPrefix() + userIdStr)) {
             return buildResponse(query.getUserId(), query.getConcertId(), WaitingQueueStatusType.ACTIVE, 0L);
         }
 
         // 2. 대기 순번 조회
         String queueKey = properties.getQueueKeyPrefix() + query.getConcertId();
-        Long rank = redisTemplate.opsForZSet().rank(queueKey, userIdStr);
+        Long rank = waitingQueueStore.rank(queueKey, userIdStr);
 
         return buildResponse(
                 query.getUserId(),
@@ -147,20 +86,19 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
 
         String queueKey = properties.getQueueKeyPrefix() + concertId;
         long activeTtlSeconds = TimeUnit.MINUTES.toSeconds(properties.getActiveTtlMinutes());
-        List<?> scriptResult = redisTemplate.execute(
-                ACTIVATE_USERS_SCRIPT,
-                List.of(queueKey),
+        List<String> rawActivatedUsers = waitingQueueStore.activateUsers(
+                queueKey,
                 properties.getActiveKeyPrefix(),
-                String.valueOf(activeTtlSeconds),
-                String.valueOf(count)
+                activeTtlSeconds,
+                count
         );
 
-        if (scriptResult == null || scriptResult.isEmpty()) {
+        if (rawActivatedUsers == null || rawActivatedUsers.isEmpty()) {
             return List.of();
         }
 
-        List<Long> activatedUsers = new ArrayList<>(scriptResult.size());
-        for (Object rawUserId : scriptResult) {
+        List<Long> activatedUsers = new ArrayList<>(rawActivatedUsers.size());
+        for (String rawUserId : rawActivatedUsers) {
             Long userId = parseLong(rawUserId);
             if (userId != null) {
                 activatedUsers.add(userId);
@@ -172,7 +110,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
     @Override
     public Long getActiveTtlSeconds(Long userId) {
         String activeKey = properties.getActiveKeyPrefix() + userId;
-        Long ttl = redisTemplate.getExpire(activeKey, TimeUnit.SECONDS);
+        Long ttl = waitingQueueStore.ttlSeconds(activeKey);
         return (ttl != null && ttl > 0) ? ttl : 0L;
     }
 
@@ -185,17 +123,7 @@ public class WaitingQueueServiceImpl implements WaitingQueueService {
                 .build();
     }
 
-    private long toLong(Object value, long defaultValue) {
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return defaultValue;
-    }
-
-    private Long parseLong(Object rawValue) {
-        if (rawValue instanceof Number number) {
-            return number.longValue();
-        }
+    private Long parseLong(String rawValue) {
         if (rawValue == null) {
             return null;
         }

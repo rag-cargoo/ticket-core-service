@@ -1,11 +1,11 @@
 package com.ticketrush.application.reservation.service;
 
+import com.ticketrush.application.reservation.port.outbound.SeatSoftLockStore;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.global.config.ReservationProperties;
 import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +22,7 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
     private static final String STATUS_RELEASED = "RELEASED";
     private static final String STATUS_HOLD = "HOLD";
 
-    private final StringRedisTemplate redisTemplate;
+    private final SeatSoftLockStore seatSoftLockStore;
     private final ReservationSeatPort reservationSeatPort;
     private final ReservationProperties reservationProperties;
     private final PushNotifier pushNotifier;
@@ -36,13 +36,13 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
         String key = context.key();
         String encodedValue = encode(new LockValue(userId, resolvedRequestId, expiresAt));
 
-        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, encodedValue, ttlSeconds, TimeUnit.SECONDS);
-        if (!Boolean.TRUE.equals(acquired)) {
-            LockValue current = decode(redisTemplate.opsForValue().get(key));
+        boolean acquired = seatSoftLockStore.setIfAbsent(key, encodedValue, ttlSeconds, TimeUnit.SECONDS);
+        if (!acquired) {
+            LockValue current = decode(seatSoftLockStore.get(key));
             if (current == null || !userId.equals(current.ownerUserId())) {
                 throw new IllegalStateException("Seat is already selecting by another user. seatId=" + seatId);
             }
-            redisTemplate.opsForValue().set(key, encodedValue, ttlSeconds, TimeUnit.SECONDS);
+            seatSoftLockStore.set(key, encodedValue, ttlSeconds, TimeUnit.SECONDS);
         }
 
         pushNotifier.sendSeatMapStatus(context.optionId(), seatId, STATUS_SELECTING, userId, expiresAt);
@@ -61,7 +61,7 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
     public SeatSoftLockReleaseResult release(Long userId, Long seatId) {
         SeatContext context = seatContext(seatId);
         String key = context.key();
-        LockValue current = decode(redisTemplate.opsForValue().get(key));
+        LockValue current = decode(seatSoftLockStore.get(key));
 
         if (current == null) {
             return new SeatSoftLockReleaseResult(context.optionId(), seatId, STATUS_RELEASED, false);
@@ -70,7 +70,7 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
             throw new IllegalStateException("Seat soft lock owner mismatch. seatId=" + seatId);
         }
 
-        redisTemplate.delete(key);
+        seatSoftLockStore.delete(key);
         pushNotifier.sendSeatMapStatus(context.optionId(), seatId, STATUS_RELEASED, null, null);
         return new SeatSoftLockReleaseResult(context.optionId(), seatId, STATUS_RELEASED, true);
     }
@@ -78,7 +78,7 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
     @Override
     public void ensureHoldableByUser(Long userId, Long seatId) {
         SeatContext context = seatContext(seatId);
-        LockValue current = decode(redisTemplate.opsForValue().get(context.key()));
+        LockValue current = decode(seatSoftLockStore.get(context.key()));
         if (current != null && !userId.equals(current.ownerUserId())) {
             throw new IllegalStateException("Seat is selecting by another user. seatId=" + seatId);
         }
@@ -87,7 +87,7 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
     @Override
     public void promoteToHold(Long userId, Long seatId, LocalDateTime holdExpiresAt) {
         SeatContext context = seatContext(seatId);
-        redisTemplate.delete(context.key());
+        seatSoftLockStore.delete(context.key());
         pushNotifier.sendSeatMapStatus(
                 context.optionId(),
                 seatId,

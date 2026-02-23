@@ -1,5 +1,6 @@
 package com.ticketrush.application.waitingqueue.service;
 
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueStore;
 import com.ticketrush.global.config.WaitingQueueProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,8 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.List;
 
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.when;
 class WaitingQueueServiceImplTest {
 
     @Mock
-    private StringRedisTemplate redisTemplate;
+    private WaitingQueueStore waitingQueueStore;
 
     @Mock
     private WaitingQueueProperties properties;
@@ -41,23 +40,21 @@ class WaitingQueueServiceImplTest {
 
     @Test
     void activateUsers_executesLuaScriptAtomically() {
-        when(redisTemplate.execute(
-                any(DefaultRedisScript.class),
-                eq(List.of("waiting-queue:7")),
+        when(waitingQueueStore.activateUsers(
+                eq("waiting-queue:7"),
                 eq("active-user:"),
-                eq("300"),
-                eq("2")
+                eq(300L),
+                eq(2L)
         )).thenReturn(List.of("1001", "1002"));
 
         List<Long> activatedUsers = waitingQueueService.activateUsers(7L, 2);
 
         assertThat(activatedUsers).containsExactly(1001L, 1002L);
-        verify(redisTemplate).execute(
-                any(DefaultRedisScript.class),
-                eq(List.of("waiting-queue:7")),
+        verify(waitingQueueStore).activateUsers(
+                eq("waiting-queue:7"),
                 eq("active-user:"),
-                eq("300"),
-                eq("2")
+                eq(300L),
+                eq(2L)
         );
     }
 
@@ -66,12 +63,12 @@ class WaitingQueueServiceImplTest {
         List<Long> activatedUsers = waitingQueueService.activateUsers(7L, 0);
 
         assertThat(activatedUsers).isEmpty();
-        verifyNoInteractions(redisTemplate);
+        verifyNoInteractions(waitingQueueStore);
     }
 
     @Test
     void activateUsers_whenScriptReturnsNull_returnsEmpty() {
-        when(redisTemplate.execute(any(DefaultRedisScript.class), any(List.class), any(), any(), any()))
+        when(waitingQueueStore.activateUsers(any(), any(), any(Long.class), any(Long.class)))
                 .thenReturn(null);
 
         List<Long> activatedUsers = waitingQueueService.activateUsers(7L, 2);
