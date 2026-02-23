@@ -1,5 +1,6 @@
 package com.ticketrush.application.reservation.service;
 
+import com.ticketrush.application.reservation.port.outbound.SeatSoftLockStore;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.concert.entity.Concert;
@@ -13,8 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -32,10 +31,7 @@ import static org.mockito.Mockito.when;
 class SeatSoftLockServiceImplTest {
 
     @Mock
-    private StringRedisTemplate redisTemplate;
-
-    @Mock
-    private ValueOperations<String, String> valueOperations;
+    private SeatSoftLockStore seatSoftLockStore;
 
     @Mock
     private ReservationSeatPort reservationSeatPort;
@@ -52,19 +48,18 @@ class SeatSoftLockServiceImplTest {
         reservationProperties.setSoftLockKeyPrefix("seat:lock:");
 
         seatSoftLockService = new SeatSoftLockServiceImpl(
-                redisTemplate,
+                seatSoftLockStore,
                 reservationSeatPort,
                 reservationProperties,
                 pushNotifier
         );
 
-        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         lenient().when(reservationSeatPort.getSeat(55L)).thenReturn(buildSeat(11L, 55L));
     }
 
     @Test
     void acquire_whenKeyIsEmpty_setsNxAndBroadcastsSelecting() {
-        when(valueOperations.setIfAbsent(
+        when(seatSoftLockStore.setIfAbsent(
                 eq("seat:lock:11:55"),
                 anyString(),
                 eq(30L),
@@ -85,7 +80,7 @@ class SeatSoftLockServiceImplTest {
 
     @Test
     void ensureHoldableByUser_whenForeignLockExists_throwsConflict() {
-        when(valueOperations.get("seat:lock:11:55")).thenReturn("999|req-x|2026-02-22T02:00:00Z");
+        when(seatSoftLockStore.get("seat:lock:11:55")).thenReturn("999|req-x|2026-02-22T02:00:00Z");
 
         assertThatThrownBy(() -> seatSoftLockService.ensureHoldableByUser(200L, 55L))
                 .isInstanceOf(IllegalStateException.class)
@@ -94,7 +89,7 @@ class SeatSoftLockServiceImplTest {
 
     @Test
     void release_whenOwnerMatches_deletesKeyAndBroadcastsReleased() {
-        when(valueOperations.get("seat:lock:11:55")).thenReturn("200|req-x|2026-02-22T02:00:00Z");
+        when(seatSoftLockStore.get("seat:lock:11:55")).thenReturn("200|req-x|2026-02-22T02:00:00Z");
 
         SeatSoftLockService.SeatSoftLockReleaseResult result = seatSoftLockService.release(200L, 55L);
 
@@ -102,7 +97,7 @@ class SeatSoftLockServiceImplTest {
         assertThat(result.seatId()).isEqualTo(55L);
         assertThat(result.status()).isEqualTo("RELEASED");
         assertThat(result.released()).isTrue();
-        verify(redisTemplate).delete("seat:lock:11:55");
+        verify(seatSoftLockStore).delete("seat:lock:11:55");
         verify(pushNotifier).sendSeatMapStatus(11L, 55L, "RELEASED", null, null);
     }
 
@@ -112,7 +107,7 @@ class SeatSoftLockServiceImplTest {
 
         seatSoftLockService.promoteToHold(200L, 55L, holdExpiresAt);
 
-        verify(redisTemplate).delete("seat:lock:11:55");
+        verify(seatSoftLockStore).delete("seat:lock:11:55");
         verify(pushNotifier).sendSeatMapStatus(
                 eq(11L),
                 eq(55L),

@@ -36,6 +36,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.api..");
 
     @ArchTest
+    static final ArchRule application_should_not_depend_on_spring_redis_directly =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.application..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.springframework.data.redis..");
+
+    @ArchTest
     static final ArchRule rest_controllers_should_not_depend_on_repository_directly =
             noClasses()
                     .that().areAnnotatedWith(RestController.class)
