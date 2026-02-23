@@ -3,12 +3,11 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.auth.SocialAuthorizeUrlResponse;
 import com.ticketrush.api.dto.auth.SocialLoginRequest;
 import com.ticketrush.api.dto.auth.SocialLoginResponse;
+import com.ticketrush.application.auth.model.AuthTokenResult;
+import com.ticketrush.application.auth.model.SocialAuthorizeResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
 import com.ticketrush.application.auth.port.inbound.SocialAuthUseCase;
-import com.ticketrush.domain.auth.model.AuthTokenPair;
-import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
-import com.ticketrush.domain.user.SocialProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +25,7 @@ public class SocialAuthController {
             @PathVariable String provider,
             @RequestParam(required = false) String state
     ) {
-        SocialProvider socialProvider = SocialProvider.from(provider);
-        SocialAuthorizeInfo info = socialAuthUseCase.getAuthorizeInfo(socialProvider, state);
+        SocialAuthorizeResult info = socialAuthUseCase.getAuthorizeInfo(provider, state);
         return ResponseEntity.ok(SocialAuthorizeUrlResponse.from(info));
     }
 
@@ -36,9 +34,8 @@ public class SocialAuthController {
             @PathVariable String provider,
             @RequestBody SocialLoginRequest request
     ) {
-        SocialProvider socialProvider = SocialProvider.from(provider);
-        SocialLoginResult result = socialAuthUseCase.login(socialProvider, request.getCode(), request.getState());
-        AuthTokenPair tokenPair = authSessionUseCase.issueFor(result.getUser());
+        SocialLoginUserResult result = socialAuthUseCase.login(provider, request.getCode(), request.getState());
+        AuthTokenResult tokenPair = authSessionUseCase.issueForUserId(result.getUserId());
         return ResponseEntity.ok(SocialLoginResponse.from(result, tokenPair));
     }
 }

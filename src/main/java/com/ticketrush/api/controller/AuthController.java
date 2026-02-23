@@ -5,9 +5,9 @@ import com.ticketrush.api.dto.auth.AuthTokenResponse;
 import com.ticketrush.api.dto.auth.TokenLogoutRequest;
 import com.ticketrush.api.dto.auth.TokenRefreshRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
+import com.ticketrush.application.auth.model.AuthTokenResult;
 import com.ticketrush.application.auth.port.inbound.AuthSessionUseCase;
 import com.ticketrush.application.user.port.inbound.UserUseCase;
-import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +33,7 @@ public class AuthController {
 
     @PostMapping("/token/refresh")
     public ResponseEntity<AuthTokenResponse> refresh(@RequestBody TokenRefreshRequest request) {
-        AuthTokenPair tokenPair = authSessionUseCase.refresh(request.getRefreshToken());
+        AuthTokenResult tokenPair = authSessionUseCase.refresh(request.getRefreshToken());
         return ResponseEntity.ok(AuthTokenResponse.from(tokenPair));
     }
 

@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto.auth;
 
-import com.ticketrush.domain.auth.model.AuthTokenPair;
+import com.ticketrush.application.auth.model.AuthTokenResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +15,7 @@ public class AuthTokenResponse {
     private long accessTokenExpiresInSeconds;
     private long refreshTokenExpiresInSeconds;
 
-    public static AuthTokenResponse from(AuthTokenPair pair) {
+    public static AuthTokenResponse from(AuthTokenResult pair) {
         return new AuthTokenResponse(
                 "Bearer",
                 pair.getAccessToken(),

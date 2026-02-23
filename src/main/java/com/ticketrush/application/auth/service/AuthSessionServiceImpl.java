@@ -1,7 +1,7 @@
 package com.ticketrush.application.auth.service;
 
+import com.ticketrush.application.auth.model.AuthTokenResult;
 import com.ticketrush.domain.auth.entity.RefreshToken;
-import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.repository.RefreshTokenRepository;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.domain.user.User;
@@ -25,26 +25,17 @@ public class AuthSessionServiceImpl implements AuthSessionService {
     private final UserRepository userRepository;
 
     @Transactional
-    public AuthTokenPair issueFor(User user) {
-        String accessTokenId = UUID.randomUUID().toString();
-        String refreshTokenId = UUID.randomUUID().toString();
-        String accessToken = jwtTokenProvider.createAccessToken(user, accessTokenId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user, refreshTokenId);
-
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDateTime refreshExpiresAt = now.plusSeconds(jwtTokenProvider.refreshTokenExpiresInSeconds());
-        refreshTokenRepository.save(new RefreshToken(user, refreshTokenId, refreshExpiresAt, now));
-
-        return new AuthTokenPair(
-                accessToken,
-                refreshToken,
-                jwtTokenProvider.accessTokenExpiresInSeconds(),
-                jwtTokenProvider.refreshTokenExpiresInSeconds()
-        );
+    public AuthTokenResult issueForUserId(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("user id is required");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found: " + userId));
+        return issueForUser(user);
     }
 
     @Transactional
-    public AuthTokenPair refresh(String refreshTokenValue) {
+    public AuthTokenResult refresh(String refreshTokenValue) {
         Claims claims = parseRefreshClaims(refreshTokenValue);
         String tokenId = jwtTokenProvider.extractTokenId(claims);
 
@@ -62,10 +53,7 @@ public class AuthSessionServiceImpl implements AuthSessionService {
         }
 
         refreshToken.revoke(now);
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found: " + userId));
-        return issueFor(user);
+        return issueForUserId(userId);
     }
 
     @Transactional
@@ -91,6 +79,24 @@ public class AuthSessionServiceImpl implements AuthSessionService {
 
         String accessTokenId = jwtTokenProvider.extractTokenId(accessClaims);
         accessTokenDenylistService.revoke(accessTokenId, jwtTokenProvider.extractExpiration(accessClaims));
+    }
+
+    private AuthTokenResult issueForUser(User user) {
+        String accessTokenId = UUID.randomUUID().toString();
+        String refreshTokenId = UUID.randomUUID().toString();
+        String accessToken = jwtTokenProvider.createAccessToken(user, accessTokenId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user, refreshTokenId);
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDateTime refreshExpiresAt = now.plusSeconds(jwtTokenProvider.refreshTokenExpiresInSeconds());
+        refreshTokenRepository.save(new RefreshToken(user, refreshTokenId, refreshExpiresAt, now));
+
+        return new AuthTokenResult(
+                accessToken,
+                refreshToken,
+                jwtTokenProvider.accessTokenExpiresInSeconds(),
+                jwtTokenProvider.refreshTokenExpiresInSeconds()
+        );
     }
 
     private Claims parseRefreshClaims(String refreshTokenValue) {

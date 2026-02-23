@@ -1,15 +1,12 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.auth.model.AuthTokenResult;
+import com.ticketrush.application.auth.model.SocialAuthorizeResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 import com.ticketrush.application.auth.port.inbound.AuthTokenAuthenticationUseCase;
 import com.ticketrush.application.auth.service.AuthSessionService;
 import com.ticketrush.application.auth.service.SocialAuthService;
-import com.ticketrush.domain.auth.model.AuthTokenPair;
-import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
 import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
-import com.ticketrush.domain.user.SocialProvider;
-import com.ticketrush.domain.user.User;
-import com.ticketrush.domain.user.UserTier;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
 import org.junit.jupiter.api.Test;
@@ -18,10 +15,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,12 +45,12 @@ class SocialAuthControllerIntegrationTest {
 
     @Test
     void authorizeUrl_shouldReturnProviderStateAndUrl() throws Exception {
-        SocialAuthorizeInfo info = new SocialAuthorizeInfo(
-                SocialProvider.KAKAO,
+        SocialAuthorizeResult info = new SocialAuthorizeResult(
+                "kakao",
                 "state-fixed-1",
                 "https://kauth.kakao.com/oauth/authorize?client_id=fake&state=state-fixed-1"
         );
-        when(socialAuthService.getAuthorizeInfo(SocialProvider.KAKAO, "state-fixed-1")).thenReturn(info);
+        when(socialAuthService.getAuthorizeInfo("kakao", "state-fixed-1")).thenReturn(info);
 
         mockMvc.perform(get("/api/auth/social/kakao/authorize-url")
                         .param("state", "state-fixed-1"))
@@ -67,22 +62,21 @@ class SocialAuthControllerIntegrationTest {
 
     @Test
     void exchangeCode_shouldReturnTokenPairAndUserProfile() throws Exception {
-        User user = User.socialUser(
+        SocialLoginUserResult loginResult = new SocialLoginUserResult(
+                501L,
                 "kakao_user_501",
-                UserTier.BASIC,
-                SocialProvider.KAKAO,
+                "kakao",
                 "kakao-social-501",
                 "kakao501@example.com",
-                "Kakao User 501"
+                "Kakao User 501",
+                "USER",
+                true
         );
-        ReflectionTestUtils.setField(user, "id", 501L);
+        AuthTokenResult tokenPair = new AuthTokenResult("access-token-501", "refresh-token-501", 300, 3600);
 
-        SocialLoginResult loginResult = new SocialLoginResult(user, true);
-        AuthTokenPair tokenPair = new AuthTokenPair("access-token-501", "refresh-token-501", 300, 3600);
-
-        when(socialAuthService.login(SocialProvider.KAKAO, "kakao-code-501", "state-fixed-1"))
+        when(socialAuthService.login("kakao", "kakao-code-501", "state-fixed-1"))
                 .thenReturn(loginResult);
-        when(authSessionService.issueFor(any(User.class))).thenReturn(tokenPair);
+        when(authSessionService.issueForUserId(501L)).thenReturn(tokenPair);
 
         mockMvc.perform(post("/api/auth/social/kakao/exchange")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,6 +95,9 @@ class SocialAuthControllerIntegrationTest {
 
     @Test
     void authorizeUrl_shouldReturnBadRequestForUnsupportedProvider() throws Exception {
+        when(socialAuthService.getAuthorizeInfo("unsupported", null))
+                .thenThrow(new IllegalArgumentException("Unsupported provider: unsupported"));
+
         mockMvc.perform(get("/api/auth/social/unsupported/authorize-url"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Unsupported provider")));

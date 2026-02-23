@@ -1,7 +1,7 @@
 package com.ticketrush.application.auth.service;
 
+import com.ticketrush.application.auth.model.AuthTokenResult;
 import com.ticketrush.domain.auth.entity.RefreshToken;
-import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.repository.RefreshTokenRepository;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.infrastructure.auth.denylist.InMemoryAccessTokenDenylistService;
@@ -51,7 +51,7 @@ class AuthSessionServiceTest {
     void issueFor_shouldPersistRefreshTokenAndReturnTokenPair() {
         User user = userRepository.save(new User("auth-user-1", UserTier.BASIC, UserRole.USER));
 
-        AuthTokenPair tokenPair = authSessionService.issueFor(user);
+        AuthTokenResult tokenPair = authSessionService.issueForUserId(user.getId());
 
         assertThat(tokenPair.getAccessToken()).isNotBlank();
         assertThat(tokenPair.getRefreshToken()).isNotBlank();
@@ -64,9 +64,9 @@ class AuthSessionServiceTest {
     @Test
     void refresh_shouldRotateRefreshToken() {
         User user = userRepository.save(new User("auth-user-2", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair first = authSessionService.issueFor(user);
+        AuthTokenResult first = authSessionService.issueForUserId(user.getId());
 
-        AuthTokenPair second = authSessionService.refresh(first.getRefreshToken());
+        AuthTokenResult second = authSessionService.refresh(first.getRefreshToken());
 
         assertThat(second.getAccessToken()).isNotBlank();
         assertThat(second.getRefreshToken()).isNotBlank();
@@ -79,7 +79,7 @@ class AuthSessionServiceTest {
     @Test
     void refresh_shouldFailWhenTokenAlreadyRevoked() {
         User user = userRepository.save(new User("auth-user-3", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair first = authSessionService.issueFor(user);
+        AuthTokenResult first = authSessionService.issueForUserId(user.getId());
         authSessionService.logout(first.getRefreshToken(), first.getAccessToken());
 
         assertThatThrownBy(() -> authSessionService.refresh(first.getRefreshToken()))
@@ -90,7 +90,7 @@ class AuthSessionServiceTest {
     @Test
     void logout_shouldRevokeRefreshTokenAndAccessToken() {
         User user = userRepository.save(new User("auth-user-4", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair pair = authSessionService.issueFor(user);
+        AuthTokenResult pair = authSessionService.issueForUserId(user.getId());
         String accessTokenId = jwtTokenProvider.extractTokenId(jwtTokenProvider.parseClaims(pair.getAccessToken()));
 
         authSessionService.logout(pair.getRefreshToken(), pair.getAccessToken());
@@ -104,8 +104,8 @@ class AuthSessionServiceTest {
     void logout_shouldFailWhenAccessAndRefreshTokenUserMismatch() {
         User userA = userRepository.save(new User("auth-user-5a", UserTier.BASIC, UserRole.USER));
         User userB = userRepository.save(new User("auth-user-5b", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair pairA = authSessionService.issueFor(userA);
-        AuthTokenPair pairB = authSessionService.issueFor(userB);
+        AuthTokenResult pairA = authSessionService.issueForUserId(userA.getId());
+        AuthTokenResult pairB = authSessionService.issueForUserId(userB.getId());
 
         assertThatThrownBy(() -> authSessionService.logout(pairA.getRefreshToken(), pairB.getAccessToken()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -115,7 +115,7 @@ class AuthSessionServiceTest {
     @Test
     void logout_shouldFailWhenRefreshTokenMissing() {
         User user = userRepository.save(new User("auth-user-6", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair pair = authSessionService.issueFor(user);
+        AuthTokenResult pair = authSessionService.issueForUserId(user.getId());
 
         assertThatThrownBy(() -> authSessionService.logout(null, pair.getAccessToken()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -125,7 +125,7 @@ class AuthSessionServiceTest {
     @Test
     void logout_shouldFailWhenAccessTokenMissing() {
         User user = userRepository.save(new User("auth-user-7", UserTier.BASIC, UserRole.USER));
-        AuthTokenPair pair = authSessionService.issueFor(user);
+        AuthTokenResult pair = authSessionService.issueForUserId(user.getId());
 
         assertThatThrownBy(() -> authSessionService.logout(pair.getRefreshToken(), null))
                 .isInstanceOf(IllegalArgumentException.class)

@@ -1,7 +1,7 @@
 package com.ticketrush.application.auth.service;
 
-import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
+import com.ticketrush.application.auth.model.SocialAuthorizeResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 import com.ticketrush.domain.auth.model.SocialProfile;
 import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
@@ -35,25 +35,31 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     }
 
     @Transactional(readOnly = true)
-    public SocialAuthorizeInfo getAuthorizeInfo(SocialProvider provider, String state) {
+    public SocialAuthorizeResult getAuthorizeInfo(String provider, String state) {
+        SocialProvider socialProvider = SocialProvider.from(provider);
         String effectiveState = (state == null || state.isBlank()) ? UUID.randomUUID().toString() : state.trim();
-        SocialOAuthClient client = getClient(provider);
-        return new SocialAuthorizeInfo(provider, effectiveState, client.buildAuthorizeUrl(effectiveState));
+        SocialOAuthClient client = getClient(socialProvider);
+        return new SocialAuthorizeResult(
+                socialProvider.name().toLowerCase(),
+                effectiveState,
+                client.buildAuthorizeUrl(effectiveState)
+        );
     }
 
     @Transactional
-    public SocialLoginResult login(SocialProvider provider, String code, String state) {
+    public SocialLoginUserResult login(String provider, String code, String state) {
+        SocialProvider socialProvider = SocialProvider.from(provider);
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("authorization code is required");
         }
 
-        SocialProfile profile = getClient(provider).fetchProfile(code.trim(), state);
+        SocialProfile profile = getClient(socialProvider).fetchProfile(code.trim(), state);
         User existing = userRepository.findBySocialProviderAndSocialId(profile.getProvider(), profile.getSocialId())
                 .orElse(null);
 
         if (existing != null) {
             existing.updateSocialProfile(profile.getEmail(), profile.getDisplayName());
-            return new SocialLoginResult(existing, false);
+            return toLoginResult(existing, false);
         }
 
         String username = generateUsername(profile.getProvider(), profile.getSocialId());
@@ -65,7 +71,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 profile.getEmail(),
                 profile.getDisplayName()
         );
-        return new SocialLoginResult(userRepository.save(created), true);
+        return toLoginResult(userRepository.save(created), true);
     }
 
     private SocialOAuthClient getClient(SocialProvider provider) {
@@ -84,5 +90,20 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             candidate = base + "_" + suffix++;
         }
         return candidate;
+    }
+
+    private SocialLoginUserResult toLoginResult(User user, boolean newUser) {
+        String provider = user.getSocialProvider() == null ? null : user.getSocialProvider().name().toLowerCase();
+        String role = user.getRole() == null ? null : user.getRole().name();
+        return new SocialLoginUserResult(
+                user.getId(),
+                user.getUsername(),
+                provider,
+                user.getSocialId(),
+                user.getEmail(),
+                user.getDisplayName(),
+                role,
+                newUser
+        );
     }
 }

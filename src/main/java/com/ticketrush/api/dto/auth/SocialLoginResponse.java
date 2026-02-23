@@ -1,8 +1,7 @@
 package com.ticketrush.api.dto.auth;
 
-import com.ticketrush.domain.auth.model.AuthTokenPair;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
-import com.ticketrush.domain.user.User;
+import com.ticketrush.application.auth.model.AuthTokenResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,17 +24,15 @@ public class SocialLoginResponse {
     private long accessTokenExpiresInSeconds;
     private long refreshTokenExpiresInSeconds;
 
-    public static SocialLoginResponse from(SocialLoginResult result, AuthTokenPair tokenPair) {
-        User user = result.getUser();
-        String provider = user.getSocialProvider() == null ? null : user.getSocialProvider().name().toLowerCase();
+    public static SocialLoginResponse from(SocialLoginUserResult result, AuthTokenResult tokenPair) {
         return new SocialLoginResponse(
-                user.getId(),
-                user.getUsername(),
-                provider,
-                user.getSocialId(),
-                user.getEmail(),
-                user.getDisplayName(),
-                user.getRole().name(),
+                result.getUserId(),
+                result.getUsername(),
+                result.getProvider(),
+                result.getSocialId(),
+                result.getEmail(),
+                result.getDisplayName(),
+                result.getRole(),
                 result.isNewUser(),
                 "Bearer",
                 tokenPair.getAccessToken(),

@@ -257,6 +257,23 @@ class LayerDependencyArchTest {
                     .haveFullyQualifiedName("com.ticketrush.application.auth.service.JwtTokenProvider");
 
     @ArchTest
+    static final ArchRule auth_api_should_not_depend_on_domain_auth_models =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.AuthController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.SocialAuthController")
+                    .or().resideInAnyPackage("com.ticketrush.api.dto.auth..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.auth.model..");
+
+    @ArchTest
+    static final ArchRule social_auth_api_should_not_depend_on_social_provider_enum_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.SocialAuthController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.auth.SocialAuthorizeUrlResponse")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.dto.auth.SocialLoginResponse")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.domain.user.SocialProvider");
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")

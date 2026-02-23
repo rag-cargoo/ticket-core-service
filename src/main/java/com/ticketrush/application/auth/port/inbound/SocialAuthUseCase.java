@@ -1,12 +1,11 @@
 package com.ticketrush.application.auth.port.inbound;
 
-import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
-import com.ticketrush.domain.user.SocialProvider;
+import com.ticketrush.application.auth.model.SocialAuthorizeResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 
 public interface SocialAuthUseCase {
 
-    SocialAuthorizeInfo getAuthorizeInfo(SocialProvider provider, String state);
+    SocialAuthorizeResult getAuthorizeInfo(String provider, String state);
 
-    SocialLoginResult login(SocialProvider provider, String code, String state);
+    SocialLoginUserResult login(String provider, String code, String state);
 }

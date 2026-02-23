@@ -1,7 +1,7 @@
 package com.ticketrush.application.auth.service;
 
-import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
-import com.ticketrush.domain.auth.model.SocialLoginResult;
+import com.ticketrush.application.auth.model.SocialAuthorizeResult;
+import com.ticketrush.application.auth.model.SocialLoginUserResult;
 import com.ticketrush.domain.auth.model.SocialProfile;
 import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
@@ -42,10 +42,10 @@ class SocialAuthServiceTest {
 
     @Test
     void login_shouldCreateSocialUserOnFirstLogin() {
-        SocialLoginResult result = socialAuthService.login(SocialProvider.KAKAO, "first-code", null);
+        SocialLoginUserResult result = socialAuthService.login("kakao", "first-code", null);
 
         assertThat(result.isNewUser()).isTrue();
-        User user = result.getUser();
+        User user = userRepository.findById(result.getUserId()).orElseThrow();
         assertThat(user.getSocialProvider()).isEqualTo(SocialProvider.KAKAO);
         assertThat(user.getSocialId()).isEqualTo("kakao-fixed-id");
         assertThat(user.getEmail()).isEqualTo("first-code@kakao.example.com");
@@ -55,18 +55,18 @@ class SocialAuthServiceTest {
 
     @Test
     void login_shouldReuseExistingUserAndUpdateProfile() {
-        SocialLoginResult first = socialAuthService.login(SocialProvider.KAKAO, "before", null);
-        SocialLoginResult second = socialAuthService.login(SocialProvider.KAKAO, "after", null);
+        SocialLoginUserResult first = socialAuthService.login("kakao", "before", null);
+        SocialLoginUserResult second = socialAuthService.login("kakao", "after", null);
 
-        assertThat(first.getUser().getId()).isEqualTo(second.getUser().getId());
+        assertThat(first.getUserId()).isEqualTo(second.getUserId());
         assertThat(second.isNewUser()).isFalse();
-        assertThat(second.getUser().getEmail()).isEqualTo("after@kakao.example.com");
-        assertThat(second.getUser().getDisplayName()).isEqualTo("KAKAO-after");
+        assertThat(second.getEmail()).isEqualTo("after@kakao.example.com");
+        assertThat(second.getDisplayName()).isEqualTo("KAKAO-after");
     }
 
     @Test
     void authorizeUrl_shouldGenerateStateWhenNotProvided() {
-        SocialAuthorizeInfo info = socialAuthService.getAuthorizeInfo(SocialProvider.NAVER, null);
+        SocialAuthorizeResult info = socialAuthService.getAuthorizeInfo("naver", null);
 
         assertThat(info.getState()).isNotBlank();
         assertThat(info.getAuthorizeUrl()).contains("state=" + info.getState());
@@ -74,7 +74,7 @@ class SocialAuthServiceTest {
 
     @Test
     void naverLogin_shouldRequireState() {
-        assertThatThrownBy(() -> socialAuthService.login(SocialProvider.NAVER, "code", null))
+        assertThatThrownBy(() -> socialAuthService.login("naver", "code", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("state is required");
     }
