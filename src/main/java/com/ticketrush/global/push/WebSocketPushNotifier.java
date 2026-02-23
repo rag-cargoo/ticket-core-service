@@ -4,7 +4,6 @@ import com.ticketrush.global.config.WaitingQueueProperties;
 import com.ticketrush.global.sse.SseEventNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component("webSocketPushNotifier")
@@ -27,29 +25,19 @@ public class WebSocketPushNotifier implements PushNotifier {
     private static final String SEAT_MAP_TOPIC_PREFIX = "/topic/seats";
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final StringRedisTemplate redisTemplate;
+    private final WebSocketQueueSubscriptionStore queueSubscriptionStore;
     private final WaitingQueueProperties waitingQueueProperties;
 
     public String subscribeQueue(Long userId, Long concertId) {
         long nowMillis = System.currentTimeMillis();
         long ttlSeconds = normalizedSubscriberTtlSeconds();
         long expiresAtMillis = nowMillis + (ttlSeconds * 1000L);
-        String subscriberKey = queueSubscriberKey(concertId);
-        redisTemplate.opsForZSet().add(subscriberKey, String.valueOf(userId), expiresAtMillis);
-        redisTemplate.opsForSet().add(concertIndexKey(), String.valueOf(concertId));
-        redisTemplate.expire(subscriberKey, ttlSeconds * 2, TimeUnit.SECONDS);
-        redisTemplate.expire(concertIndexKey(), ttlSeconds * 2, TimeUnit.SECONDS);
+        queueSubscriptionStore.addQueueSubscriber(concertId, userId, expiresAtMillis, ttlSeconds);
         return queueDestination(userId, concertId);
     }
 
     public void unsubscribeQueue(Long userId, Long concertId) {
-        String subscriberKey = queueSubscriberKey(concertId);
-        redisTemplate.opsForZSet().remove(subscriberKey, String.valueOf(userId));
-        Long size = redisTemplate.opsForZSet().zCard(subscriberKey);
-        if (size == null || size <= 0) {
-            redisTemplate.delete(subscriberKey);
-            redisTemplate.opsForSet().remove(concertIndexKey(), String.valueOf(concertId));
-        }
+        queueSubscriptionStore.removeQueueSubscriber(concertId, userId);
     }
 
     public String subscribeReservation(Long userId, Long seatId) {
@@ -95,7 +83,7 @@ public class WebSocketPushNotifier implements PushNotifier {
     @Override
     public void sendQueueHeartbeat() {
         String timestamp = Instant.now().toString();
-        Set<String> concertIdMembers = redisTemplate.opsForSet().members(concertIndexKey());
+        Set<String> concertIdMembers = queueSubscriptionStore.getConcertIds();
         if (concertIdMembers == null || concertIdMembers.isEmpty()) {
             return;
         }
@@ -112,7 +100,7 @@ public class WebSocketPushNotifier implements PushNotifier {
     }
 
     public Map<Long, Set<Long>> snapshotQueueSubscribers() {
-        Set<String> concertIdMembers = redisTemplate.opsForSet().members(concertIndexKey());
+        Set<String> concertIdMembers = queueSubscriptionStore.getConcertIds();
         if (concertIdMembers == null || concertIdMembers.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -132,13 +120,9 @@ public class WebSocketPushNotifier implements PushNotifier {
 
     @Override
     public Set<Long> getSubscribedQueueUsers(Long concertId) {
-        String subscriberKey = queueSubscriberKey(concertId);
         long nowMillis = System.currentTimeMillis();
-        redisTemplate.opsForZSet().removeRangeByScore(subscriberKey, Double.NEGATIVE_INFINITY, nowMillis - 1);
-        Set<String> users = redisTemplate.opsForZSet().rangeByScore(subscriberKey, nowMillis, Double.POSITIVE_INFINITY);
+        Set<String> users = queueSubscriptionStore.getActiveSubscribers(concertId, nowMillis);
         if (users == null || users.isEmpty()) {
-            redisTemplate.opsForSet().remove(concertIndexKey(), String.valueOf(concertId));
-            redisTemplate.delete(subscriberKey);
             return Set.of();
         }
         Set<Long> parsed = new LinkedHashSet<>();
@@ -192,14 +176,6 @@ public class WebSocketPushNotifier implements PushNotifier {
 
     private String seatMapDestination(Long optionId) {
         return SEAT_MAP_TOPIC_PREFIX + "/" + optionId;
-    }
-
-    private String queueSubscriberKey(Long concertId) {
-        return waitingQueueProperties.getWsSubscriberZsetKeyPrefix() + concertId;
-    }
-
-    private String concertIndexKey() {
-        return waitingQueueProperties.getWsConcertIndexKey();
     }
 
     private long normalizedSubscriberTtlSeconds() {
