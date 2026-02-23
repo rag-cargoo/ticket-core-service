@@ -1,9 +1,9 @@
 package com.ticketrush.global.interceptor;
 
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueStore;
 import com.ticketrush.global.config.WaitingQueueProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequiredArgsConstructor
 public class WaitingQueueInterceptor implements HandlerInterceptor {
 
-    private final StringRedisTemplate redisTemplate;
+    private final WaitingQueueStore waitingQueueStore;
     private final WaitingQueueProperties waitingQueueProperties;
 
     @Override
@@ -29,9 +29,9 @@ public class WaitingQueueInterceptor implements HandlerInterceptor {
         }
 
         String activeKey = waitingQueueProperties.getActiveKeyPrefix() + userId;
-        Boolean isActive = redisTemplate.hasKey(activeKey);
+        boolean isActive = waitingQueueStore.hasActiveUser(activeKey);
 
-        if (Boolean.FALSE.equals(isActive)) {
+        if (!isActive) {
             log.warn(">>>> [Interceptor] 거부된 사용자: {}, 활성 토큰 없음", userId);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not an active user in waiting queue");
             return false;
