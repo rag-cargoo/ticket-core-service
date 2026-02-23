@@ -78,6 +78,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.global..");
 
     @ArchTest
+    static final ArchRule runtime_adapters_should_not_depend_on_application_service_package_directly =
+            noClasses()
+                    .that().resideInAnyPackage("com.ticketrush.global..", "com.ticketrush.infrastructure..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.application..service..");
+
+    @ArchTest
     static final ArchRule waiting_queue_runtime_should_not_depend_on_waiting_queue_properties_concrete =
             noClasses()
                     .that().resideInAnyPackage(
