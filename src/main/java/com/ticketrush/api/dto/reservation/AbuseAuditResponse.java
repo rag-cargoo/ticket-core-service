@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto.reservation;
 
-import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
+import com.ticketrush.application.reservation.model.AbuseAuditRecord;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,20 +24,20 @@ public class AbuseAuditResponse {
     private String detailMessage;
     private LocalDateTime occurredAt;
 
-    public static AbuseAuditResponse from(AbuseAuditLog log) {
+    public static AbuseAuditResponse from(AbuseAuditRecord log) {
         return new AbuseAuditResponse(
-                log.getId(),
-                log.getAction().name(),
-                log.getResult().name(),
-                log.getReason().name(),
-                log.getUserId(),
-                log.getConcertId(),
-                log.getSeatId(),
-                log.getReservationId(),
-                log.getRequestFingerprint(),
-                log.getDeviceFingerprint(),
-                log.getDetailMessage(),
-                log.getOccurredAt()
+                log.id(),
+                log.action().name(),
+                log.result().name(),
+                log.reason().name(),
+                log.userId(),
+                log.concertId(),
+                log.seatId(),
+                log.reservationId(),
+                log.requestFingerprint(),
+                log.deviceFingerprint(),
+                log.detailMessage(),
+                log.occurredAt()
         );
     }
 }

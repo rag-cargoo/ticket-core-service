@@ -1,5 +1,6 @@
 package com.ticketrush.global.messaging;
 
+import com.ticketrush.application.reservation.model.ReservationQueueLockType;
 import com.ticketrush.domain.reservation.event.ReservationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,11 @@ public class KafkaReservationProducer {
 
     @Value("${app.kafka.topic.reservation}")
     private String topic;
+
+    public void send(Long userId, Long seatId, ReservationQueueLockType lockType) {
+        ReservationEvent.LockType domainLockType = ReservationEvent.LockType.valueOf(lockType.name());
+        send(ReservationEvent.of(userId, seatId, domainLockType));
+    }
 
     public void send(ReservationEvent event) {
         log.info("Sending reservation event to Kafka - Topic: {}, UserId: {}, SeatId: {}", 

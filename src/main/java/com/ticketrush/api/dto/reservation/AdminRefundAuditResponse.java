@@ -1,6 +1,7 @@
 package com.ticketrush.api.dto.reservation;
 
-import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
+import com.ticketrush.application.reservation.model.AdminRefundAuditRecord;
+import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
 import com.ticketrush.domain.user.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,20 +18,20 @@ public class AdminRefundAuditResponse {
     private Long targetUserId;
     private Long actorUserId;
     private UserRole actorRole;
-    private AdminRefundAuditLog.AuditResult result;
+    private AdminRefundAuditResultType result;
     private String detailMessage;
     private LocalDateTime occurredAt;
 
-    public static AdminRefundAuditResponse from(AdminRefundAuditLog auditLog) {
+    public static AdminRefundAuditResponse from(AdminRefundAuditRecord auditLog) {
         return new AdminRefundAuditResponse(
-                auditLog.getId(),
-                auditLog.getReservationId(),
-                auditLog.getTargetUserId(),
-                auditLog.getActorUserId(),
-                auditLog.getActorRole(),
-                auditLog.getResult(),
-                auditLog.getDetailMessage(),
-                auditLog.getOccurredAt()
+                auditLog.id(),
+                auditLog.reservationId(),
+                auditLog.targetUserId(),
+                auditLog.actorUserId(),
+                auditLog.actorRole(),
+                auditLog.result(),
+                auditLog.detailMessage(),
+                auditLog.occurredAt()
         );
     }
 }

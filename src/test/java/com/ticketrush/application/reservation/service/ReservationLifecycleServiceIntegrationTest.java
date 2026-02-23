@@ -3,6 +3,10 @@ package com.ticketrush.application.reservation.service;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleServiceImpl;
 import com.ticketrush.application.reservation.service.SalesPolicyServiceImpl;
+import com.ticketrush.application.reservation.model.AbuseAuditActionType;
+import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
+import com.ticketrush.application.reservation.model.AbuseAuditRecord;
+import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
 import com.ticketrush.domain.entertainment.Entertainment;
@@ -513,10 +517,10 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), secondSeat.getId(), "audit-dup-1", "audit-device")
         )).isInstanceOf(IllegalStateException.class);
 
-        List<AbuseAuditLog> blockedLogs = abuseAuditService.getAuditLogs(
-                AbuseAuditLog.AuditAction.HOLD_CREATE,
-                AbuseAuditLog.AuditResult.BLOCKED,
-                AbuseAuditLog.AuditReason.DUPLICATE_REQUEST_FINGERPRINT,
+        List<AbuseAuditRecord> blockedLogs = abuseAuditService.getAuditLogs(
+                AbuseAuditActionType.HOLD_CREATE,
+                AbuseAuditResultType.BLOCKED,
+                AbuseAuditReasonType.DUPLICATE_REQUEST_FINGERPRINT,
                 user.getId(),
                 null,
                 null,
@@ -524,7 +528,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 10
         );
         assertThat(blockedLogs).isNotEmpty();
-        assertThat(blockedLogs.get(0).getReason()).isEqualTo(AbuseAuditLog.AuditReason.DUPLICATE_REQUEST_FINGERPRINT);
+        assertThat(blockedLogs.get(0).reason()).isEqualTo(AbuseAuditReasonType.DUPLICATE_REQUEST_FINGERPRINT);
     }
 
     private Seat saveSeat(String seatNo) {

@@ -2,16 +2,18 @@ package com.ticketrush.api.controller;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
+import com.ticketrush.application.reservation.model.ReservationQueueLockType;
 import com.ticketrush.application.reservation.model.ReservationResult;
+import com.ticketrush.application.reservation.model.AbuseAuditActionType;
+import com.ticketrush.application.reservation.model.AbuseAuditResultType;
+import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
+import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.application.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.AbuseAuditService;
 import com.ticketrush.application.reservation.service.AdminRefundAuditService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.application.reservation.service.SeatSoftLockService;
-import com.ticketrush.domain.reservation.event.ReservationEvent;
-import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
-import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.global.lock.RedissonLockFacade;
 import com.ticketrush.global.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SsePushNotifier;
@@ -85,7 +87,7 @@ public class ReservationController {
      */
     @PostMapping("/v4-opt/queue-polling")
     public ResponseEntity<Map<String, String>> createPollingOptimisticReservation(@RequestBody ReservationRequest request) {
-        return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
+        return enqueue(request, ReservationQueueLockType.OPTIMISTIC);
     }
 
     /**
@@ -93,7 +95,7 @@ public class ReservationController {
      */
     @PostMapping("/v4-pes/queue-polling")
     public ResponseEntity<Map<String, String>> createPollingPessimisticReservation(@RequestBody ReservationRequest request) {
-        return enqueue(request, ReservationEvent.LockType.PESSIMISTIC);
+        return enqueue(request, ReservationQueueLockType.PESSIMISTIC);
     }
 
     /**
@@ -122,7 +124,7 @@ public class ReservationController {
      */
     @PostMapping("/v5-opt/queue-sse")
     public ResponseEntity<Map<String, String>> createSseOptimisticReservation(@RequestBody ReservationRequest request) {
-        return enqueue(request, ReservationEvent.LockType.OPTIMISTIC);
+        return enqueue(request, ReservationQueueLockType.OPTIMISTIC);
     }
 
     /**
@@ -194,9 +196,9 @@ public class ReservationController {
      */
     @GetMapping("/v6/audit/abuse")
     public ResponseEntity<List<AbuseAuditResponse>> getAbuseAudits(
-            @RequestParam(required = false) AbuseAuditLog.AuditAction action,
-            @RequestParam(required = false) AbuseAuditLog.AuditResult result,
-            @RequestParam(required = false) AbuseAuditLog.AuditReason reason,
+            @RequestParam(required = false) AbuseAuditActionType action,
+            @RequestParam(required = false) AbuseAuditResultType result,
+            @RequestParam(required = false) AbuseAuditReasonType reason,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Long concertId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
@@ -352,9 +354,9 @@ public class ReservationController {
      */
     @GetMapping("/v7/audit/abuse")
     public ResponseEntity<List<AbuseAuditResponse>> getAbuseAuditsV7(
-            @RequestParam(required = false) AbuseAuditLog.AuditAction action,
-            @RequestParam(required = false) AbuseAuditLog.AuditResult result,
-            @RequestParam(required = false) AbuseAuditLog.AuditReason reason,
+            @RequestParam(required = false) AbuseAuditActionType action,
+            @RequestParam(required = false) AbuseAuditResultType result,
+            @RequestParam(required = false) AbuseAuditReasonType reason,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Long concertId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
@@ -377,7 +379,7 @@ public class ReservationController {
     public ResponseEntity<List<AdminRefundAuditResponse>> getAdminRefundAuditsV7(
             @RequestParam(required = false) Long reservationId,
             @RequestParam(required = false) Long actorUserId,
-            @RequestParam(required = false) AdminRefundAuditLog.AuditResult result,
+            @RequestParam(required = false) AdminRefundAuditResultType result,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromAt,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toAt,
             @RequestParam(required = false) Integer limit
@@ -390,9 +392,9 @@ public class ReservationController {
         );
     }
 
-    private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationEvent.LockType lockType) {
+    private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationQueueLockType lockType) {
         queueService.setStatus(request.getUserId(), request.getSeatId(), "PENDING");
-        kafkaProducer.send(ReservationEvent.of(request.getUserId(), request.getSeatId(), lockType));
+        kafkaProducer.send(request.getUserId(), request.getSeatId(), lockType);
         return ResponseEntity.accepted().body(Map.of(
             "message", "Reservation request enqueued",
             "strategy", lockType.name()
