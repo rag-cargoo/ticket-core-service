@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.adapter.outbound;
+package com.ticketrush.infrastructure.reservation.adapter.outbound;
 
 import com.ticketrush.domain.reservation.port.outbound.ReservationWaitingQueuePort;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;

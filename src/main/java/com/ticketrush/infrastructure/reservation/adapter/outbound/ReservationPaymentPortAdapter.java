@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.adapter.outbound;
+package com.ticketrush.infrastructure.reservation.adapter.outbound;
 
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;

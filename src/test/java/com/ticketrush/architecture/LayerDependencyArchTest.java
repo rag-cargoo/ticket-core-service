@@ -18,6 +18,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.api..");
 
     @ArchTest
+    static final ArchRule domain_should_not_depend_on_application_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.domain..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.application..");
+
+    @ArchTest
     static final ArchRule application_should_not_depend_on_api_layer =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.application..")
