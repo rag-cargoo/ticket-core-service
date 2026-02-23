@@ -1,17 +1,15 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.auth.port.inbound.AuthTokenAuthenticationUseCase;
 import com.ticketrush.application.auth.service.AuthSessionService;
-import com.ticketrush.application.auth.service.JwtTokenProvider;
 import com.ticketrush.application.auth.service.SocialAuthService;
 import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
 import com.ticketrush.domain.auth.model.SocialLoginResult;
-import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.domain.user.SocialProvider;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserTier;
-import com.ticketrush.global.config.AuthJwtProperties;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
 import org.junit.jupiter.api.Test;
@@ -20,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,12 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = SocialAuthController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, AuthJwtProperties.class})
-@TestPropertySource(properties = {
-        "app.auth.jwt.secret=test-social-auth-secret-key-which-is-long-enough",
-        "app.auth.jwt.access-token-seconds=300",
-        "app.auth.jwt.refresh-token-seconds=3600"
-})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 class SocialAuthControllerIntegrationTest {
 
     @Autowired
@@ -51,7 +43,7 @@ class SocialAuthControllerIntegrationTest {
     private AuthSessionService authSessionService;
 
     @MockBean
-    private AccessTokenDenylistService accessTokenDenylistService;
+    private AuthTokenAuthenticationUseCase authTokenAuthenticationUseCase;
 
     @MockBean
     private WaitingQueueInterceptor waitingQueueInterceptor;

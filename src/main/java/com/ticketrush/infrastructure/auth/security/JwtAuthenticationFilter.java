@@ -1,10 +1,7 @@
 package com.ticketrush.infrastructure.auth.security;
 
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
-import com.ticketrush.application.auth.service.JwtTokenProvider;
-import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
-import com.ticketrush.domain.user.UserRole;
-import io.jsonwebtoken.Claims;
+import com.ticketrush.application.auth.port.inbound.AuthTokenAuthenticationUseCase;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,15 +23,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String AUTH_ERROR_MESSAGE_ATTR = "auth.error.message";
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final AccessTokenDenylistService accessTokenDenylistService;
+    private final AuthTokenAuthenticationUseCase authTokenAuthenticationUseCase;
 
     public JwtAuthenticationFilter(
-            JwtTokenProvider jwtTokenProvider,
-            AccessTokenDenylistService accessTokenDenylistService
+            AuthTokenAuthenticationUseCase authTokenAuthenticationUseCase
     ) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.accessTokenDenylistService = accessTokenDenylistService;
+        this.authTokenAuthenticationUseCase = authTokenAuthenticationUseCase;
     }
 
     @Override
@@ -46,29 +40,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String bearerToken = resolveBearerToken(request);
         if (bearerToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                Claims claims = jwtTokenProvider.parseClaims(bearerToken);
-                String tokenType = jwtTokenProvider.extractTokenType(claims);
-                if (!JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(tokenType)) {
-                    request.setAttribute(AUTH_ERROR_MESSAGE_ATTR, "invalid access token type");
-                } else {
-                    String tokenId = jwtTokenProvider.extractTokenId(claims);
-                    if (accessTokenDenylistService.isRevoked(tokenId)) {
-                        throw new IllegalArgumentException("revoked access token");
-                    }
+                AuthUserPrincipal principal = authTokenAuthenticationUseCase.authenticateAccessToken(bearerToken);
 
-                    Long userId = jwtTokenProvider.extractUserId(claims);
-                    String username = claims.get("username", String.class);
-                    UserRole role = jwtTokenProvider.extractRole(claims);
-                    AuthUserPrincipal principal = new AuthUserPrincipal(userId, username, role);
-
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + principal.getRole().name()))
+                );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (IllegalArgumentException e) {
                 request.setAttribute(AUTH_ERROR_MESSAGE_ATTR, e.getMessage());
                 // invalid token: leave context empty and let security entry point handle protected paths

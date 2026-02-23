@@ -1,14 +1,13 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.auth.model.AuthUserPrincipal;
+import com.ticketrush.application.auth.port.inbound.AuthTokenAuthenticationUseCase;
 import com.ticketrush.application.auth.service.AuthSessionService;
-import com.ticketrush.application.auth.service.JwtTokenProvider;
 import com.ticketrush.application.user.service.UserService;
-import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
 import com.ticketrush.domain.user.UserTier;
-import com.ticketrush.global.config.AuthJwtProperties;
 import com.ticketrush.global.config.SecurityConfig;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
 import org.junit.jupiter.api.Test;
@@ -16,11 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,25 +25,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuthController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, AuthJwtProperties.class})
-@TestPropertySource(properties = {
-        "app.auth.jwt.secret=test-auth-security-secret-key-which-is-long-enough",
-        "app.auth.jwt.access-token-seconds=300",
-        "app.auth.jwt.refresh-token-seconds=3600"
-})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 class AuthSecurityIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
-
     @MockBean
     private AuthSessionService authSessionService;
 
     @MockBean
-    private AccessTokenDenylistService accessTokenDenylistService;
+    private AuthTokenAuthenticationUseCase authTokenAuthenticationUseCase;
 
     @MockBean
     private UserService userService;
@@ -67,11 +56,12 @@ class AuthSecurityIntegrationTest {
     void me_shouldReturnProfileWhenAccessTokenIsValid() throws Exception {
         User user = new User("token-user", UserTier.BASIC, UserRole.USER);
         ReflectionTestUtils.setField(user, "id", 101L);
-        String accessToken = jwtTokenProvider.createAccessToken(user);
         when(userService.getUser(101L)).thenReturn(user);
+        when(authTokenAuthenticationUseCase.authenticateAccessToken("valid-access-token"))
+                .thenReturn(new AuthUserPrincipal(101L, "token-user", UserRole.USER));
 
         mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer valid-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(101L))
                 .andExpect(jsonPath("$.username").value("token-user"))
@@ -80,13 +70,11 @@ class AuthSecurityIntegrationTest {
 
     @Test
     void me_shouldReturnUnauthorizedWhenAccessTokenIsRevoked() throws Exception {
-        User user = new User("revoked-user", UserTier.BASIC, UserRole.USER);
-        ReflectionTestUtils.setField(user, "id", 102L);
-        String accessToken = jwtTokenProvider.createAccessToken(user);
-        when(accessTokenDenylistService.isRevoked(anyString())).thenReturn(true);
+        when(authTokenAuthenticationUseCase.authenticateAccessToken("revoked-access-token"))
+                .thenThrow(new IllegalArgumentException("revoked access token"));
 
         mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer revoked-access-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.errorCode").value("AUTH_ACCESS_TOKEN_REVOKED"))

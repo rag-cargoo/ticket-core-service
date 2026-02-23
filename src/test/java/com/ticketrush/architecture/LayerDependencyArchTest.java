@@ -244,6 +244,13 @@ class LayerDependencyArchTest {
                     .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationQueueService");
 
     @ArchTest
+    static final ArchRule jwt_authentication_filter_should_not_depend_on_jwt_token_provider_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.auth.service.JwtTokenProvider");
+
+    @ArchTest
     static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
