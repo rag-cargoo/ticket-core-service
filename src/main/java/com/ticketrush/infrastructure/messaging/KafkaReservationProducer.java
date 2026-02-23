@@ -1,4 +1,4 @@
-package com.ticketrush.global.messaging;
+package com.ticketrush.infrastructure.messaging;
 
 import com.ticketrush.application.reservation.model.ReservationQueueEvent;
 import com.ticketrush.application.reservation.model.ReservationQueueLockType;

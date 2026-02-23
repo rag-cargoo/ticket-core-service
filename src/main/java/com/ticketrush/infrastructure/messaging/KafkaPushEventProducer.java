@@ -1,4 +1,4 @@
-package com.ticketrush.global.messaging;
+package com.ticketrush.infrastructure.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

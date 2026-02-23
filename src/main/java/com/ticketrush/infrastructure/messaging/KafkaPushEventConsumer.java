@@ -1,4 +1,4 @@
-package com.ticketrush.global.messaging;
+package com.ticketrush.infrastructure.messaging;
 
 import com.ticketrush.global.push.WebSocketPushNotifier;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.ticketrush.global.messaging;
+package com.ticketrush.infrastructure.messaging;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
