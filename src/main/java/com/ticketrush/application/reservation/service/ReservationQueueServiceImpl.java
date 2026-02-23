@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.service;
+package com.ticketrush.application.reservation.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

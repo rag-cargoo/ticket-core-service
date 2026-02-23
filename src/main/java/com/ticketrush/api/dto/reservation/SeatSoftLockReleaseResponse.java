@@ -1,6 +1,6 @@
 package com.ticketrush.api.dto.reservation;
 
-import com.ticketrush.domain.reservation.service.SeatSoftLockService;
+import com.ticketrush.application.reservation.service.SeatSoftLockService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
