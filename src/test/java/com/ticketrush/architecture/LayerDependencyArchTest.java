@@ -193,6 +193,29 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.reservation..");
 
     @ArchTest
+    static final ArchRule reservation_controller_should_not_depend_on_reservation_queue_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationQueueService");
+
+    @ArchTest
+    static final ArchRule waiting_queue_controller_should_not_depend_on_waiting_queue_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.waitingqueue.WaitingQueueController")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.waitingqueue.service.WaitingQueueService");
+
+    @ArchTest
+    static final ArchRule realtime_controllers_should_not_depend_on_realtime_subscription_service_directly =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.waitingqueue.WaitingQueueController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.WebSocketPushController")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.realtime.service.RealtimeSubscriptionService");
+
+    @ArchTest
     static final ArchRule catalog_controllers_should_not_depend_on_domain_catalog_services =
             noClasses()
                     .that().haveFullyQualifiedName("com.ticketrush.api.controller.EntertainmentController")

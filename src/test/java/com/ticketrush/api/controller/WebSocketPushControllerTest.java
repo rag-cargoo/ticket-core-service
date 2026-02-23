@@ -4,7 +4,7 @@ import com.ticketrush.api.dto.push.WebSocketQueueSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketReservationSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketSeatMapSubscriptionRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
-import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
+import com.ticketrush.application.realtime.port.inbound.RealtimeSubscriptionUseCase;
 import com.ticketrush.domain.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,14 +26,14 @@ import static org.mockito.Mockito.when;
 class WebSocketPushControllerTest {
 
     @Mock
-    private RealtimeSubscriptionService realtimeSubscriptionService;
+    private RealtimeSubscriptionUseCase realtimeSubscriptionUseCase;
 
     private WebSocketPushController controller;
     private AuthUserPrincipal principal;
 
     @BeforeEach
     void setUp() {
-        controller = new WebSocketPushController(realtimeSubscriptionService);
+        controller = new WebSocketPushController(realtimeSubscriptionUseCase);
         principal = new AuthUserPrincipal(200L, "tester", UserRole.USER);
     }
 
@@ -42,14 +42,14 @@ class WebSocketPushControllerTest {
         WebSocketQueueSubscriptionRequest request = new WebSocketQueueSubscriptionRequest();
         request.setConcertId(7L);
 
-        when(realtimeSubscriptionService.subscribeQueueWebSocket(200L, 7L))
+        when(realtimeSubscriptionUseCase.subscribeQueueWebSocket(200L, 7L))
                 .thenReturn("/topic/waiting-queue/7/200");
 
         ResponseEntity<Map<String, String>> response = controller.subscribeWaitingQueue(principal, request);
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).containsEntry("destination", "/topic/waiting-queue/7/200");
-        verify(realtimeSubscriptionService).subscribeQueueWebSocket(eq(200L), eq(7L));
+        verify(realtimeSubscriptionUseCase).subscribeQueueWebSocket(eq(200L), eq(7L));
     }
 
     @Test
@@ -62,7 +62,7 @@ class WebSocketPushControllerTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("does not match");
 
-        verify(realtimeSubscriptionService, never()).subscribeQueueWebSocket(eq(200L), eq(7L));
+        verify(realtimeSubscriptionUseCase, never()).subscribeQueueWebSocket(eq(200L), eq(7L));
     }
 
     @Test
@@ -70,7 +70,7 @@ class WebSocketPushControllerTest {
         ResponseEntity<Void> response = controller.unsubscribeReservation(principal, null, 55L);
 
         assertThat(response.getStatusCode().value()).isEqualTo(204);
-        verify(realtimeSubscriptionService).unsubscribeReservationWebSocket(200L, 55L);
+        verify(realtimeSubscriptionUseCase).unsubscribeReservationWebSocket(200L, 55L);
     }
 
     @Test
@@ -79,14 +79,14 @@ class WebSocketPushControllerTest {
         request.setUserId(200L);
         request.setSeatId(55L);
 
-        when(realtimeSubscriptionService.subscribeReservationWebSocket(200L, 55L))
+        when(realtimeSubscriptionUseCase.subscribeReservationWebSocket(200L, 55L))
                 .thenReturn("/topic/reservations/55/200");
 
         ResponseEntity<Map<String, String>> response = controller.subscribeReservation(principal, request);
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).containsEntry("destination", "/topic/reservations/55/200");
-        verify(realtimeSubscriptionService).subscribeReservationWebSocket(200L, 55L);
+        verify(realtimeSubscriptionUseCase).subscribeReservationWebSocket(200L, 55L);
     }
 
     @Test
@@ -94,13 +94,13 @@ class WebSocketPushControllerTest {
         WebSocketSeatMapSubscriptionRequest request = new WebSocketSeatMapSubscriptionRequest();
         request.setOptionId(19L);
 
-        when(realtimeSubscriptionService.subscribeSeatMapWebSocket(19L)).thenReturn("/topic/seats/19");
+        when(realtimeSubscriptionUseCase.subscribeSeatMapWebSocket(19L)).thenReturn("/topic/seats/19");
 
         ResponseEntity<Map<String, String>> response = controller.subscribeSeatMap(principal, request);
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).containsEntry("destination", "/topic/seats/19");
-        verify(realtimeSubscriptionService).subscribeSeatMapWebSocket(19L);
+        verify(realtimeSubscriptionUseCase).subscribeSeatMapWebSocket(19L);
     }
 
     @Test
@@ -108,6 +108,6 @@ class WebSocketPushControllerTest {
         ResponseEntity<Void> response = controller.unsubscribeSeatMap(principal, 19L);
 
         assertThat(response.getStatusCode().value()).isEqualTo(204);
-        verify(realtimeSubscriptionService).unsubscribeSeatMapWebSocket(19L);
+        verify(realtimeSubscriptionUseCase).unsubscribeSeatMapWebSocket(19L);
     }
 }

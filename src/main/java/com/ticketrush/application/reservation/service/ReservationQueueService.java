@@ -1,11 +1,8 @@
 package com.ticketrush.application.reservation.service;
 
-import com.ticketrush.application.reservation.model.ReservationQueueLockType;
+import com.ticketrush.application.reservation.port.inbound.ReservationQueueOrchestrationUseCase;
 
-public interface ReservationQueueService {
+public interface ReservationQueueService extends ReservationQueueOrchestrationUseCase {
+
     void setStatus(Long userId, Long seatId, String status);
-
-    String getStatus(Long userId, Long seatId);
-
-    void enqueue(Long userId, Long seatId, ReservationQueueLockType lockType);
 }

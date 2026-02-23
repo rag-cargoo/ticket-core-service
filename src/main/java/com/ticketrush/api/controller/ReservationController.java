@@ -8,10 +8,10 @@ import com.ticketrush.application.reservation.model.AbuseAuditActionType;
 import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
 import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
-import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
+import com.ticketrush.application.realtime.port.inbound.RealtimeSubscriptionUseCase;
 import com.ticketrush.application.reservation.port.inbound.DistributedReservationUseCase;
+import com.ticketrush.application.reservation.port.inbound.ReservationQueueOrchestrationUseCase;
 import com.ticketrush.application.reservation.service.ReservationService;
-import com.ticketrush.application.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.AbuseAuditService;
 import com.ticketrush.application.reservation.service.AdminRefundAuditService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
@@ -47,8 +47,8 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final DistributedReservationUseCase distributedReservationUseCase;
-    private final RealtimeSubscriptionService realtimeSubscriptionService;
-    private final ReservationQueueService queueService;
+    private final RealtimeSubscriptionUseCase realtimeSubscriptionUseCase;
+    private final ReservationQueueOrchestrationUseCase reservationQueueOrchestrationUseCase;
     private final ReservationLifecycleService reservationLifecycleService;
     private final SeatSoftLockService seatSoftLockService;
     private final AbuseAuditService abuseAuditService;
@@ -104,7 +104,7 @@ public class ReservationController {
     public ResponseEntity<Map<String, String>> getReservationStatus(
             @RequestParam Long userId, 
             @RequestParam Long seatId) {
-        String status = queueService.getStatus(userId, seatId);
+        String status = reservationQueueOrchestrationUseCase.getStatus(userId, seatId);
         return ResponseEntity.ok(Map.of("status", status != null ? status : "NOT_FOUND"));
     }
 
@@ -115,7 +115,7 @@ public class ReservationController {
     public SseEmitter subscribe(
             @RequestParam Long userId,
             @RequestParam Long seatId) {
-        return realtimeSubscriptionService.subscribeReservationSse(userId, seatId);
+        return realtimeSubscriptionUseCase.subscribeReservationSse(userId, seatId);
     }
 
     /**
@@ -392,7 +392,7 @@ public class ReservationController {
     }
 
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationQueueLockType lockType) {
-        queueService.enqueue(request.getUserId(), request.getSeatId(), lockType);
+        reservationQueueOrchestrationUseCase.enqueue(request.getUserId(), request.getSeatId(), lockType);
         return ResponseEntity.accepted().body(Map.of(
             "message", "Reservation request enqueued",
             "strategy", lockType.name()

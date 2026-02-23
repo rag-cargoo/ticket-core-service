@@ -2,11 +2,11 @@ package com.ticketrush.api.waitingqueue;
 
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueRequest;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
-import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
+import com.ticketrush.application.realtime.port.inbound.RealtimeSubscriptionUseCase;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
-import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
+import com.ticketrush.application.waitingqueue.port.inbound.WaitingQueueUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -20,13 +20,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class WaitingQueueController {
 
-    private final WaitingQueueService waitingQueueService;
-    private final RealtimeSubscriptionService realtimeSubscriptionService;
+    private final WaitingQueueUseCase waitingQueueUseCase;
+    private final RealtimeSubscriptionUseCase realtimeSubscriptionUseCase;
 
     @PostMapping("/join")
     public ResponseEntity<WaitingQueueResponse> join(@RequestBody WaitingQueueRequest request) {
         log.debug(">>>> [Incoming Request] join - userId: {}, concertId: {}", request.getUserId(), request.getConcertId());
-        WaitingQueueStatusResult result = waitingQueueService.join(
+        WaitingQueueStatusResult result = waitingQueueUseCase.join(
                 new WaitingQueueJoinCommand(request.getUserId(), request.getConcertId())
         );
         return ResponseEntity.ok(toApiResponse(result));
@@ -37,7 +37,7 @@ public class WaitingQueueController {
             @RequestParam Long userId,
             @RequestParam Long concertId) {
         log.debug(">>>> [Incoming Request] status - userId: {}, concertId: {}", userId, concertId);
-        WaitingQueueStatusResult result = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
+        WaitingQueueStatusResult result = waitingQueueUseCase.getStatus(new WaitingQueueStatusQuery(userId, concertId));
         return ResponseEntity.ok(toApiResponse(result));
     }
 
@@ -46,7 +46,7 @@ public class WaitingQueueController {
             @RequestParam Long userId,
             @RequestParam Long concertId) {
         log.debug(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
-        return realtimeSubscriptionService.subscribeWaitingQueueSse(userId, concertId);
+        return realtimeSubscriptionUseCase.subscribeWaitingQueueSse(userId, concertId);
     }
 
     private WaitingQueueResponse toApiResponse(WaitingQueueStatusResult result) {

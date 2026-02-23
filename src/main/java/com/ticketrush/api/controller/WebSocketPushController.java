@@ -4,7 +4,7 @@ import com.ticketrush.api.dto.push.WebSocketQueueSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketReservationSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketSeatMapSubscriptionRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
-import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
+import com.ticketrush.application.realtime.port.inbound.RealtimeSubscriptionUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSocketPushController {
 
-    private final RealtimeSubscriptionService realtimeSubscriptionService;
+    private final RealtimeSubscriptionUseCase realtimeSubscriptionUseCase;
 
     @PostMapping("/waiting-queue/subscriptions")
     public ResponseEntity<Map<String, String>> subscribeWaitingQueue(
@@ -32,7 +32,7 @@ public class WebSocketPushController {
     ) {
         Long userId = requiredUserId(principal);
         validateRequestedUserId(request.getUserId(), userId);
-        String destination = realtimeSubscriptionService.subscribeQueueWebSocket(userId, request.getConcertId());
+        String destination = realtimeSubscriptionUseCase.subscribeQueueWebSocket(userId, request.getConcertId());
         return ResponseEntity.ok(Map.of(
                 "transport", "websocket",
                 "destination", destination
@@ -47,7 +47,7 @@ public class WebSocketPushController {
     ) {
         Long authenticatedUserId = requiredUserId(principal);
         validateRequestedUserId(userId, authenticatedUserId);
-        realtimeSubscriptionService.unsubscribeQueueWebSocket(authenticatedUserId, concertId);
+        realtimeSubscriptionUseCase.unsubscribeQueueWebSocket(authenticatedUserId, concertId);
         return ResponseEntity.noContent().build();
     }
 
@@ -58,7 +58,7 @@ public class WebSocketPushController {
     ) {
         Long userId = requiredUserId(principal);
         validateRequestedUserId(request.getUserId(), userId);
-        String destination = realtimeSubscriptionService.subscribeReservationWebSocket(userId, request.getSeatId());
+        String destination = realtimeSubscriptionUseCase.subscribeReservationWebSocket(userId, request.getSeatId());
         return ResponseEntity.ok(Map.of(
                 "transport", "websocket",
                 "destination", destination
@@ -73,7 +73,7 @@ public class WebSocketPushController {
     ) {
         Long authenticatedUserId = requiredUserId(principal);
         validateRequestedUserId(userId, authenticatedUserId);
-        realtimeSubscriptionService.unsubscribeReservationWebSocket(authenticatedUserId, seatId);
+        realtimeSubscriptionUseCase.unsubscribeReservationWebSocket(authenticatedUserId, seatId);
         return ResponseEntity.noContent().build();
     }
 
@@ -83,7 +83,7 @@ public class WebSocketPushController {
             @Valid @RequestBody WebSocketSeatMapSubscriptionRequest request
     ) {
         requiredUserId(principal);
-        String destination = realtimeSubscriptionService.subscribeSeatMapWebSocket(request.getOptionId());
+        String destination = realtimeSubscriptionUseCase.subscribeSeatMapWebSocket(request.getOptionId());
         return ResponseEntity.ok(Map.of(
                 "transport", "websocket",
                 "destination", destination
@@ -96,7 +96,7 @@ public class WebSocketPushController {
             @RequestParam Long optionId
     ) {
         requiredUserId(principal);
-        realtimeSubscriptionService.unsubscribeSeatMapWebSocket(optionId);
+        realtimeSubscriptionUseCase.unsubscribeSeatMapWebSocket(optionId);
         return ResponseEntity.noContent().build();
     }
 
