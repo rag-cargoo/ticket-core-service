@@ -1,5 +1,6 @@
 package com.ticketrush.global.config;
 
+import com.ticketrush.application.reservation.port.outbound.ReservationConfigPort;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "app.reservation")
-public class ReservationProperties {
+public class ReservationProperties implements ReservationConfigPort {
 
     /**
      * 결제 대기(HOLD/PAYING) 상태 유지 시간.

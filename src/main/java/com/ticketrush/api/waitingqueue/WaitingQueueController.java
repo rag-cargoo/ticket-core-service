@@ -1,22 +1,18 @@
 package com.ticketrush.api.waitingqueue;
 
-import com.ticketrush.api.dto.waitingqueue.WaitingQueueSsePayload;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueRequest;
 import com.ticketrush.api.dto.waitingqueue.WaitingQueueResponse;
+import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
-import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
-import com.ticketrush.global.sse.SsePushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.time.Instant;
 
 @Slf4j
 @RestController
@@ -25,7 +21,7 @@ import java.time.Instant;
 public class WaitingQueueController {
 
     private final WaitingQueueService waitingQueueService;
-    private final SsePushNotifier ssePushNotifier;
+    private final RealtimeSubscriptionService realtimeSubscriptionService;
 
     @PostMapping("/join")
     public ResponseEntity<WaitingQueueResponse> join(@RequestBody WaitingQueueRequest request) {
@@ -50,29 +46,7 @@ public class WaitingQueueController {
             @RequestParam Long userId,
             @RequestParam Long concertId) {
         log.debug(">>>> [Incoming Request] subscribe - userId: {}, concertId: {}", userId, concertId);
-
-        SseEmitter emitter = ssePushNotifier.subscribeQueue(userId, concertId);
-        WaitingQueueStatusResult currentStatus = waitingQueueService.getStatus(new WaitingQueueStatusQuery(userId, concertId));
-        Long activeTtlSeconds = currentStatus.getStatus() == WaitingQueueStatusType.ACTIVE
-                ? waitingQueueService.getActiveTtlSeconds(userId)
-                : 0L;
-
-        WaitingQueueSsePayload payload = WaitingQueueSsePayload.builder()
-                .userId(userId)
-                .concertId(concertId)
-                .status(currentStatus.getStatus().name())
-                .rank(currentStatus.getRank())
-                .activeTtlSeconds(activeTtlSeconds)
-                .timestamp(Instant.now().toString())
-                .build();
-
-        if (currentStatus.getStatus() == WaitingQueueStatusType.ACTIVE) {
-            ssePushNotifier.sendQueueActivated(userId, concertId, payload);
-        } else {
-            ssePushNotifier.sendQueueRankUpdate(userId, concertId, payload);
-        }
-
-        return emitter;
+        return realtimeSubscriptionService.subscribeWaitingQueueSse(userId, concertId);
     }
 
     private WaitingQueueResponse toApiResponse(WaitingQueueStatusResult result) {

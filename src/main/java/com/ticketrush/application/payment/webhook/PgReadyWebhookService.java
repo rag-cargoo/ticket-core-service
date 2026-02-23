@@ -8,8 +8,8 @@ import com.ticketrush.domain.payment.entity.PaymentTransactionType;
 import com.ticketrush.domain.payment.repository.PaymentTransactionRepository;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
-import com.ticketrush.global.cache.ConcertReadCacheEvictor;
-import com.ticketrush.global.push.PushNotifier;
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,8 +25,8 @@ public class PgReadyWebhookService {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final ReservationRepository reservationRepository;
-    private final PushNotifier pushNotifier;
-    private final ConcertReadCacheEvictor concertReadCacheEvictor;
+    private final ReservationStatusPushPort pushNotifier;
+    private final ConcertReadCacheEvictPort concertReadCacheEvictor;
 
     private static final String EVENT_PAYMENT = "PAYMENT";
     private static final String STATUS_APPROVED = "APPROVED";

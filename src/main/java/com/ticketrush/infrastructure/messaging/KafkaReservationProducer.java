@@ -2,6 +2,7 @@ package com.ticketrush.infrastructure.messaging;
 
 import com.ticketrush.application.reservation.model.ReservationQueueEvent;
 import com.ticketrush.application.reservation.model.ReservationQueueLockType;
+import com.ticketrush.application.reservation.port.outbound.ReservationQueueEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,13 +12,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KafkaReservationProducer {
+public class KafkaReservationProducer implements ReservationQueueEventPublisher {
 
     private final KafkaTemplate<String, ReservationQueueEvent> kafkaTemplate;
 
     @Value("${app.kafka.topic.reservation}")
     private String topic;
 
+    @Override
     public void send(Long userId, Long seatId, ReservationQueueLockType lockType) {
         send(ReservationQueueEvent.of(userId, seatId, lockType));
     }

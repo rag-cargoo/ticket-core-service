@@ -1,11 +1,11 @@
 package com.ticketrush.global.scheduler;
 
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import com.ticketrush.application.waitingqueue.service.WaitingQueueService;
-import com.ticketrush.global.config.WaitingQueueProperties;
-import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,10 +30,10 @@ class WaitingQueueSchedulerTest {
     private WaitingQueueService waitingQueueService;
 
     @Mock
-    private WaitingQueueProperties properties;
+    private WaitingQueueConfigPort properties;
 
     @Mock
-    private PushNotifier pushNotifier;
+    private QueueRuntimePushPort pushNotifier;
 
     @Mock
     private SchedulerLockService schedulerLockService;

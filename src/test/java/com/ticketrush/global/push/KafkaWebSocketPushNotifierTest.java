@@ -1,8 +1,10 @@
 package com.ticketrush.global.push;
 
-import com.ticketrush.infrastructure.messaging.KafkaPushEvent;
-import com.ticketrush.infrastructure.messaging.KafkaPushEventProducer;
-import com.ticketrush.global.sse.SseEventNames;
+import com.ticketrush.application.port.outbound.PushEvent;
+import com.ticketrush.application.port.outbound.PushEventPublisherPort;
+import com.ticketrush.application.port.outbound.QueueEventName;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.QueueSubscriberQueryPort;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -18,18 +20,22 @@ class KafkaWebSocketPushNotifierTest {
 
     @Test
     void sendQueueActivated_shouldPublishQueueEventToKafka() {
-        KafkaPushEventProducer producer = mock(KafkaPushEventProducer.class);
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, webSocketPushNotifier);
+        PushEventPublisherPort producer = mock(PushEventPublisherPort.class);
+        QueueSubscriberQueryPort queueSubscriberQueryPort = mock(QueueSubscriberQueryPort.class);
+        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, queueSubscriberQueryPort);
 
-        notifier.sendQueueActivated(11L, 22L, Map.of("status", "ACTIVE"));
+        notifier.sendQueueActivated(
+                11L,
+                22L,
+                QueuePushPayload.of(11L, 22L, "ACTIVE", 0L, 300L)
+        );
 
-        var eventCaptor = forClass(KafkaPushEvent.class);
+        var eventCaptor = forClass(PushEvent.class);
         var keyCaptor = forClass(String.class);
         verify(producer).publish(eventCaptor.capture(), keyCaptor.capture());
 
-        assertThat(eventCaptor.getValue().getType()).isEqualTo(KafkaPushEvent.Type.QUEUE_EVENT);
-        assertThat(eventCaptor.getValue().getEventName()).isEqualTo(SseEventNames.ACTIVE);
+        assertThat(eventCaptor.getValue().getType()).isEqualTo(PushEvent.Type.QUEUE_EVENT);
+        assertThat(eventCaptor.getValue().getEventName()).isEqualTo(QueueEventName.ACTIVE);
         assertThat(eventCaptor.getValue().getUserId()).isEqualTo(11L);
         assertThat(eventCaptor.getValue().getConcertId()).isEqualTo(22L);
         assertThat(keyCaptor.getValue()).isEqualTo("queue:22:11");
@@ -37,24 +43,24 @@ class KafkaWebSocketPushNotifierTest {
 
     @Test
     void sendQueueHeartbeat_shouldPublishKeepaliveForEachSubscriber() {
-        KafkaPushEventProducer producer = mock(KafkaPushEventProducer.class);
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        when(webSocketPushNotifier.snapshotQueueSubscribers()).thenReturn(Map.of(1L, Set.of(10L, 11L)));
+        PushEventPublisherPort producer = mock(PushEventPublisherPort.class);
+        QueueSubscriberQueryPort queueSubscriberQueryPort = mock(QueueSubscriberQueryPort.class);
+        when(queueSubscriberQueryPort.snapshotQueueSubscribers()).thenReturn(Map.of(1L, Set.of(10L, 11L)));
 
-        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, webSocketPushNotifier);
+        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, queueSubscriberQueryPort);
         notifier.sendQueueHeartbeat();
 
-        verify(producer).publish(org.mockito.ArgumentMatchers.any(KafkaPushEvent.class), org.mockito.ArgumentMatchers.eq("queue:1:10"));
-        verify(producer).publish(org.mockito.ArgumentMatchers.any(KafkaPushEvent.class), org.mockito.ArgumentMatchers.eq("queue:1:11"));
+        verify(producer).publish(org.mockito.ArgumentMatchers.any(PushEvent.class), org.mockito.ArgumentMatchers.eq("queue:1:10"));
+        verify(producer).publish(org.mockito.ArgumentMatchers.any(PushEvent.class), org.mockito.ArgumentMatchers.eq("queue:1:11"));
     }
 
     @Test
     void getSubscribedQueueUsers_shouldDelegateToWebSocketNotifier() {
-        KafkaPushEventProducer producer = mock(KafkaPushEventProducer.class);
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        when(webSocketPushNotifier.getSubscribedQueueUsers(9L)).thenReturn(Set.of(100L));
+        PushEventPublisherPort producer = mock(PushEventPublisherPort.class);
+        QueueSubscriberQueryPort queueSubscriberQueryPort = mock(QueueSubscriberQueryPort.class);
+        when(queueSubscriberQueryPort.getSubscribedQueueUsers(9L)).thenReturn(Set.of(100L));
 
-        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, webSocketPushNotifier);
+        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, queueSubscriberQueryPort);
         Set<Long> users = notifier.getSubscribedQueueUsers(9L);
 
         assertThat(users).containsExactly(100L);

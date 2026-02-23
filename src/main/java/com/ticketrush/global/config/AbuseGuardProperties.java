@@ -1,5 +1,6 @@
 package com.ticketrush.global.config;
 
+import com.ticketrush.application.reservation.port.outbound.AbuseGuardConfigPort;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "app.abuse-guard")
-public class AbuseGuardProperties {
+public class AbuseGuardProperties implements AbuseGuardConfigPort {
 
     /**
      * 유저별 HOLD 요청 빈도 계산 윈도우.

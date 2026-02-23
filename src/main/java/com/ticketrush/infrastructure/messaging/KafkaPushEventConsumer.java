@@ -1,6 +1,6 @@
 package com.ticketrush.infrastructure.messaging;
 
-import com.ticketrush.global.push.WebSocketPushNotifier;
+import com.ticketrush.application.port.outbound.WebSocketEventDispatchPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class KafkaPushEventConsumer {
 
-    private final WebSocketPushNotifier webSocketPushNotifier;
+    private final WebSocketEventDispatchPort webSocketEventDispatchPort;
 
     @KafkaListener(
             topics = "${app.kafka.topic.push}",
@@ -26,18 +26,18 @@ public class KafkaPushEventConsumer {
         }
 
         switch (event.getType()) {
-            case QUEUE_EVENT -> webSocketPushNotifier.publishQueueEvent(
+            case QUEUE_EVENT -> webSocketEventDispatchPort.publishQueueEvent(
                     event.getUserId(),
                     event.getConcertId(),
                     event.getEventName(),
                     event.getData()
             );
-            case RESERVATION_STATUS -> webSocketPushNotifier.sendReservationStatus(
+            case RESERVATION_STATUS -> webSocketEventDispatchPort.sendReservationStatus(
                     event.getUserId(),
                     event.getSeatId(),
                     event.getStatus()
             );
-            case SEAT_MAP_STATUS -> webSocketPushNotifier.sendSeatMapStatus(
+            case SEAT_MAP_STATUS -> webSocketEventDispatchPort.sendSeatMapStatus(
                     event.getOptionId(),
                     event.getSeatId(),
                     event.getStatus(),

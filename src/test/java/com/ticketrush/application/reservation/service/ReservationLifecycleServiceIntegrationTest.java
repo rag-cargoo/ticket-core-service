@@ -9,6 +9,9 @@ import com.ticketrush.application.reservation.model.AbuseAuditRecord;
 import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
@@ -43,7 +46,6 @@ import com.ticketrush.global.cache.ConcertReadCacheEvictor;
 import com.ticketrush.global.config.AbuseGuardProperties;
 import com.ticketrush.global.config.PaymentProperties;
 import com.ticketrush.global.config.ReservationProperties;
-import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -115,8 +117,18 @@ class ReservationLifecycleServiceIntegrationTest {
         }
 
         @Bean
-        PushNotifier pushNotifier() {
-            return mock(PushNotifier.class);
+        QueueRuntimePushPort queuePushNotifier() {
+            return mock(QueueRuntimePushPort.class);
+        }
+
+        @Bean
+        ReservationStatusPushPort reservationStatusPushNotifier() {
+            return mock(ReservationStatusPushPort.class);
+        }
+
+        @Bean
+        SeatMapPushPort seatMapPushNotifier() {
+            return mock(SeatMapPushPort.class);
         }
 
         @Bean
@@ -165,7 +177,13 @@ class ReservationLifecycleServiceIntegrationTest {
     private WaitingQueueService waitingQueueService;
 
     @jakarta.annotation.Resource
-    private PushNotifier pushNotifier;
+    private QueueRuntimePushPort queuePushNotifier;
+
+    @jakarta.annotation.Resource
+    private ReservationStatusPushPort reservationStatusPushNotifier;
+
+    @jakarta.annotation.Resource
+    private SeatMapPushPort seatMapPushNotifier;
 
     @jakarta.annotation.Resource
     private PaymentService paymentService;
@@ -191,14 +209,14 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.RESERVED);
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(100_000L);
-        verify(pushNotifier).sendSeatMapStatus(
+        verify(seatMapPushNotifier).sendSeatMapStatus(
                 eq(seat.getConcertOption().getId()),
                 eq(seat.getId()),
                 eq(Reservation.ReservationStatus.HOLD.name()),
                 eq(user.getId()),
                 any()
         );
-        verify(pushNotifier).sendSeatMapStatus(
+        verify(seatMapPushNotifier).sendSeatMapStatus(
                 eq(seat.getConcertOption().getId()),
                 eq(seat.getId()),
                 eq(Reservation.ReservationStatus.CONFIRMED.name()),
@@ -225,8 +243,8 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(expired.getExpiredAt()).isNotNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
-        verify(pushNotifier).sendReservationStatus(user.getId(), seat.getId(), Reservation.ReservationStatus.EXPIRED.name());
-        verify(pushNotifier).sendSeatMapStatus(
+        verify(reservationStatusPushNotifier).sendReservationStatus(user.getId(), seat.getId(), Reservation.ReservationStatus.EXPIRED.name());
+        verify(seatMapPushNotifier).sendSeatMapStatus(
                 eq(seat.getConcertOption().getId()),
                 eq(seat.getId()),
                 eq(Seat.SeatStatus.AVAILABLE.name()),
@@ -259,8 +277,8 @@ class ReservationLifecycleServiceIntegrationTest {
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
 
         verify(waitingQueueService).activateUsers(concertId, 1);
-        verify(pushNotifier).sendQueueActivated(eq(999L), eq(concertId), any());
-        verify(pushNotifier).sendSeatMapStatus(
+        verify(queuePushNotifier).sendQueueActivated(eq(999L), eq(concertId), any());
+        verify(seatMapPushNotifier).sendSeatMapStatus(
                 eq(seat.getConcertOption().getId()),
                 eq(seat.getId()),
                 eq(Seat.SeatStatus.AVAILABLE.name()),

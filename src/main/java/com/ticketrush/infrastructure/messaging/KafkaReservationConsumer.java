@@ -1,11 +1,11 @@
 package com.ticketrush.infrastructure.messaging;
 
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationQueueEvent;
 import com.ticketrush.application.reservation.model.ReservationQueueLockType;
 import com.ticketrush.application.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.ReservationService;
-import com.ticketrush.global.push.PushNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -18,7 +18,7 @@ public class KafkaReservationConsumer {
 
     private final ReservationService reservationService;
     private final ReservationQueueService queueService;
-    private final PushNotifier pushNotifier;
+    private final ReservationStatusPushPort pushNotifier;
 
     @KafkaListener(topics = "${app.kafka.topic.reservation}", groupId = "${spring.kafka.consumer.group-id:ticket-group}")
     public void consume(ReservationQueueEvent event) {

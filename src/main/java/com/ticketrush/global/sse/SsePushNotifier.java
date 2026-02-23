@@ -1,7 +1,12 @@
 package com.ticketrush.global.sse;
 
-import com.ticketrush.global.config.WaitingQueueProperties;
-import com.ticketrush.global.push.PushNotifier;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
+import com.ticketrush.application.port.outbound.SsePushPort;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
+import com.ticketrush.global.monitoring.PushMonitoringMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,12 +23,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component("ssePushNotifier")
 @RequiredArgsConstructor
-public class SsePushNotifier implements PushNotifier {
+public class SsePushNotifier implements QueueRuntimePushPort, ReservationStatusPushPort, SeatMapPushPort, SsePushPort {
 
     private static final String RESERVATION_KEY_PREFIX = "res:";
     private static final String QUEUE_KEY_PREFIX = "queue:";
 
-    private final WaitingQueueProperties properties;
+    private final WaitingQueueConfigPort waitingQueueConfig;
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     /**
@@ -43,7 +48,7 @@ public class SsePushNotifier implements PushNotifier {
     }
 
     private SseEmitter createEmitter(String key, String initMessage) {
-        SseEmitter emitter = new SseEmitter(properties.getSseTimeoutMillis());
+        SseEmitter emitter = new SseEmitter(waitingQueueConfig.getSseTimeoutMillis());
 
         emitter.onCompletion(() -> removeIfSame(key, emitter));
         emitter.onTimeout(() -> removeIfSame(key, emitter));
@@ -71,26 +76,38 @@ public class SsePushNotifier implements PushNotifier {
     public void sendReservationStatus(Long userId, Long seatId, String status) {
         String key = RESERVATION_KEY_PREFIX + userId + ":" + seatId;
         sendAndComplete(key, SseEventNames.RESERVATION_STATUS, status);
+        PushMonitoringMetrics.increment("push", "sse", "reservation_status");
     }
 
     @Override
-    public void sendQueueRankUpdate(Long userId, Long concertId, Object data) {
+    public void sendQueueRankUpdate(Long userId, Long concertId, QueuePushPayload data) {
         String key = toQueueKey(userId, concertId);
         send(key, SseEventNames.RANK_UPDATE, data);
+        PushMonitoringMetrics.increment("push", "sse", "queue_rank_update");
     }
 
     @Override
-    public void sendQueueActivated(Long userId, Long concertId, Object data) {
+    public void sendQueueActivated(Long userId, Long concertId, QueuePushPayload data) {
         String key = toQueueKey(userId, concertId);
         send(key, SseEventNames.ACTIVE, data);
+        PushMonitoringMetrics.increment("push", "sse", "queue_activated");
     }
 
     @Override
     public void sendQueueHeartbeat() {
         Object heartbeat = Map.of("timestamp", Instant.now().toString());
-        emitters.keySet().stream()
-                .filter(key -> key.startsWith(QUEUE_KEY_PREFIX))
-                .forEach(key -> send(key, SseEventNames.KEEPALIVE, heartbeat));
+        long fanoutCount = 0L;
+        for (String key : emitters.keySet()) {
+            if (!key.startsWith(QUEUE_KEY_PREFIX)) {
+                continue;
+            }
+            send(key, SseEventNames.KEEPALIVE, heartbeat);
+            fanoutCount++;
+        }
+        if (fanoutCount > 0L) {
+            PushMonitoringMetrics.increment("push", "sse", "queue_keepalive", fanoutCount);
+            log.info("PUSH_MONITOR transport=sse event=queue_keepalive fanout={}", fanoutCount);
+        }
     }
 
     @Override

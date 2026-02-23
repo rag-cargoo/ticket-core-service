@@ -1,10 +1,10 @@
 package com.ticketrush.global.config;
 
-import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.global.auth.AuthErrorClassifier;
 import com.ticketrush.global.auth.AuthErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +24,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.util.List;
 
@@ -32,10 +33,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String AUTH_ERROR_MESSAGE_ATTR = "auth.error.message";
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter,
+            @Qualifier("jwtAuthenticationFilter") OncePerRequestFilter jwtAuthenticationFilter,
             @Value("${app.admin-console.minimum-role:USER}") String adminConsoleMinimumRole
     ) throws Exception {
         AuthorizationManager<RequestAuthorizationContext> adminConsoleAccessManager =
@@ -62,7 +65,7 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            String detail = (String) request.getAttribute(JwtAuthenticationFilter.AUTH_ERROR_MESSAGE_ATTR);
+                            String detail = (String) request.getAttribute(AUTH_ERROR_MESSAGE_ATTR);
                             AuthErrorCode errorCode = AuthErrorClassifier.classifyUnauthorized(
                                     detail,
                                     request.getHeader(HttpHeaders.AUTHORIZATION)

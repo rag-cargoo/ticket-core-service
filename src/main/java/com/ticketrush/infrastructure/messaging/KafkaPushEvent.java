@@ -1,5 +1,7 @@
 package com.ticketrush.infrastructure.messaging;
 
+import com.ticketrush.application.port.outbound.QueueEventName;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,8 +21,8 @@ public class KafkaPushEvent {
     private Long seatId;
     private Long optionId;
     private String status;
-    private String eventName;
-    private Object data;
+    private QueueEventName eventName;
+    private QueuePushPayload data;
     private Long ownerUserId;
     private String expiresAt;
     private String timestamp;

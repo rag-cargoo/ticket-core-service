@@ -1,5 +1,6 @@
 package com.ticketrush.global.config;
 
+import com.ticketrush.application.reservation.port.outbound.PaymentConfigPort;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "app.payment")
-public class PaymentProperties {
+public class PaymentProperties implements PaymentConfigPort {
 
     /**
      * 예약 결제 처리 게이트웨이 provider.

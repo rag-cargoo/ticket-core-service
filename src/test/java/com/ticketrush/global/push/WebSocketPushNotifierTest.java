@@ -1,10 +1,11 @@
 package com.ticketrush.global.push;
 
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.WebSocketQueueSubscriptionStorePort;
 import com.ticketrush.global.config.WaitingQueueProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +21,7 @@ class WebSocketPushNotifierTest {
     @Test
     void subscribeQueue_shouldPersistSubscriptionToStore() {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        WebSocketQueueSubscriptionStore subscriptionStore = mock(WebSocketQueueSubscriptionStore.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
 
         WebSocketPushNotifier notifier = new WebSocketPushNotifier(messagingTemplate, subscriptionStore, waitingQueueProperties());
 
@@ -33,7 +34,7 @@ class WebSocketPushNotifierTest {
     @Test
     void getSubscribedQueueUsers_shouldReadFromStore() {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        WebSocketQueueSubscriptionStore subscriptionStore = mock(WebSocketQueueSubscriptionStore.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
         when(subscriptionStore.getActiveSubscribers(eq(1L), anyLong()))
                 .thenReturn(Set.of("100", "101"));
 
@@ -47,7 +48,7 @@ class WebSocketPushNotifierTest {
     @Test
     void sendQueueHeartbeat_shouldPublishToSubscribedUsers() {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        WebSocketQueueSubscriptionStore subscriptionStore = mock(WebSocketQueueSubscriptionStore.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
         when(subscriptionStore.getConcertIds()).thenReturn(Set.of("1"));
         when(subscriptionStore.getActiveSubscribers(eq(1L), anyLong()))
                 .thenReturn(Set.of("100"));
@@ -62,11 +63,15 @@ class WebSocketPushNotifierTest {
     @Test
     void sendQueueActivated_shouldPublishToWaitingQueueTopic() {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        WebSocketQueueSubscriptionStore subscriptionStore = mock(WebSocketQueueSubscriptionStore.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
 
         WebSocketPushNotifier notifier = new WebSocketPushNotifier(messagingTemplate, subscriptionStore, waitingQueueProperties());
 
-        notifier.sendQueueActivated(100L, 1L, Map.of("status", "ACTIVE"));
+        notifier.sendQueueActivated(
+                100L,
+                1L,
+                QueuePushPayload.of(100L, 1L, "ACTIVE", 0L, 300L)
+        );
 
         verify(messagingTemplate).convertAndSend(eq("/topic/waiting-queue/1/100"), anyMap());
     }
@@ -74,7 +79,7 @@ class WebSocketPushNotifierTest {
     @Test
     void sendReservationStatus_shouldPublishToReservationTopic() {
         SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
-        WebSocketQueueSubscriptionStore subscriptionStore = mock(WebSocketQueueSubscriptionStore.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
 
         WebSocketPushNotifier notifier = new WebSocketPushNotifier(messagingTemplate, subscriptionStore, waitingQueueProperties());
 

@@ -18,6 +18,18 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.api..");
 
     @ArchTest
+    static final ArchRule global_should_not_depend_on_api_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.global..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.api..");
+
+    @ArchTest
+    static final ArchRule global_should_not_depend_on_infrastructure_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.global..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.infrastructure..");
+
+    @ArchTest
     static final ArchRule domain_should_not_depend_on_application_layer =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.domain..")
@@ -36,6 +48,48 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.api..");
 
     @ArchTest
+    static final ArchRule application_should_not_depend_on_global_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.application..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.global..");
+
+    @ArchTest
+    static final ArchRule api_layer_should_not_depend_on_global_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.global..");
+
+    @ArchTest
+    static final ArchRule api_layer_should_not_depend_on_infrastructure_messaging =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.infrastructure.messaging..");
+
+    @ArchTest
+    static final ArchRule api_layer_should_not_depend_on_application_outbound_ports =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.application.port.outbound..");
+
+    @ArchTest
+    static final ArchRule infrastructure_should_not_depend_on_global_layer =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.infrastructure..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.global..");
+
+    @ArchTest
+    static final ArchRule waiting_queue_runtime_should_not_depend_on_waiting_queue_properties_concrete =
+            noClasses()
+                    .that().resideInAnyPackage(
+                            "com.ticketrush.global.sse..",
+                            "com.ticketrush.global.scheduler..",
+                            "com.ticketrush.global.interceptor..",
+                            "com.ticketrush.global.push.."
+                    )
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.global.config.WaitingQueueProperties");
+
+    @ArchTest
     static final ArchRule application_should_not_depend_on_spring_redis_directly =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.application..")
@@ -52,6 +106,79 @@ class LayerDependencyArchTest {
             noClasses()
                     .that().resideInAPackage("com.ticketrush.global..")
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework.kafka..");
+
+    @ArchTest
+    static final ArchRule global_push_should_not_depend_on_infrastructure_messaging =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.global.push..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.infrastructure.messaging..");
+
+    @ArchTest
+    static final ArchRule kafka_websocket_push_notifier_should_not_depend_on_websocket_push_notifier_concrete =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.global.push.KafkaWebSocketPushNotifier")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.global.push.WebSocketPushNotifier");
+
+    @ArchTest
+    static final ArchRule waiting_queue_scheduler_should_not_depend_on_push_notifier_concrete =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.global.scheduler.WaitingQueueScheduler")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("com.ticketrush.global.push..", "com.ticketrush.global.sse..");
+
+    @ArchTest
+    static final ArchRule seat_soft_lock_service_should_not_depend_on_transport_specific_push_ports =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.application.reservation.service.SeatSoftLockServiceImpl")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.SsePushPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketEventDispatchPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketSubscriptionPort");
+
+    @ArchTest
+    static final ArchRule pg_ready_webhook_service_should_not_depend_on_transport_specific_push_ports =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.application.payment.webhook.PgReadyWebhookService")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.SsePushPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketEventDispatchPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketSubscriptionPort");
+
+    @ArchTest
+    static final ArchRule kafka_reservation_consumer_should_not_depend_on_transport_specific_push_ports =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.messaging.KafkaReservationConsumer")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.SsePushPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketEventDispatchPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketSubscriptionPort");
+
+    @ArchTest
+    static final ArchRule reservation_lifecycle_service_should_not_depend_on_transport_specific_push_ports =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.application.reservation.service.ReservationLifecycleServiceImpl")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.SsePushPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketEventDispatchPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketSubscriptionPort");
+
+    @ArchTest
+    static final ArchRule kafka_push_event_consumer_should_not_depend_on_transport_specific_push_ports =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.infrastructure.messaging.KafkaPushEventConsumer")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.SsePushPort")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.ticketrush.application.port.outbound.WebSocketSubscriptionPort");
 
     @ArchTest
     static final ArchRule rest_controllers_should_not_depend_on_repository_directly =

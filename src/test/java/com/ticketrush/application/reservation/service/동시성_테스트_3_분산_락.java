@@ -9,7 +9,7 @@ import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.global.lock.RedissonLockFacade;
-import com.ticketrush.api.dto.ReservationRequest;
+import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ class 동시성_테스트_3_분산_락 {
             executorService.submit(() -> {
                 try {
                     // Facade를 통한 분산 락 예약 호출
-                    redissonLockFacade.createReservation(new ReservationRequest(targetUserId, targetSeatId));
+                    redissonLockFacade.createReservation(new ReservationCreateCommand(targetUserId, targetSeatId, null, null));
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     System.out.println("예약 실패: " + e.getMessage());

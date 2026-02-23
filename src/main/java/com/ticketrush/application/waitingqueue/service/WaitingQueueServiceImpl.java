@@ -4,6 +4,7 @@ import com.ticketrush.application.waitingqueue.model.WaitingQueueJoinCommand;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusQuery;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusResult;
 import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class WaitingQueueServiceImpl implements WaitingQueueService {
 
     private final WaitingQueueStore waitingQueueStore;
-    private final com.ticketrush.global.config.WaitingQueueProperties properties;
+    private final WaitingQueueConfigPort properties;
     private static final long JOIN_RESULT_ACTIVE = 1L;
     private static final long JOIN_RESULT_REJECTED = 2L;
     private static final long JOIN_RESULT_WAITING = 3L;

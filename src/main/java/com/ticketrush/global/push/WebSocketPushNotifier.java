@@ -1,6 +1,14 @@
 package com.ticketrush.global.push;
 
-import com.ticketrush.global.config.WaitingQueueProperties;
+import com.ticketrush.application.port.outbound.QueueSubscriberQueryPort;
+import com.ticketrush.application.port.outbound.QueueEventName;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
+import com.ticketrush.application.port.outbound.WebSocketEventDispatchPort;
+import com.ticketrush.application.port.outbound.WebSocketQueueSubscriptionStorePort;
+import com.ticketrush.application.port.outbound.WebSocketSubscriptionPort;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
+import com.ticketrush.global.monitoring.PushMonitoringMetrics;
 import com.ticketrush.global.sse.SseEventNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,15 +26,15 @@ import java.util.Set;
 @Slf4j
 @Component("webSocketPushNotifier")
 @RequiredArgsConstructor
-public class WebSocketPushNotifier implements PushNotifier {
+public class WebSocketPushNotifier implements QueueRuntimePushPort, WebSocketSubscriptionPort, WebSocketEventDispatchPort, QueueSubscriberQueryPort {
 
     private static final String WAITING_QUEUE_TOPIC_PREFIX = "/topic/waiting-queue";
     private static final String RESERVATION_TOPIC_PREFIX = "/topic/reservations";
     private static final String SEAT_MAP_TOPIC_PREFIX = "/topic/seats";
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final WebSocketQueueSubscriptionStore queueSubscriptionStore;
-    private final WaitingQueueProperties waitingQueueProperties;
+    private final WebSocketQueueSubscriptionStorePort queueSubscriptionStore;
+    private final WaitingQueueConfigPort waitingQueueConfig;
 
     public String subscribeQueue(Long userId, Long concertId) {
         long nowMillis = System.currentTimeMillis();
@@ -68,21 +76,23 @@ public class WebSocketPushNotifier implements PushNotifier {
                         "timestamp", Instant.now().toString()
                 )
         );
+        PushMonitoringMetrics.increment("push", "websocket", "reservation_status");
     }
 
     @Override
-    public void sendQueueRankUpdate(Long userId, Long concertId, Object data) {
-        publishQueueEvent(userId, concertId, SseEventNames.RANK_UPDATE, data);
+    public void sendQueueRankUpdate(Long userId, Long concertId, QueuePushPayload data) {
+        publishQueueEvent(userId, concertId, QueueEventName.RANK_UPDATE, data);
     }
 
     @Override
-    public void sendQueueActivated(Long userId, Long concertId, Object data) {
-        publishQueueEvent(userId, concertId, SseEventNames.ACTIVE, data);
+    public void sendQueueActivated(Long userId, Long concertId, QueuePushPayload data) {
+        publishQueueEvent(userId, concertId, QueueEventName.ACTIVE, data);
     }
 
     @Override
     public void sendQueueHeartbeat() {
         String timestamp = Instant.now().toString();
+        long fanoutCount = 0L;
         Set<String> concertIdMembers = queueSubscriptionStore.getConcertIds();
         if (concertIdMembers == null || concertIdMembers.isEmpty()) {
             return;
@@ -94,11 +104,25 @@ public class WebSocketPushNotifier implements PushNotifier {
             }
             Set<Long> users = getSubscribedQueueUsers(concertId);
             for (Long userId : users) {
-                publishQueueEvent(userId, concertId, SseEventNames.KEEPALIVE, Map.of("timestamp", timestamp));
+                publishQueueEvent(
+                        userId,
+                        concertId,
+                        QueueEventName.KEEPALIVE,
+                        QueuePushPayload.builder()
+                                .userId(userId)
+                                .concertId(concertId)
+                                .timestamp(timestamp)
+                                .build()
+                );
+                fanoutCount++;
             }
+        }
+        if (fanoutCount > 0L) {
+            log.info("PUSH_MONITOR transport=websocket event=queue_keepalive fanout={}", fanoutCount);
         }
     }
 
+    @Override
     public Map<Long, Set<Long>> snapshotQueueSubscribers() {
         Set<String> concertIdMembers = queueSubscriptionStore.getConcertIds();
         if (concertIdMembers == null || concertIdMembers.isEmpty()) {
@@ -151,19 +175,22 @@ public class WebSocketPushNotifier implements PushNotifier {
             payload.put("expiresAt", expiresAt);
         }
         messagingTemplate.convertAndSend(seatMapDestination(optionId), payload);
+        PushMonitoringMetrics.increment("push", "websocket", "seat_map_status");
     }
 
-    public void publishQueueEvent(Long userId, Long concertId, String eventName, Object data) {
+    @Override
+    public void publishQueueEvent(Long userId, Long concertId, QueueEventName eventName, QueuePushPayload data) {
         messagingTemplate.convertAndSend(
                 queueDestination(userId, concertId),
                 Map.of(
-                        "event", eventName,
+                        "event", eventName.name(),
                         "transport", "websocket",
                         "userId", userId,
                         "concertId", concertId,
                         "data", data
                 )
         );
+        PushMonitoringMetrics.increment("push", "websocket", queueEventMetricName(eventName));
     }
 
     private String queueDestination(Long userId, Long concertId) {
@@ -179,7 +206,7 @@ public class WebSocketPushNotifier implements PushNotifier {
     }
 
     private long normalizedSubscriberTtlSeconds() {
-        long ttlSeconds = waitingQueueProperties.getWsSubscriberTtlSeconds();
+        long ttlSeconds = waitingQueueConfig.getWsSubscriberTtlSeconds();
         return ttlSeconds > 0 ? ttlSeconds : 300L;
     }
 
@@ -193,5 +220,13 @@ public class WebSocketPushNotifier implements PushNotifier {
             log.debug("invalid queue subscriber id: {}", rawValue, exception);
             return null;
         }
+    }
+
+    private String queueEventMetricName(QueueEventName eventName) {
+        return switch (eventName) {
+            case RANK_UPDATE -> "queue_rank_update";
+            case ACTIVE -> "queue_activated";
+            case KEEPALIVE -> "queue_keepalive";
+        };
     }
 }

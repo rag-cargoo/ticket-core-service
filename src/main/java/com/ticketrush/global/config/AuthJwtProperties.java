@@ -1,5 +1,6 @@
 package com.ticketrush.global.config;
 
+import com.ticketrush.application.auth.port.outbound.AuthJwtConfigPort;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "app.auth.jwt")
-public class AuthJwtProperties {
+public class AuthJwtProperties implements AuthJwtConfigPort {
     private String issuer = "ticketrush";
     private String secret;
     private long accessTokenSeconds = 1800;

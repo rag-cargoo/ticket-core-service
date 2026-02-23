@@ -1,9 +1,9 @@
 package com.ticketrush.infrastructure.auth.config;
 
+import com.ticketrush.application.auth.port.outbound.AuthJwtConfigPort;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.infrastructure.auth.denylist.InMemoryAccessTokenDenylistService;
 import com.ticketrush.infrastructure.auth.denylist.RedisAccessTokenDenylistService;
-import com.ticketrush.global.config.AuthJwtProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -17,9 +17,9 @@ public class AccessTokenDenylistConfig {
     @ConditionalOnBean(StringRedisTemplate.class)
     AccessTokenDenylistService redisAccessTokenDenylistService(
             StringRedisTemplate redisTemplate,
-            AuthJwtProperties authJwtProperties
+            AuthJwtConfigPort authJwtConfigPort
     ) {
-        return new RedisAccessTokenDenylistService(redisTemplate, authJwtProperties);
+        return new RedisAccessTokenDenylistService(redisTemplate, authJwtConfigPort);
     }
 
     @Bean

@@ -1,8 +1,8 @@
 package com.ticketrush.application.auth.service;
 
+import com.ticketrush.application.auth.port.outbound.AuthJwtConfigPort;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
-import com.ticketrush.global.config.AuthJwtProperties;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -26,7 +26,7 @@ public class JwtTokenProvider {
     public static final String TOKEN_TYPE_ACCESS = "access";
     public static final String TOKEN_TYPE_REFRESH = "refresh";
 
-    private final AuthJwtProperties authJwtProperties;
+    private final AuthJwtConfigPort authJwtProperties;
     private SecretKey signingKey;
 
     @PostConstruct

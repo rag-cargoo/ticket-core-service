@@ -8,15 +8,14 @@ import com.ticketrush.application.reservation.model.AbuseAuditActionType;
 import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
 import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
+import com.ticketrush.application.realtime.service.RealtimeSubscriptionService;
+import com.ticketrush.application.reservation.port.inbound.DistributedReservationUseCase;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.application.reservation.service.ReservationQueueService;
 import com.ticketrush.application.reservation.service.AbuseAuditService;
 import com.ticketrush.application.reservation.service.AdminRefundAuditService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.application.reservation.service.SeatSoftLockService;
-import com.ticketrush.global.lock.RedissonLockFacade;
-import com.ticketrush.infrastructure.messaging.KafkaReservationProducer;
-import com.ticketrush.global.sse.SsePushNotifier;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
@@ -47,14 +46,13 @@ import java.util.Map;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final RedissonLockFacade redissonLockFacade;
-    private final KafkaReservationProducer kafkaProducer;
+    private final DistributedReservationUseCase distributedReservationUseCase;
+    private final RealtimeSubscriptionService realtimeSubscriptionService;
     private final ReservationQueueService queueService;
     private final ReservationLifecycleService reservationLifecycleService;
     private final SeatSoftLockService seatSoftLockService;
     private final AbuseAuditService abuseAuditService;
     private final AdminRefundAuditService adminRefundAuditService;
-    private final SsePushNotifier ssePushNotifier;
 
     /**
      * [v1] 낙관적 락 버전
@@ -79,7 +77,8 @@ public class ReservationController {
      */
     @PostMapping("/v3/distributed-lock")
     public ResponseEntity<ReservationResponse> createDistributedLockReservation(@RequestBody ReservationRequest request) {
-        return ResponseEntity.ok(redissonLockFacade.createReservation(request));
+        ReservationResult result = distributedReservationUseCase.createReservation(toCreateCommand(request));
+        return ResponseEntity.ok(ReservationResponse.from(result));
     }
 
     /**
@@ -116,7 +115,7 @@ public class ReservationController {
     public SseEmitter subscribe(
             @RequestParam Long userId,
             @RequestParam Long seatId) {
-        return ssePushNotifier.subscribeReservation(userId, seatId);
+        return realtimeSubscriptionService.subscribeReservationSse(userId, seatId);
     }
 
     /**
@@ -393,8 +392,7 @@ public class ReservationController {
     }
 
     private ResponseEntity<Map<String, String>> enqueue(ReservationRequest request, ReservationQueueLockType lockType) {
-        queueService.setStatus(request.getUserId(), request.getSeatId(), "PENDING");
-        kafkaProducer.send(request.getUserId(), request.getSeatId(), lockType);
+        queueService.enqueue(request.getUserId(), request.getSeatId(), lockType);
         return ResponseEntity.accepted().body(Map.of(
             "message", "Reservation request enqueued",
             "strategy", lockType.name()

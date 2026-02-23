@@ -1,10 +1,10 @@
 package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.port.outbound.SeatSoftLockStore;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
-import com.ticketrush.global.config.ReservationProperties;
-import com.ticketrush.global.push.PushNotifier;
+import com.ticketrush.application.reservation.port.outbound.ReservationConfigPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -24,8 +24,8 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
 
     private final SeatSoftLockStore seatSoftLockStore;
     private final ReservationSeatPort reservationSeatPort;
-    private final ReservationProperties reservationProperties;
-    private final PushNotifier pushNotifier;
+    private final ReservationConfigPort reservationProperties;
+    private final SeatMapPushPort pushNotifier;
 
     @Override
     public SeatSoftLockAcquireResult acquire(Long userId, Long seatId, String requestId) {

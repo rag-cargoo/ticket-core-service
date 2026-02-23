@@ -15,20 +15,22 @@ import com.ticketrush.application.reservation.service.AbuseAuditService;
 import com.ticketrush.application.reservation.service.AdminRefundAuditService;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRole;
-import com.ticketrush.global.config.ReservationProperties;
-import com.ticketrush.global.config.PaymentProperties;
-import com.ticketrush.global.cache.ConcertReadCacheEvictor;
-import com.ticketrush.global.push.PushNotifier;
+import com.ticketrush.application.reservation.port.outbound.PaymentConfigPort;
+import com.ticketrush.application.reservation.port.outbound.ReservationConfigPort;
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
+import com.ticketrush.application.waitingqueue.model.WaitingQueueStatusType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -40,14 +42,16 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ReservationSeatPort reservationSeatPort;
     private final ReservationUserPort reservationUserPort;
     private final ReservationWaitingQueuePort reservationWaitingQueuePort;
-    private final ReservationProperties reservationProperties;
-    private final PaymentProperties paymentProperties;
+    private final ReservationConfigPort reservationProperties;
+    private final PaymentConfigPort paymentProperties;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
     private final AdminRefundAuditService adminRefundAuditService;
     private final ReservationPaymentPort reservationPaymentPort;
-    private final PushNotifier pushNotifier;
-    private final ConcertReadCacheEvictor concertReadCacheEvictor;
+    private final QueueRuntimePushPort queuePushNotifier;
+    private final ReservationStatusPushPort reservationStatusPushNotifier;
+    private final SeatMapPushPort seatMapPushNotifier;
+    private final ConcertReadCacheEvictPort concertReadCacheEvictor;
 
     @Transactional
     public ReservationLifecycleResult createHold(ReservationCreateCommand command) {
@@ -71,7 +75,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
                 reservation.getId(),
                 now
         );
-        pushNotifier.sendSeatMapStatus(
+        seatMapPushNotifier.sendSeatMapStatus(
                 seat.getConcertOption().getId(),
                 seat.getId(),
                 Reservation.ReservationStatus.HOLD.name(),
@@ -126,7 +130,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.cancel(now);
         reservation.getSeat().cancel();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
-        pushNotifier.sendSeatMapStatus(
+        seatMapPushNotifier.sendSeatMapStatus(
                 reservation.getSeat().getConcertOption().getId(),
                 reservation.getSeat().getId(),
                 Seat.SeatStatus.AVAILABLE.name(),
@@ -203,7 +207,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             reservation.expire(now);
             reservation.getSeat().cancel();
             notifyReservationExpired(reservation);
-            pushNotifier.sendSeatMapStatus(
+            seatMapPushNotifier.sendSeatMapStatus(
                     reservation.getSeat().getConcertOption().getId(),
                     reservation.getSeat().getId(),
                     Seat.SeatStatus.AVAILABLE.name(),
@@ -247,15 +251,14 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private void notifyActivatedUsers(Long concertId, List<Long> activatedUsers) {
         for (Long activatedUserId : activatedUsers) {
             Long activeTtlSeconds = reservationWaitingQueuePort.getActiveTtlSeconds(activatedUserId);
-            Object payload = Map.of(
-                    "userId", activatedUserId,
-                    "concertId", concertId,
-                    "status", "ACTIVE",
-                    "rank", 0L,
-                    "activeTtlSeconds", activeTtlSeconds,
-                    "timestamp", Instant.now().toString()
+            QueuePushPayload payload = QueuePushPayload.of(
+                    activatedUserId,
+                    concertId,
+                    WaitingQueueStatusType.ACTIVE.name(),
+                    0L,
+                    activeTtlSeconds
             );
-            pushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
+            queuePushNotifier.sendQueueActivated(activatedUserId, concertId, payload);
         }
     }
 
@@ -311,7 +314,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private void notifyReservationExpired(Reservation reservation) {
-        pushNotifier.sendReservationStatus(
+        reservationStatusPushNotifier.sendReservationStatus(
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),
                 Reservation.ReservationStatus.EXPIRED.name()
@@ -322,14 +325,14 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         reservation.confirmPayment(now);
         reservation.getSeat().confirmHeldSeat();
         concertReadCacheEvictor.evictAvailableSeatsByOptionId(reservation.getSeat().getConcertOption().getId());
-        pushNotifier.sendSeatMapStatus(
+        seatMapPushNotifier.sendSeatMapStatus(
                 reservation.getSeat().getConcertOption().getId(),
                 reservation.getSeat().getId(),
                 Reservation.ReservationStatus.CONFIRMED.name(),
                 reservation.getUser().getId(),
                 null
         );
-        pushNotifier.sendReservationStatus(
+        reservationStatusPushNotifier.sendReservationStatus(
                 reservation.getUser().getId(),
                 reservation.getSeat().getId(),
                 Reservation.ReservationStatus.CONFIRMED.name()

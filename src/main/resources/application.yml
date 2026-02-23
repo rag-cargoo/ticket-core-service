@@ -46,6 +46,8 @@ app:
     minimum-role: USER
   push:
     mode: ${APP_PUSH_MODE:websocket}
+    monitor:
+      snapshot-delay-millis: ${APP_PUSH_MONITOR_SNAPSHOT_DELAY_MILLIS:60000}
   websocket:
     broker:
       mode: ${APP_WS_BROKER_MODE:simple}

@@ -1,7 +1,7 @@
 package com.ticketrush.infrastructure.push.adapter.outbound;
 
-import com.ticketrush.global.config.WaitingQueueProperties;
-import com.ticketrush.global.push.WebSocketQueueSubscriptionStore;
+import com.ticketrush.application.port.outbound.WebSocketQueueSubscriptionStorePort;
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -11,10 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
-public class RedisWebSocketQueueSubscriptionStoreAdapter implements WebSocketQueueSubscriptionStore {
+public class RedisWebSocketQueueSubscriptionStoreAdapter implements WebSocketQueueSubscriptionStorePort {
 
     private final StringRedisTemplate redisTemplate;
-    private final WaitingQueueProperties waitingQueueProperties;
+    private final WaitingQueueConfigPort waitingQueueConfig;
 
     @Override
     public void addQueueSubscriber(Long concertId, Long userId, long expiresAtMillis, long ttlSeconds) {
@@ -56,10 +56,10 @@ public class RedisWebSocketQueueSubscriptionStoreAdapter implements WebSocketQue
     }
 
     private String queueSubscriberKey(Long concertId) {
-        return waitingQueueProperties.getWsSubscriberZsetKeyPrefix() + concertId;
+        return waitingQueueConfig.getWsSubscriberZsetKeyPrefix() + concertId;
     }
 
     private String concertIndexKey() {
-        return waitingQueueProperties.getWsConcertIndexKey();
+        return waitingQueueConfig.getWsConcertIndexKey();
     }
 }

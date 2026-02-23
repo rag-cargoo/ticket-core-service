@@ -8,7 +8,7 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.global.config.AbuseGuardProperties;
+import com.ticketrush.application.reservation.port.outbound.AbuseGuardConfigPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
 
     private final AbuseAuditLogRepository abuseAuditLogRepository;
     private final AbuseAuditWriter abuseAuditWriter;
-    private final AbuseGuardProperties abuseGuardProperties;
+    private final AbuseGuardConfigPort abuseGuardProperties;
 
     @Transactional
     public void validateHoldRequest(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {

@@ -1,11 +1,12 @@
 package com.ticketrush.global.cache;
 
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ConcertReadCacheEvictor {
+public class ConcertReadCacheEvictor implements ConcertReadCacheEvictPort {
 
     private final CacheManager cacheManager;
 
@@ -13,6 +14,7 @@ public class ConcertReadCacheEvictor {
         this.cacheManager = cacheManager;
     }
 
+    @Override
     public void evictAvailableSeatsByOptionId(Long concertOptionId) {
         if (concertOptionId == null) {
             return;

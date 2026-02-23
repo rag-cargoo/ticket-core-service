@@ -1,6 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.port.outbound.SeatSoftLockStore;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.artist.Artist;
 import com.ticketrush.domain.concert.entity.Concert;
@@ -8,7 +9,6 @@ import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.global.config.ReservationProperties;
-import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ class SeatSoftLockServiceImplTest {
     private ReservationSeatPort reservationSeatPort;
 
     @Mock
-    private PushNotifier pushNotifier;
+    private SeatMapPushPort pushNotifier;
 
     private SeatSoftLockServiceImpl seatSoftLockService;
 

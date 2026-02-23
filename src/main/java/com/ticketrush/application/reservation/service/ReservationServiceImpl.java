@@ -8,7 +8,7 @@ import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
-import com.ticketrush.global.cache.ConcertReadCacheEvictor;
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationSeatPort reservationSeatPort;
     private final ReservationUserPort reservationUserPort;
-    private final ConcertReadCacheEvictor concertReadCacheEvictor;
+    private final ConcertReadCacheEvictPort concertReadCacheEvictor;
 
     /**
      * [v1] 낙관적 락(Optimistic Lock)을 사용한 예약 생성

@@ -1,10 +1,12 @@
 package com.ticketrush.infrastructure.messaging;
 
-import com.ticketrush.global.push.WebSocketPushNotifier;
+import com.ticketrush.application.port.outbound.QueueEventName;
+import com.ticketrush.application.port.outbound.QueuePushPayload;
+import com.ticketrush.application.port.outbound.WebSocketEventDispatchPort;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -12,26 +14,37 @@ class KafkaPushEventConsumerTest {
 
     @Test
     void consume_queueEvent_shouldDispatchToWebSocketNotifier() {
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketPushNotifier);
+        WebSocketEventDispatchPort webSocketEventDispatchPort = mock(WebSocketEventDispatchPort.class);
+        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketEventDispatchPort);
 
         KafkaPushEvent event = KafkaPushEvent.builder()
                 .type(KafkaPushEvent.Type.QUEUE_EVENT)
                 .userId(10L)
                 .concertId(20L)
-                .eventName("RANK_UPDATE")
-                .data(Map.of("rank", 1))
+                .eventName(QueueEventName.RANK_UPDATE)
+                .data(QueuePushPayload.of(10L, 20L, "WAITING", 1L, 0L))
                 .build();
 
         consumer.consume(event);
 
-        verify(webSocketPushNotifier).publishQueueEvent(10L, 20L, "RANK_UPDATE", Map.of("rank", 1));
+        verify(webSocketEventDispatchPort).publishQueueEvent(
+                eq(10L),
+                eq(20L),
+                eq(QueueEventName.RANK_UPDATE),
+                argThat(payload ->
+                        payload != null
+                                && payload.getUserId().equals(10L)
+                                && payload.getConcertId().equals(20L)
+                                && payload.getStatus().equals("WAITING")
+                                && payload.getRank().equals(1L)
+                )
+        );
     }
 
     @Test
     void consume_reservationStatus_shouldDispatchToWebSocketNotifier() {
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketPushNotifier);
+        WebSocketEventDispatchPort webSocketEventDispatchPort = mock(WebSocketEventDispatchPort.class);
+        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketEventDispatchPort);
 
         KafkaPushEvent event = KafkaPushEvent.builder()
                 .type(KafkaPushEvent.Type.RESERVATION_STATUS)
@@ -42,13 +55,13 @@ class KafkaPushEventConsumerTest {
 
         consumer.consume(event);
 
-        verify(webSocketPushNotifier).sendReservationStatus(10L, 99L, "CONFIRMED");
+        verify(webSocketEventDispatchPort).sendReservationStatus(10L, 99L, "CONFIRMED");
     }
 
     @Test
     void consume_seatMapStatus_shouldDispatchToWebSocketNotifier() {
-        WebSocketPushNotifier webSocketPushNotifier = mock(WebSocketPushNotifier.class);
-        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketPushNotifier);
+        WebSocketEventDispatchPort webSocketEventDispatchPort = mock(WebSocketEventDispatchPort.class);
+        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketEventDispatchPort);
 
         KafkaPushEvent event = KafkaPushEvent.builder()
                 .type(KafkaPushEvent.Type.SEAT_MAP_STATUS)
@@ -61,6 +74,6 @@ class KafkaPushEventConsumerTest {
 
         consumer.consume(event);
 
-        verify(webSocketPushNotifier).sendSeatMapStatus(7L, 55L, "SELECTING", 100L, "2026-02-22T14:30:00Z");
+        verify(webSocketEventDispatchPort).sendSeatMapStatus(7L, 55L, "SELECTING", 100L, "2026-02-22T14:30:00Z");
     }
 }

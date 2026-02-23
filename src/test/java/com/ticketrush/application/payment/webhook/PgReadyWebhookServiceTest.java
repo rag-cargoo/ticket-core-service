@@ -1,5 +1,6 @@
 package com.ticketrush.application.payment.webhook;
 
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
 import com.ticketrush.domain.entertainment.Entertainment;
@@ -21,7 +22,6 @@ import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.global.cache.ConcertReadCacheEvictor;
-import com.ticketrush.global.push.PushNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -41,8 +41,8 @@ class PgReadyWebhookServiceTest {
     @TestConfiguration
     static class TestConfig {
         @Bean
-        PushNotifier pushNotifier() {
-            return mock(PushNotifier.class);
+        ReservationStatusPushPort pushNotifier() {
+            return mock(ReservationStatusPushPort.class);
         }
 
         @Bean
@@ -79,7 +79,7 @@ class PgReadyWebhookServiceTest {
     private ConcertOptionRepository concertOptionRepository;
 
     @jakarta.annotation.Resource
-    private PushNotifier pushNotifier;
+    private ReservationStatusPushPort pushNotifier;
 
     @Test
     void handle_shouldConfirmReservationWhenApproved() {

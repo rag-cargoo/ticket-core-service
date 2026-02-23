@@ -1,7 +1,7 @@
 package com.ticketrush.global.interceptor;
 
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueStore;
-import com.ticketrush.global.config.WaitingQueueProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class WaitingQueueInterceptor implements HandlerInterceptor {
 
     private final WaitingQueueStore waitingQueueStore;
-    private final WaitingQueueProperties waitingQueueProperties;
+    private final WaitingQueueConfigPort waitingQueueConfig;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -28,7 +28,7 @@ public class WaitingQueueInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String activeKey = waitingQueueProperties.getActiveKeyPrefix() + userId;
+        String activeKey = waitingQueueConfig.getActiveKeyPrefix() + userId;
         boolean isActive = waitingQueueStore.hasActiveUser(activeKey);
 
         if (!isActive) {

@@ -1,7 +1,7 @@
 package com.ticketrush.infrastructure.auth.denylist;
 
+import com.ticketrush.application.auth.port.outbound.AuthJwtConfigPort;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
-import com.ticketrush.global.config.AuthJwtProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
@@ -18,15 +18,15 @@ public class RedisAccessTokenDenylistService implements AccessTokenDenylistServi
     private static final Duration MIN_TTL = Duration.ofSeconds(1);
 
     private final StringRedisTemplate redisTemplate;
-    private final AuthJwtProperties authJwtProperties;
+    private final AuthJwtConfigPort authJwtConfig;
     private final Map<String, Instant> fallbackRevokedUntilByTokenId = new ConcurrentHashMap<>();
 
     public RedisAccessTokenDenylistService(
             StringRedisTemplate redisTemplate,
-            AuthJwtProperties authJwtProperties
+            AuthJwtConfigPort authJwtConfig
     ) {
         this.redisTemplate = redisTemplate;
-        this.authJwtProperties = authJwtProperties;
+        this.authJwtConfig = authJwtConfig;
     }
 
     @Override
@@ -93,6 +93,6 @@ public class RedisAccessTokenDenylistService implements AccessTokenDenylistServi
     }
 
     private String key(String tokenId) {
-        return authJwtProperties.getAccessTokenBlocklistKeyPrefix() + tokenId;
+        return authJwtConfig.getAccessTokenBlocklistKeyPrefix() + tokenId;
     }
 }

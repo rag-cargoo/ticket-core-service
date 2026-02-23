@@ -1,6 +1,8 @@
 package com.ticketrush.global.config;
 
-import com.ticketrush.global.push.PushNotifier;
+import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
+import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
+import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,17 +17,49 @@ public class PushNotifierConfig {
 
     @Bean
     @Primary
-    public PushNotifier pushNotifier(
+    public QueueRuntimePushPort queueRuntimePushNotifier(
             PushProperties properties,
-            @Qualifier("ssePushNotifier") PushNotifier ssePushNotifier,
-            @Qualifier("kafkaWebSocketPushNotifier") PushNotifier kafkaWebSocketPushNotifier
+            @Qualifier("ssePushNotifier") QueueRuntimePushPort ssePushNotifier,
+            @Qualifier("kafkaWebSocketPushNotifier") QueueRuntimePushPort kafkaWebSocketPushNotifier
     ) {
         if (properties.getMode() == PushProperties.Mode.WEBSOCKET) {
-            log.info("Push notifier mode: WEBSOCKET (Kafka fanout)");
+            log.info("Queue runtime notifier mode: WEBSOCKET (Kafka fanout)");
             return kafkaWebSocketPushNotifier;
         }
 
-        log.info("Push notifier mode: SSE");
+        log.info("Queue runtime notifier mode: SSE");
+        return ssePushNotifier;
+    }
+
+    @Bean
+    @Primary
+    public ReservationStatusPushPort reservationStatusPushNotifier(
+            PushProperties properties,
+            @Qualifier("ssePushNotifier") ReservationStatusPushPort ssePushNotifier,
+            @Qualifier("kafkaWebSocketPushNotifier") ReservationStatusPushPort kafkaWebSocketPushNotifier
+    ) {
+        if (properties.getMode() == PushProperties.Mode.WEBSOCKET) {
+            log.info("Reservation status notifier mode: WEBSOCKET (Kafka fanout)");
+            return kafkaWebSocketPushNotifier;
+        }
+
+        log.info("Reservation status notifier mode: SSE");
+        return ssePushNotifier;
+    }
+
+    @Bean
+    @Primary
+    public SeatMapPushPort seatMapPushNotifier(
+            PushProperties properties,
+            @Qualifier("ssePushNotifier") SeatMapPushPort ssePushNotifier,
+            @Qualifier("kafkaWebSocketPushNotifier") SeatMapPushPort kafkaWebSocketPushNotifier
+    ) {
+        if (properties.getMode() == PushProperties.Mode.WEBSOCKET) {
+            log.info("Seat-map notifier mode: WEBSOCKET (Kafka fanout)");
+            return kafkaWebSocketPushNotifier;
+        }
+
+        log.info("Seat-map notifier mode: SSE");
         return ssePushNotifier;
     }
 }

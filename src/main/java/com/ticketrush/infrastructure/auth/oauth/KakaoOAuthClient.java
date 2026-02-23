@@ -1,9 +1,9 @@
 package com.ticketrush.infrastructure.auth.oauth;
 
+import com.ticketrush.application.auth.port.outbound.SocialLoginConfigPort;
 import com.ticketrush.domain.auth.model.SocialProfile;
 import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
-import com.ticketrush.global.config.SocialLoginProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -24,7 +24,7 @@ public class KakaoOAuthClient implements SocialOAuthClient {
     private static final String TOKEN_ENDPOINT = "https://kauth.kakao.com/oauth/token";
     private static final String PROFILE_ENDPOINT = "https://kapi.kakao.com/v2/user/me";
 
-    private final SocialLoginProperties socialLoginProperties;
+    private final SocialLoginConfigPort socialLoginConfig;
     private final RestClient restClient = RestClient.create();
 
     @Override
@@ -34,14 +34,13 @@ public class KakaoOAuthClient implements SocialOAuthClient {
 
     @Override
     public String buildAuthorizeUrl(String state) {
-        SocialLoginProperties.Provider provider = socialLoginProperties.getKakao();
-        validateConfig(provider.getClientId(), "KAKAO_CLIENT_ID");
-        validateConfig(provider.getRedirectUri(), "KAKAO_REDIRECT_URI");
+        validateConfig(socialLoginConfig.getKakaoClientId(), "KAKAO_CLIENT_ID");
+        validateConfig(socialLoginConfig.getKakaoRedirectUri(), "KAKAO_REDIRECT_URI");
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(AUTHORIZE_ENDPOINT)
                 .queryParam("response_type", "code")
-                .queryParam("client_id", provider.getClientId())
-                .queryParam("redirect_uri", provider.getRedirectUri());
+                .queryParam("client_id", socialLoginConfig.getKakaoClientId())
+                .queryParam("redirect_uri", socialLoginConfig.getKakaoRedirectUri());
         if (StringUtils.hasText(state)) {
             builder.queryParam("state", state);
         }
@@ -51,17 +50,16 @@ public class KakaoOAuthClient implements SocialOAuthClient {
     @Override
     @SuppressWarnings("unchecked")
     public SocialProfile fetchProfile(String code, String state) {
-        SocialLoginProperties.Provider provider = socialLoginProperties.getKakao();
-        validateConfig(provider.getClientId(), "KAKAO_CLIENT_ID");
-        validateConfig(provider.getRedirectUri(), "KAKAO_REDIRECT_URI");
+        validateConfig(socialLoginConfig.getKakaoClientId(), "KAKAO_CLIENT_ID");
+        validateConfig(socialLoginConfig.getKakaoRedirectUri(), "KAKAO_REDIRECT_URI");
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
-        form.add("client_id", provider.getClientId());
-        form.add("redirect_uri", provider.getRedirectUri());
+        form.add("client_id", socialLoginConfig.getKakaoClientId());
+        form.add("redirect_uri", socialLoginConfig.getKakaoRedirectUri());
         form.add("code", code);
-        if (StringUtils.hasText(provider.getClientSecret())) {
-            form.add("client_secret", provider.getClientSecret());
+        if (StringUtils.hasText(socialLoginConfig.getKakaoClientSecret())) {
+            form.add("client_secret", socialLoginConfig.getKakaoClientSecret());
         }
 
         Map<String, Object> tokenResponse = restClient.post()

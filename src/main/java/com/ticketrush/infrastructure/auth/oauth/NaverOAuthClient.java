@@ -1,9 +1,9 @@
 package com.ticketrush.infrastructure.auth.oauth;
 
+import com.ticketrush.application.auth.port.outbound.SocialLoginConfigPort;
 import com.ticketrush.domain.auth.model.SocialProfile;
 import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
-import com.ticketrush.global.config.SocialLoginProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class NaverOAuthClient implements SocialOAuthClient {
     private static final String TOKEN_ENDPOINT = "https://nid.naver.com/oauth2.0/token";
     private static final String PROFILE_ENDPOINT = "https://openapi.naver.com/v1/nid/me";
 
-    private final SocialLoginProperties socialLoginProperties;
+    private final SocialLoginConfigPort socialLoginConfig;
     private final RestClient restClient = RestClient.create();
 
     @Override
@@ -31,17 +31,16 @@ public class NaverOAuthClient implements SocialOAuthClient {
 
     @Override
     public String buildAuthorizeUrl(String state) {
-        SocialLoginProperties.Provider provider = socialLoginProperties.getNaver();
-        validateConfig(provider.getClientId(), "NAVER_CLIENT_ID");
-        validateConfig(provider.getRedirectUri(), "NAVER_REDIRECT_URI");
+        validateConfig(socialLoginConfig.getNaverClientId(), "NAVER_CLIENT_ID");
+        validateConfig(socialLoginConfig.getNaverRedirectUri(), "NAVER_REDIRECT_URI");
         if (!StringUtils.hasText(state)) {
             throw new IllegalArgumentException("state is required for naver authorize url");
         }
 
         return UriComponentsBuilder.fromHttpUrl(AUTHORIZE_ENDPOINT)
                 .queryParam("response_type", "code")
-                .queryParam("client_id", provider.getClientId())
-                .queryParam("redirect_uri", provider.getRedirectUri())
+                .queryParam("client_id", socialLoginConfig.getNaverClientId())
+                .queryParam("redirect_uri", socialLoginConfig.getNaverRedirectUri())
                 .queryParam("state", state)
                 .toUriString();
     }
@@ -49,18 +48,17 @@ public class NaverOAuthClient implements SocialOAuthClient {
     @Override
     @SuppressWarnings("unchecked")
     public SocialProfile fetchProfile(String code, String state) {
-        SocialLoginProperties.Provider provider = socialLoginProperties.getNaver();
-        validateConfig(provider.getClientId(), "NAVER_CLIENT_ID");
-        validateConfig(provider.getClientSecret(), "NAVER_CLIENT_SECRET");
-        validateConfig(provider.getRedirectUri(), "NAVER_REDIRECT_URI");
+        validateConfig(socialLoginConfig.getNaverClientId(), "NAVER_CLIENT_ID");
+        validateConfig(socialLoginConfig.getNaverClientSecret(), "NAVER_CLIENT_SECRET");
+        validateConfig(socialLoginConfig.getNaverRedirectUri(), "NAVER_REDIRECT_URI");
         if (!StringUtils.hasText(state)) {
             throw new IllegalArgumentException("state is required for naver token exchange");
         }
 
         String tokenUri = UriComponentsBuilder.fromHttpUrl(TOKEN_ENDPOINT)
                 .queryParam("grant_type", "authorization_code")
-                .queryParam("client_id", provider.getClientId())
-                .queryParam("client_secret", provider.getClientSecret())
+                .queryParam("client_id", socialLoginConfig.getNaverClientId())
+                .queryParam("client_secret", socialLoginConfig.getNaverClientSecret())
                 .queryParam("code", code)
                 .queryParam("state", state)
                 .toUriString();

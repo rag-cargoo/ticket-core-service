@@ -1,5 +1,6 @@
 package com.ticketrush.global.config;
 
+import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 @ConfigurationProperties(prefix = "app.waiting-queue")
-public class WaitingQueueProperties {
+public class WaitingQueueProperties implements WaitingQueueConfigPort {
     private long maxQueueSize;
     private long activeTtlMinutes;
     private long activationBatchSize;

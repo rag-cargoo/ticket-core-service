@@ -2,9 +2,8 @@ package com.ticketrush.global.lock;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationResult;
+import com.ticketrush.application.reservation.port.inbound.DistributedReservationUseCase;
 import com.ticketrush.application.reservation.service.ReservationService;
-import com.ticketrush.api.dto.ReservationRequest;
-import com.ticketrush.api.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -16,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RedissonLockFacade {
+public class RedissonLockFacade implements DistributedReservationUseCase {
 
     private final RedissonClient redissonClient;
     private final ReservationService reservationService;
@@ -24,8 +23,9 @@ public class RedissonLockFacade {
     // 비즈니스 정책: 사용자는 최대 10초까지 대기할 수 있음 (상수로 관리하거나 설정에서 주입)
     private static final long WAIT_TIME = 10L;
 
-    public ReservationResponse createReservation(ReservationRequest request) {
-        String lockKey = "lock:seat:" + request.getSeatId();
+    @Override
+    public ReservationResult createReservation(ReservationCreateCommand command) {
+        String lockKey = "lock:seat:" + command.getSeatId();
         RLock lock = redissonClient.getLock(lockKey);
 
         try {
@@ -35,19 +35,11 @@ public class RedissonLockFacade {
             boolean available = lock.tryLock(WAIT_TIME, -1, TimeUnit.SECONDS);
 
             if (!available) {
-                log.warn("락 획득 실패 - SeatId: {}, UserId: {}", request.getSeatId(), request.getUserId());
+                log.warn("락 획득 실패 - SeatId: {}, UserId: {}", command.getSeatId(), command.getUserId());
                 throw new RuntimeException("현재 예약 요청이 많습니다. 잠시 후 다시 시도해주세요.");
             }
 
-            ReservationResult result = reservationService.createReservation(
-                    new ReservationCreateCommand(
-                            request.getUserId(),
-                            request.getSeatId(),
-                            request.getRequestFingerprint(),
-                            request.getDeviceFingerprint()
-                    )
-            );
-            return ReservationResponse.from(result);
+            return reservationService.createReservation(command);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

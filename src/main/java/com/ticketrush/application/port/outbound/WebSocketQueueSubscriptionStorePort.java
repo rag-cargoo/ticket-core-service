@@ -1,8 +1,8 @@
-package com.ticketrush.global.push;
+package com.ticketrush.application.port.outbound;
 
 import java.util.Set;
 
-public interface WebSocketQueueSubscriptionStore {
+public interface WebSocketQueueSubscriptionStorePort {
 
     void addQueueSubscriber(Long concertId, Long userId, long expiresAtMillis, long ttlSeconds);
 
