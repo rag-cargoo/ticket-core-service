@@ -27,7 +27,7 @@ import com.ticketrush.api.dto.reservation.SeatSoftLockAcquireResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockRequest;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
-import com.ticketrush.domain.auth.security.AuthUserPrincipal;
+import com.ticketrush.application.auth.model.AuthUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;

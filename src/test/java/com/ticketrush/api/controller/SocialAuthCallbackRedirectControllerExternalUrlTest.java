@@ -1,6 +1,6 @@
 package com.ticketrush.api.controller;
 
-import com.ticketrush.domain.auth.security.JwtAuthenticationFilter;
+import com.ticketrush.infrastructure.auth.security.JwtAuthenticationFilter;
 import com.ticketrush.global.interceptor.WaitingQueueInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

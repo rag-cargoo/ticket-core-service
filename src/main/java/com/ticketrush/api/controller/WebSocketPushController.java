@@ -3,7 +3,7 @@ package com.ticketrush.api.controller;
 import com.ticketrush.api.dto.push.WebSocketQueueSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketReservationSubscriptionRequest;
 import com.ticketrush.api.dto.push.WebSocketSeatMapSubscriptionRequest;
-import com.ticketrush.domain.auth.security.AuthUserPrincipal;
+import com.ticketrush.application.auth.model.AuthUserPrincipal;
 import com.ticketrush.global.push.WebSocketPushNotifier;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

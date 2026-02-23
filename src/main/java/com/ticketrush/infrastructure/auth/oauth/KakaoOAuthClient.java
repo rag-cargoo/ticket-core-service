@@ -1,6 +1,7 @@
-package com.ticketrush.domain.auth.oauth;
+package com.ticketrush.infrastructure.auth.oauth;
 
 import com.ticketrush.domain.auth.model.SocialProfile;
+import com.ticketrush.domain.auth.oauth.SocialOAuthClient;
 import com.ticketrush.domain.user.SocialProvider;
 import com.ticketrush.global.config.SocialLoginProperties;
 import lombok.RequiredArgsConstructor;

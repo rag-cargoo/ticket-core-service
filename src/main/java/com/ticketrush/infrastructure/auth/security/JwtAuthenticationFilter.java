@@ -1,7 +1,8 @@
-package com.ticketrush.domain.auth.security;
+package com.ticketrush.infrastructure.auth.security;
 
+import com.ticketrush.application.auth.model.AuthUserPrincipal;
+import com.ticketrush.application.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
-import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.UserRole;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;

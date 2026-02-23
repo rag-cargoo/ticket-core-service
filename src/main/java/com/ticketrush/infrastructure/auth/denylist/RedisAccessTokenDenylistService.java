@@ -1,5 +1,6 @@
-package com.ticketrush.domain.auth.service;
+package com.ticketrush.infrastructure.auth.denylist;
 
+import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
 import com.ticketrush.global.config.AuthJwtProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
