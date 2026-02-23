@@ -1,5 +1,9 @@
 package com.ticketrush.application.reservation.service;
 
+import com.ticketrush.application.reservation.model.AbuseAuditActionType;
+import com.ticketrush.application.reservation.model.AbuseAuditReasonType;
+import com.ticketrush.application.reservation.model.AbuseAuditRecord;
+import com.ticketrush.application.reservation.model.AbuseAuditResultType;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.repository.AbuseAuditLogRepository;
@@ -47,10 +51,10 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AbuseAuditLog> getAuditLogs(
-            AbuseAuditLog.AuditAction action,
-            AbuseAuditLog.AuditResult result,
-            AbuseAuditLog.AuditReason reason,
+    public List<AbuseAuditRecord> getAuditLogs(
+            AbuseAuditActionType action,
+            AbuseAuditResultType result,
+            AbuseAuditReasonType reason,
             Long userId,
             Long concertId,
             LocalDateTime fromAt,
@@ -63,15 +67,18 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
         LocalDateTime resolvedFromAt = fromAt == null ? LocalDateTime.of(1970, 1, 1, 0, 0, 0) : fromAt;
         LocalDateTime resolvedToAt = toAt == null ? LocalDateTime.of(9999, 12, 31, 23, 59, 59) : toAt;
         return abuseAuditLogRepository.search(
-                action,
-                result,
-                reason,
-                userId,
-                concertId,
-                resolvedFromAt,
-                resolvedToAt,
-                PageRequest.of(0, resolvedLimit)
-        );
+                        toDomainAction(action),
+                        toDomainResult(result),
+                        toDomainReason(reason),
+                        userId,
+                        concertId,
+                        resolvedFromAt,
+                        resolvedToAt,
+                        PageRequest.of(0, resolvedLimit)
+                )
+                .stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     private void ensureRateLimit(String requestFingerprint, String deviceFingerprint, User user, Seat seat, LocalDateTime now) {
@@ -170,5 +177,43 @@ public class AbuseAuditServiceImpl implements AbuseAuditService {
                 AbuseAuditLog.blockedHold(user, seat, requestFingerprint, deviceFingerprint, reason, message, LocalDateTime.now())
         );
         throw new IllegalStateException(message);
+    }
+
+    private AbuseAuditLog.AuditAction toDomainAction(AbuseAuditActionType action) {
+        if (action == null) {
+            return null;
+        }
+        return AbuseAuditLog.AuditAction.valueOf(action.name());
+    }
+
+    private AbuseAuditLog.AuditResult toDomainResult(AbuseAuditResultType result) {
+        if (result == null) {
+            return null;
+        }
+        return AbuseAuditLog.AuditResult.valueOf(result.name());
+    }
+
+    private AbuseAuditLog.AuditReason toDomainReason(AbuseAuditReasonType reason) {
+        if (reason == null) {
+            return null;
+        }
+        return AbuseAuditLog.AuditReason.valueOf(reason.name());
+    }
+
+    private AbuseAuditRecord toRecord(AbuseAuditLog log) {
+        return new AbuseAuditRecord(
+                log.getId(),
+                AbuseAuditActionType.valueOf(log.getAction().name()),
+                AbuseAuditResultType.valueOf(log.getResult().name()),
+                AbuseAuditReasonType.valueOf(log.getReason().name()),
+                log.getUserId(),
+                log.getConcertId(),
+                log.getSeatId(),
+                log.getReservationId(),
+                log.getRequestFingerprint(),
+                log.getDeviceFingerprint(),
+                log.getDetailMessage(),
+                log.getOccurredAt()
+        );
     }
 }

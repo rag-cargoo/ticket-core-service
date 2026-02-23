@@ -1,5 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
+import com.ticketrush.application.reservation.model.AdminRefundAuditRecord;
+import com.ticketrush.application.reservation.model.AdminRefundAuditResultType;
 import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.domain.reservation.repository.AdminRefundAuditLogRepository;
 import com.ticketrush.domain.user.UserRole;
@@ -58,22 +60,25 @@ public class AdminRefundAuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminRefundAuditLog> getAuditLogs(
+    public List<AdminRefundAuditRecord> getAuditLogs(
             Long reservationId,
             Long actorUserId,
-            AdminRefundAuditLog.AuditResult result,
+            AdminRefundAuditResultType result,
             LocalDateTime fromAt,
             LocalDateTime toAt,
             Integer limit
     ) {
         return adminRefundAuditLogRepository.search(
-                reservationId,
-                actorUserId,
-                result,
-                fromAt,
-                toAt,
-                PageRequest.of(0, normalizeLimit(limit))
-        );
+                        reservationId,
+                        actorUserId,
+                        toDomainResult(result),
+                        fromAt,
+                        toAt,
+                        PageRequest.of(0, normalizeLimit(limit))
+                )
+                .stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     private int normalizeLimit(Integer limit) {
@@ -81,5 +86,25 @@ public class AdminRefundAuditService {
             return 50;
         }
         return Math.min(limit, 200);
+    }
+
+    private AdminRefundAuditLog.AuditResult toDomainResult(AdminRefundAuditResultType result) {
+        if (result == null) {
+            return null;
+        }
+        return AdminRefundAuditLog.AuditResult.valueOf(result.name());
+    }
+
+    private AdminRefundAuditRecord toRecord(AdminRefundAuditLog log) {
+        return new AdminRefundAuditRecord(
+                log.getId(),
+                log.getReservationId(),
+                log.getTargetUserId(),
+                log.getActorUserId(),
+                log.getActorRole(),
+                AdminRefundAuditResultType.valueOf(log.getResult().name()),
+                log.getDetailMessage(),
+                log.getOccurredAt()
+        );
     }
 }
