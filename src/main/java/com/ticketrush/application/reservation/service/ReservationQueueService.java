@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.service;
+package com.ticketrush.application.reservation.service;
 
 public interface ReservationQueueService {
     void setStatus(Long userId, Long seatId, String status);

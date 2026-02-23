@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.service;
+package com.ticketrush.application.reservation.service;
 
 import java.time.LocalDateTime;
 

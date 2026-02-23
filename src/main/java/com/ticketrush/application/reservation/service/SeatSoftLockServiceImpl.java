@@ -1,4 +1,4 @@
-package com.ticketrush.domain.reservation.service;
+package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;

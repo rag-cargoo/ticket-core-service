@@ -28,4 +28,10 @@ class LayerDependencyArchTest {
             noClasses()
                     .that().areAnnotatedWith(RestController.class)
                     .should().dependOnClassesThat().haveSimpleNameEndingWith("Repository");
+
+    @ArchTest
+    static final ArchRule reservation_controller_should_not_depend_on_domain_reservation_services =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.ReservationController")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.reservation.service..");
 }
