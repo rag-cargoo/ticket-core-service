@@ -48,6 +48,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework.data.redis..");
 
     @ArchTest
+    static final ArchRule global_should_not_depend_on_spring_kafka_directly =
+            noClasses()
+                    .that().resideInAPackage("com.ticketrush.global..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.springframework.kafka..");
+
+    @ArchTest
     static final ArchRule rest_controllers_should_not_depend_on_repository_directly =
             noClasses()
                     .that().areAnnotatedWith(RestController.class)
@@ -99,8 +105,8 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.payment.service..");
 
     @ArchTest
-    static final ArchRule global_messaging_should_not_depend_on_domain_reservation_events =
+    static final ArchRule infrastructure_messaging_should_not_depend_on_domain_reservation_events =
             noClasses()
-                    .that().resideInAPackage("com.ticketrush.global.messaging..")
+                    .that().resideInAPackage("com.ticketrush.infrastructure.messaging..")
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.reservation.event..");
 }

@@ -15,7 +15,7 @@ import com.ticketrush.application.reservation.service.AdminRefundAuditService;
 import com.ticketrush.application.reservation.service.ReservationLifecycleService;
 import com.ticketrush.application.reservation.service.SeatSoftLockService;
 import com.ticketrush.global.lock.RedissonLockFacade;
-import com.ticketrush.global.messaging.KafkaReservationProducer;
+import com.ticketrush.infrastructure.messaging.KafkaReservationProducer;
 import com.ticketrush.global.sse.SsePushNotifier;
 import com.ticketrush.api.dto.ReservationRequest;
 import com.ticketrush.api.dto.ReservationResponse;

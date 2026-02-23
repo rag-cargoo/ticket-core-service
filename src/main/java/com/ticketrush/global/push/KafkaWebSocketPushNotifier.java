@@ -1,7 +1,7 @@
 package com.ticketrush.global.push;
 
-import com.ticketrush.global.messaging.KafkaPushEvent;
-import com.ticketrush.global.messaging.KafkaPushEventProducer;
+import com.ticketrush.infrastructure.messaging.KafkaPushEvent;
+import com.ticketrush.infrastructure.messaging.KafkaPushEventProducer;
 import com.ticketrush.global.sse.SseEventNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
