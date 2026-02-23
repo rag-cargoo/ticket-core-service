@@ -23,9 +23,9 @@ import com.ticketrush.infrastructure.reservation.adapter.outbound.ReservationWai
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
-import com.ticketrush.domain.payment.service.PaymentService;
-import com.ticketrush.domain.payment.service.PaymentServiceImpl;
-import com.ticketrush.domain.payment.gateway.WalletPaymentGateway;
+import com.ticketrush.application.payment.service.PaymentService;
+import com.ticketrush.application.payment.service.PaymentServiceImpl;
+import com.ticketrush.infrastructure.payment.gateway.WalletPaymentGateway;
 import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
 import com.ticketrush.domain.reservation.entity.AbuseAuditLog;
 import com.ticketrush.domain.reservation.entity.Reservation;

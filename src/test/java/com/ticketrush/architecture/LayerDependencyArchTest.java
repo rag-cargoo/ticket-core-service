@@ -75,6 +75,12 @@ class LayerDependencyArchTest {
                     .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.concert.service..");
 
     @ArchTest
+    static final ArchRule wallet_controller_should_not_depend_on_domain_payment_services =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.WalletController")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.ticketrush.domain.payment.service..");
+
+    @ArchTest
     static final ArchRule global_messaging_should_not_depend_on_domain_reservation_events =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.global.messaging..")

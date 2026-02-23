@@ -1,4 +1,4 @@
-package com.ticketrush.domain.payment.service;
+package com.ticketrush.application.payment.service;
 
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;

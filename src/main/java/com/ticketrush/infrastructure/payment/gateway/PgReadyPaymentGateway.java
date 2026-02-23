@@ -1,5 +1,6 @@
-package com.ticketrush.domain.payment.gateway;
+package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;

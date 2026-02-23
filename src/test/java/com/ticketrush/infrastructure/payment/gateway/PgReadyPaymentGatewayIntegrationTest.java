@@ -1,8 +1,9 @@
-package com.ticketrush.domain.payment.gateway;
+package com.ticketrush.infrastructure.payment.gateway;
 
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
+import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import org.junit.jupiter.api.Test;
