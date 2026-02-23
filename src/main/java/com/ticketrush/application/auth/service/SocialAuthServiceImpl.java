@@ -1,4 +1,4 @@
-package com.ticketrush.domain.auth.service;
+package com.ticketrush.application.auth.service;
 
 import com.ticketrush.domain.auth.model.SocialAuthorizeInfo;
 import com.ticketrush.domain.auth.model.SocialLoginResult;

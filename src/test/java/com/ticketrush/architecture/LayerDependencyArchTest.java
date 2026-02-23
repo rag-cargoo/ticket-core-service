@@ -57,6 +57,17 @@ class LayerDependencyArchTest {
                     );
 
     @ArchTest
+    static final ArchRule auth_and_user_controllers_should_not_depend_on_domain_auth_user_services =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.ticketrush.api.controller.AuthController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.SocialAuthController")
+                    .or().haveFullyQualifiedName("com.ticketrush.api.controller.UserController")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "com.ticketrush.domain.auth.service..",
+                            "com.ticketrush.domain.user.service.."
+                    );
+
+    @ArchTest
     static final ArchRule global_messaging_should_not_depend_on_domain_reservation_events =
             noClasses()
                     .that().resideInAPackage("com.ticketrush.global.messaging..")

@@ -1,8 +1,11 @@
-package com.ticketrush.domain.auth.service;
+package com.ticketrush.application.auth.service;
 
 import com.ticketrush.domain.auth.entity.RefreshToken;
 import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.auth.repository.RefreshTokenRepository;
+import com.ticketrush.domain.auth.service.AccessTokenDenylistService;
+import com.ticketrush.domain.auth.service.InMemoryAccessTokenDenylistService;
+import com.ticketrush.domain.auth.service.JwtTokenProvider;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
 import com.ticketrush.domain.user.UserRole;

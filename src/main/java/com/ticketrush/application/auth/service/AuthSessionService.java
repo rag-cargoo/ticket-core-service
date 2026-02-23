@@ -1,4 +1,4 @@
-package com.ticketrush.domain.auth.service;
+package com.ticketrush.application.auth.service;
 
 import com.ticketrush.domain.auth.model.AuthTokenPair;
 import com.ticketrush.domain.user.User;
