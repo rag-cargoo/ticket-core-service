@@ -152,7 +152,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
 
         PaymentMethod paymentMethod = resolvePaymentMethod(paymentMethodValue);
-        paymentMethodCatalogUseCase.assertMethodAvailable(paymentMethod);
+        paymentMethodCatalogUseCase.assertMethodAvailable(paymentMethod.name());
         Long paymentAmount = resolvePaymentAmount(reservation);
         PaymentTransaction paymentTransaction = reservationPaymentPort.payForReservation(
                 userId,

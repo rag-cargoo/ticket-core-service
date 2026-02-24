@@ -1,7 +1,6 @@
 package com.ticketrush.application.payment.service;
 
 import com.ticketrush.application.payment.model.PaymentMethodCatalogResult;
-import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.global.config.PaymentProperties;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +77,7 @@ class PaymentMethodCatalogServiceTest {
 
         PaymentMethodCatalogService service = new PaymentMethodCatalogService(properties);
 
-        assertThatThrownBy(() -> service.assertMethodAvailable(PaymentMethod.CARD))
+        assertThatThrownBy(() -> service.assertMethodAvailable("CARD"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Payment method unavailable");
     }

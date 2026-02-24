@@ -41,7 +41,8 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
     }
 
     @Override
-    public void assertMethodAvailable(PaymentMethod paymentMethod) {
+    public void assertMethodAvailable(String paymentMethodCode) {
+        PaymentMethod paymentMethod = parsePaymentMethod(paymentMethodCode);
         PaymentMethodStatusResult method = getCatalog().getMethods().stream()
                 .filter(candidate -> candidate.getCode().equals(paymentMethod.name()))
                 .findFirst()
@@ -53,6 +54,18 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
                             + ", status=" + method.getStatus()
                             + ", message=" + method.getMessage()
             );
+        }
+    }
+
+    private PaymentMethod parsePaymentMethod(String paymentMethodCode) {
+        if (!StringUtils.hasText(paymentMethodCode)) {
+            throw new IllegalStateException("Payment method not found: " + paymentMethodCode);
+        }
+
+        try {
+            return PaymentMethod.valueOf(paymentMethodCode.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("Payment method not found: " + paymentMethodCode, exception);
         }
     }
 

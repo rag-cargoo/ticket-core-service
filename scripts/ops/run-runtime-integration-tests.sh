@@ -22,15 +22,24 @@ report_file="${IT_REPORT_FILE:-$tmp_root/latest/runtime-integration-latest.md}"
 
 mkdir -p "$(dirname "$report_file")" "$(dirname "$log_file")"
 
+if command -v docker-compose >/dev/null 2>&1; then
+  compose_cmd=(docker-compose)
+elif docker compose version >/dev/null 2>&1; then
+  compose_cmd=(docker compose)
+else
+  echo "[runtime-it] docker compose command is unavailable (docker-compose or docker compose required)"
+  exit 127
+fi
+
 cleanup() {
   if [[ "$keep_env" != "true" ]]; then
-    docker-compose -f "$compose_file" -p "$compose_project" down -v >/dev/null 2>&1 || true
+    "${compose_cmd[@]}" -f "$compose_file" -p "$compose_project" down -v >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
 
 echo "[runtime-it] compose up: project=$compose_project replicas=$app_replicas"
-docker-compose -f "$compose_file" -p "$compose_project" up -d --build --scale app="$app_replicas" postgres-db redis zookeeper kafka app nginx-lb
+"${compose_cmd[@]}" -f "$compose_file" -p "$compose_project" up -d --build --scale app="$app_replicas" postgres-db redis zookeeper kafka app nginx-lb
 
 echo "[runtime-it] health check: $health_url"
 healthy="false"
