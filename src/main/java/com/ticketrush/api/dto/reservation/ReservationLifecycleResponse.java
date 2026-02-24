@@ -22,6 +22,12 @@ public class ReservationLifecycleResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime cancelledAt;
     private LocalDateTime refundedAt;
+    private String paymentMethod;
+    private String paymentProvider;
+    private String paymentStatus;
+    private Long paymentTransactionId;
+    private String paymentAction;
+    private String paymentRedirectUrl;
     private List<Long> resaleActivatedUserIds;
 
     public static ReservationLifecycleResponse from(ReservationLifecycleResult result) {
@@ -36,6 +42,12 @@ public class ReservationLifecycleResponse {
                 result.getExpiredAt(),
                 result.getCancelledAt(),
                 result.getRefundedAt(),
+                result.getPaymentMethod(),
+                result.getPaymentProvider(),
+                result.getPaymentStatus(),
+                result.getPaymentTransactionId(),
+                result.getPaymentAction(),
+                result.getPaymentRedirectUrl(),
                 List.copyOf(result.getResaleActivatedUserIds())
         );
     }

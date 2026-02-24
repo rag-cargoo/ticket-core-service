@@ -29,7 +29,8 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(name = "idx_payment_transactions_user_created_at", columnList = "user_id,created_at"),
-                @Index(name = "idx_payment_transactions_reservation_type", columnList = "reservation_id,type")
+                @Index(name = "idx_payment_transactions_reservation_type", columnList = "reservation_id,type"),
+                @Index(name = "idx_payment_transactions_provider_event", columnList = "payment_provider,provider_transaction_id")
         }
 )
 @Getter
@@ -54,6 +55,16 @@ public class PaymentTransaction {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private PaymentTransactionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 30)
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "payment_provider", length = 40)
+    private String paymentProvider;
+
+    @Column(name = "provider_transaction_id", length = 120)
+    private String providerTransactionId;
 
     @Column(nullable = false)
     private Long amount;
@@ -82,6 +93,8 @@ public class PaymentTransaction {
                 null,
                 PaymentTransactionType.CHARGE,
                 PaymentTransactionStatus.SUCCESS,
+                PaymentMethod.WALLET,
+                "wallet",
                 amount,
                 balanceAfterAmount,
                 idempotencyKey,
@@ -104,7 +117,9 @@ public class PaymentTransaction {
                 balanceAfterAmount,
                 idempotencyKey,
                 description,
-                PaymentTransactionStatus.SUCCESS
+                PaymentTransactionStatus.SUCCESS,
+                PaymentMethod.WALLET,
+                "wallet"
         );
     }
 
@@ -117,11 +132,37 @@ public class PaymentTransaction {
             String description,
             PaymentTransactionStatus status
     ) {
+        return payment(
+                user,
+                reservationId,
+                amount,
+                balanceAfterAmount,
+                idempotencyKey,
+                description,
+                status,
+                PaymentMethod.WALLET,
+                "wallet"
+        );
+    }
+
+    public static PaymentTransaction payment(
+            User user,
+            Long reservationId,
+            Long amount,
+            Long balanceAfterAmount,
+            String idempotencyKey,
+            String description,
+            PaymentTransactionStatus status,
+            PaymentMethod paymentMethod,
+            String paymentProvider
+    ) {
         return new PaymentTransaction(
                 user,
                 reservationId,
                 PaymentTransactionType.PAYMENT,
                 status,
+                paymentMethod,
+                paymentProvider,
                 amount,
                 balanceAfterAmount,
                 idempotencyKey,
@@ -137,11 +178,35 @@ public class PaymentTransaction {
             String idempotencyKey,
             String description
     ) {
+        return refund(
+                user,
+                reservationId,
+                amount,
+                balanceAfterAmount,
+                idempotencyKey,
+                description,
+                PaymentMethod.WALLET,
+                "wallet"
+        );
+    }
+
+    public static PaymentTransaction refund(
+            User user,
+            Long reservationId,
+            Long amount,
+            Long balanceAfterAmount,
+            String idempotencyKey,
+            String description,
+            PaymentMethod paymentMethod,
+            String paymentProvider
+    ) {
         return new PaymentTransaction(
                 user,
                 reservationId,
                 PaymentTransactionType.REFUND,
                 PaymentTransactionStatus.SUCCESS,
+                paymentMethod,
+                paymentProvider,
                 amount,
                 balanceAfterAmount,
                 idempotencyKey,
@@ -154,6 +219,8 @@ public class PaymentTransaction {
             Long reservationId,
             PaymentTransactionType type,
             PaymentTransactionStatus status,
+            PaymentMethod paymentMethod,
+            String paymentProvider,
             Long amount,
             Long balanceAfterAmount,
             String idempotencyKey,
@@ -163,6 +230,8 @@ public class PaymentTransaction {
         this.reservationId = reservationId;
         this.type = type;
         this.status = status;
+        this.paymentMethod = paymentMethod;
+        this.paymentProvider = paymentProvider;
         this.amount = amount;
         this.balanceAfterAmount = balanceAfterAmount;
         this.idempotencyKey = idempotencyKey;
@@ -178,9 +247,30 @@ public class PaymentTransaction {
         this.description = description;
     }
 
+    public void markSuccess(String description, String providerTransactionId) {
+        markSuccess(description);
+        setProviderTransactionId(providerTransactionId);
+    }
+
     public void markFailed(String description) {
         this.status = PaymentTransactionStatus.FAILED;
         this.description = description;
+    }
+
+    public void markFailed(String description, String providerTransactionId) {
+        markFailed(description);
+        setProviderTransactionId(providerTransactionId);
+    }
+
+    private void setProviderTransactionId(String value) {
+        if (value == null) {
+            return;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+        this.providerTransactionId = trimmed;
     }
 
     @PrePersist

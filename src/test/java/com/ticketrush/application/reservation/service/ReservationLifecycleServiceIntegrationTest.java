@@ -27,6 +27,7 @@ import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.application.payment.service.PaymentService;
+import com.ticketrush.application.payment.service.PaymentMethodCatalogService;
 import com.ticketrush.application.payment.service.PaymentServiceImpl;
 import com.ticketrush.infrastructure.payment.gateway.WalletPaymentGateway;
 import com.ticketrush.domain.reservation.entity.AdminRefundAuditLog;
@@ -72,6 +73,7 @@ import static org.mockito.Mockito.when;
         AdminRefundAuditService.class,
         AbuseAuditWriter.class,
         PaymentServiceImpl.class,
+        PaymentMethodCatalogService.class,
         WalletPaymentGateway.class,
         ReservationSeatPortAdapter.class,
         ReservationPaymentPortAdapter.class,
@@ -206,6 +208,12 @@ class ReservationLifecycleServiceIntegrationTest {
         ReservationLifecycleResult confirmed = reservationLifecycleService.confirm(hold.getId(), user.getId());
         assertThat(confirmed.getStatus()).isEqualTo(Reservation.ReservationStatus.CONFIRMED.name());
         assertThat(confirmed.getConfirmedAt()).isNotNull();
+        assertThat(confirmed.getPaymentMethod()).isEqualTo("WALLET");
+        assertThat(confirmed.getPaymentProvider()).isEqualTo("wallet");
+        assertThat(confirmed.getPaymentStatus()).isEqualTo("SUCCESS");
+        assertThat(confirmed.getPaymentTransactionId()).isNotNull();
+        assertThat(confirmed.getPaymentAction()).isEqualTo("NONE");
+        assertThat(confirmed.getPaymentRedirectUrl()).isNull();
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.RESERVED);
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(100_000L);
@@ -408,6 +416,24 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.TEMP_RESERVED);
         assertThat(paymentService.getWalletBalance(user.getId())).isZero();
+    }
+
+    @Test
+    void confirmShouldRejectUnsupportedPaymentMethodWhenProviderIsWallet() {
+        User user = userRepository.save(new User("step10-method-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-104-5");
+
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
+        );
+        reservationLifecycleService.startPaying(hold.getId(), user.getId());
+
+        assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId(), "KAKAOPAY"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Payment method unavailable");
+
+        Reservation reservation = reservationRepository.findById(hold.getId()).orElseThrow();
+        assertThat(reservation.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING);
     }
 
     @Test

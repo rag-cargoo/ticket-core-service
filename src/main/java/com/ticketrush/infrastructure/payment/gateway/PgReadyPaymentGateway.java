@@ -1,5 +1,6 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
@@ -22,8 +23,20 @@ public class PgReadyPaymentGateway implements PaymentGateway {
     private final UserRepository userRepository;
 
     @Override
+    public String provider() {
+        return "pg-ready";
+    }
+
+    @Override
     @Transactional
-    public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
+    public PaymentTransaction payForReservation(
+            Long userId,
+            Long reservationId,
+            Long amount,
+            PaymentMethod paymentMethod,
+            String idempotencyKey
+    ) {
+        validateSupportedMethod(paymentMethod);
         String key = normalizeIdempotencyKey(idempotencyKey, "pg-ready-payment-" + reservationId);
         PaymentTransaction existing = findByIdempotencyKey(key);
         if (existing != null) {
@@ -41,7 +54,9 @@ public class PgReadyPaymentGateway implements PaymentGateway {
                 user.getWalletBalanceAmountSafe(),
                 key,
                 "PG_READY_PAYMENT_PENDING",
-                PaymentTransactionStatus.PENDING
+                PaymentTransactionStatus.PENDING,
+                paymentMethod,
+                provider()
         ));
     }
 
@@ -67,6 +82,12 @@ public class PgReadyPaymentGateway implements PaymentGateway {
         }
 
         User user = getUser(userId);
+        PaymentMethod refundMethod = paidTransaction.getPaymentMethod() == null
+                ? PaymentMethod.CARD
+                : paidTransaction.getPaymentMethod();
+        String refundProvider = StringUtils.hasText(paidTransaction.getPaymentProvider())
+                ? paidTransaction.getPaymentProvider()
+                : provider();
 
         // PG 환불 webhook 정식 연동 전까지는 동기 성공 처리로 고정한다.
         return paymentTransactionRepository.save(PaymentTransaction.refund(
@@ -75,7 +96,9 @@ public class PgReadyPaymentGateway implements PaymentGateway {
                 paidTransaction.getAmount(),
                 user.getWalletBalanceAmountSafe(),
                 key,
-                "PG_READY_REFUND_APPROVED"
+                "PG_READY_REFUND_APPROVED",
+                refundMethod,
+                refundProvider
         ));
     }
 
@@ -100,5 +123,19 @@ public class PgReadyPaymentGateway implements PaymentGateway {
             return fallback;
         }
         return value.trim();
+    }
+
+    private void validateSupportedMethod(PaymentMethod paymentMethod) {
+        if (paymentMethod == null) {
+            throw new IllegalStateException("paymentMethod is required");
+        }
+        if (paymentMethod == PaymentMethod.WALLET) {
+            throw new IllegalStateException("Unsupported payment method for pg-ready provider. requested=WALLET");
+        }
+        switch (paymentMethod) {
+            case CARD, KAKAOPAY, NAVERPAY, BANK_TRANSFER -> {
+            }
+            default -> throw new IllegalStateException("Unsupported payment method: " + paymentMethod);
+        }
     }
 }

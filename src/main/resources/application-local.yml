@@ -63,6 +63,12 @@ app:
     refund-cutoff-hours-before-concert: 24
   payment:
     provider: ${APP_PAYMENT_PROVIDER:wallet}
+    external-live-enabled: ${APP_PAYMENT_EXTERNAL_LIVE_ENABLED:false}
+    pg-ready-checkout-base-url: ${APP_PAYMENT_PG_READY_CHECKOUT_BASE_URL:https://pg-ready.example.com/checkout}
+    pg-ready-callback-url: ${APP_PAYMENT_PG_READY_CALLBACK_URL:/api/payments/webhooks/pg-ready}
+    pg-ready-success-redirect-url: ${APP_PAYMENT_PG_READY_SUCCESS_REDIRECT_URL:/service?payment=success}
+    pg-ready-cancel-redirect-url: ${APP_PAYMENT_PG_READY_CANCEL_REDIRECT_URL:/service?payment=cancel}
+    pg-ready-failure-redirect-url: ${APP_PAYMENT_PG_READY_FAILURE_REDIRECT_URL:/service?payment=failed}
     default-ticket-price-amount: 100000
   waiting-queue:
     queue-key-prefix: "waiting-queue:"

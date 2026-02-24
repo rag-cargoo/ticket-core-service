@@ -3,6 +3,7 @@ package com.ticketrush.application.payment.webhook;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookCommand;
 import com.ticketrush.application.payment.webhook.model.PgReadyWebhookResult;
 import com.ticketrush.application.payment.webhook.port.inbound.PgReadyWebhookUseCase;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -31,6 +32,7 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
     private static final String EVENT_PAYMENT = "PAYMENT";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_FAILED = "FAILED";
+    private static final String PROVIDER_PG_READY = "pg-ready";
 
     public PgReadyWebhookService(
             PaymentTransactionRepository paymentTransactionRepository,
@@ -67,6 +69,7 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
         }
 
         PaymentTransaction paymentTransaction = resolvePaymentTransaction(command, reservationId);
+        validatePgReadyTransaction(paymentTransaction);
         if (STATUS_APPROVED.equals(status)) {
             handleApproved(paymentTransaction, reservationId, providerEventId);
             return acceptedResponse(eventType, status, reservationId, "applied approved");
@@ -88,6 +91,16 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
     }
 
     private PaymentTransaction resolvePaymentTransaction(PgReadyWebhookCommand command, Long reservationId) {
+        String providerEventId = normalizeRaw(command.getProviderEventId());
+        if (StringUtils.hasText(providerEventId)) {
+            PaymentTransaction byProviderEvent = paymentTransactionRepository
+                    .findByPaymentProviderAndProviderTransactionId(PROVIDER_PG_READY, providerEventId)
+                    .orElse(null);
+            if (byProviderEvent != null) {
+                return byProviderEvent;
+            }
+        }
+
         String idempotencyKey = normalizeRaw(command.getIdempotencyKey());
         if (StringUtils.hasText(idempotencyKey)) {
             return paymentTransactionRepository.findByIdempotencyKey(idempotencyKey)
@@ -108,7 +121,7 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
             return;
         }
 
-        paymentTransaction.markSuccess(buildDescription("PG_READY_PAYMENT_APPROVED", providerEventId));
+        paymentTransaction.markSuccess(buildDescription("PG_READY_PAYMENT_APPROVED", providerEventId), providerEventId);
 
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalStateException("Reservation not found. reservationId=" + reservationId));
@@ -138,7 +151,7 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
         if (paymentTransaction.isStatus(PaymentTransactionStatus.FAILED)) {
             return;
         }
-        paymentTransaction.markFailed(buildDescription("PG_READY_PAYMENT_FAILED", providerEventId));
+        paymentTransaction.markFailed(buildDescription("PG_READY_PAYMENT_FAILED", providerEventId), providerEventId);
     }
 
     private PgReadyWebhookResult acceptedResponse(String eventType, String status, Long reservationId, String message) {
@@ -164,5 +177,24 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
             return "";
         }
         return value.trim();
+    }
+
+    private void validatePgReadyTransaction(PaymentTransaction transaction) {
+        String provider = normalizeRaw(transaction.getPaymentProvider());
+        if (provider.isEmpty()) {
+            return;
+        }
+        if (!PROVIDER_PG_READY.equalsIgnoreCase(provider)) {
+            throw new IllegalStateException(
+                    "PG_READY webhook can only handle pg-ready transactions. txId=" + transaction.getId() + ", provider=" + provider
+            );
+        }
+
+        PaymentMethod method = transaction.getPaymentMethod();
+        if (method == PaymentMethod.WALLET) {
+            throw new IllegalStateException(
+                    "PG_READY webhook cannot approve wallet transaction. txId=" + transaction.getId()
+            );
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
 import com.ticketrush.application.payment.port.bridge.PaymentGatewayUseCase;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,24 @@ public class WalletPaymentGateway implements PaymentGateway {
     private final PaymentGatewayUseCase paymentGatewayUseCase;
 
     @Override
+    public String provider() {
+        return "wallet";
+    }
+
+    @Override
     @Transactional
-    public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
+    public PaymentTransaction payForReservation(
+            Long userId,
+            Long reservationId,
+            Long amount,
+            PaymentMethod paymentMethod,
+            String idempotencyKey
+    ) {
+        if (paymentMethod != PaymentMethod.WALLET) {
+            throw new IllegalStateException(
+                    "Unsupported payment method for wallet provider. requested=" + paymentMethod + ", supported=WALLET"
+            );
+        }
         return paymentGatewayUseCase.payForReservation(userId, reservationId, amount, idempotencyKey);
     }
 

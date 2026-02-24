@@ -1,5 +1,6 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -32,10 +33,13 @@ class PgReadyPaymentGatewayIntegrationTest {
                 user.getId(),
                 8001L,
                 100_000L,
+                PaymentMethod.CARD,
                 "pg-ready-payment-8001"
         );
 
         assertThat(tx.getType()).isEqualTo(PaymentTransactionType.PAYMENT);
+        assertThat(tx.getPaymentMethod()).isEqualTo(PaymentMethod.CARD);
+        assertThat(tx.getPaymentProvider()).isEqualTo("pg-ready");
         assertThat(tx.getStatus()).isEqualTo(PaymentTransactionStatus.PENDING);
         assertThat(tx.getDescription()).isEqualTo("PG_READY_PAYMENT_PENDING");
         assertThat(tx.getBalanceAfterAmount()).isEqualTo(user.getWalletBalanceAmountSafe());

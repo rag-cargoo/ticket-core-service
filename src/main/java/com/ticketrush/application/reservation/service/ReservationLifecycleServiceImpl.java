@@ -2,7 +2,9 @@ package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
+import com.ticketrush.application.payment.port.inbound.PaymentMethodCatalogUseCase;
 import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.reservation.entity.Reservation;
@@ -27,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -43,6 +47,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     private final ReservationWaitingQueuePort reservationWaitingQueuePort;
     private final ReservationConfigPort reservationProperties;
     private final PaymentConfigPort paymentProperties;
+    private final PaymentMethodCatalogUseCase paymentMethodCatalogUseCase;
     private final SalesPolicyService salesPolicyService;
     private final AbuseAuditService abuseAuditService;
     private final AdminRefundAuditService adminRefundAuditService;
@@ -59,6 +64,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             ReservationWaitingQueuePort reservationWaitingQueuePort,
             ReservationConfigPort reservationProperties,
             PaymentConfigPort paymentProperties,
+            PaymentMethodCatalogUseCase paymentMethodCatalogUseCase,
             SalesPolicyService salesPolicyService,
             AbuseAuditService abuseAuditService,
             AdminRefundAuditService adminRefundAuditService,
@@ -74,6 +80,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         this.reservationWaitingQueuePort = reservationWaitingQueuePort;
         this.reservationProperties = reservationProperties;
         this.paymentProperties = paymentProperties;
+        this.paymentMethodCatalogUseCase = paymentMethodCatalogUseCase;
         this.salesPolicyService = salesPolicyService;
         this.abuseAuditService = abuseAuditService;
         this.adminRefundAuditService = adminRefundAuditService;
@@ -127,6 +134,11 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
 
     @Transactional
     public ReservationLifecycleResult confirm(Long reservationId, Long userId) {
+        return confirm(reservationId, userId, null);
+    }
+
+    @Transactional
+    public ReservationLifecycleResult confirm(Long reservationId, Long userId, String paymentMethodValue) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         LocalDateTime now = LocalDateTime.now();
         expireIfNeeded(reservation, now);
@@ -139,11 +151,14 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             );
         }
 
+        PaymentMethod paymentMethod = resolvePaymentMethod(paymentMethodValue);
+        paymentMethodCatalogUseCase.assertMethodAvailable(paymentMethod.name());
         Long paymentAmount = resolvePaymentAmount(reservation);
         PaymentTransaction paymentTransaction = reservationPaymentPort.payForReservation(
                 userId,
                 reservationId,
                 paymentAmount,
+                paymentMethod,
                 "reservation-payment-" + reservationId
         );
 
@@ -151,7 +166,30 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             confirmReservationAndSeat(reservation, now);
         }
 
-        return ReservationLifecycleResult.from(reservation);
+        String paymentMethodCode = paymentTransaction.getPaymentMethod() == null
+                ? paymentMethod.name()
+                : paymentTransaction.getPaymentMethod().name();
+        String paymentProvider = resolvePaymentProvider(paymentTransaction);
+        String paymentStatus = paymentTransaction.getStatus() == null ? null : paymentTransaction.getStatus().name();
+        String paymentAction = resolvePaymentAction(paymentTransaction.getStatus(), paymentProvider);
+        String paymentRedirectUrl = resolvePaymentRedirectUrl(
+                paymentAction,
+                reservationId,
+                userId,
+                paymentAmount,
+                paymentMethodCode,
+                paymentTransaction
+        );
+
+        return ReservationLifecycleResult.from(
+                reservation,
+                paymentMethodCode,
+                paymentProvider,
+                paymentStatus,
+                paymentTransaction.getId(),
+                paymentAction,
+                paymentRedirectUrl
+        );
     }
 
     @Transactional
@@ -376,5 +414,74 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             return optionPriceAmount;
         }
         return paymentProperties.getDefaultTicketPriceAmount();
+    }
+
+    private PaymentMethod resolvePaymentMethod(String value) {
+        try {
+            return PaymentMethod.fromNullable(value, PaymentMethod.WALLET);
+        } catch (IllegalArgumentException exception) {
+            String safeValue = value == null ? "" : value.trim();
+            throw new IllegalStateException(
+                    "Unsupported payment method: " + safeValue
+                            + ". allowed=WALLET,CARD,KAKAOPAY,NAVERPAY,BANK_TRANSFER",
+                    exception
+            );
+        }
+    }
+
+    private String resolvePaymentProvider(PaymentTransaction paymentTransaction) {
+        if (StringUtils.hasText(paymentTransaction.getPaymentProvider())) {
+            return paymentTransaction.getPaymentProvider().trim();
+        }
+        return paymentProperties.getProvider();
+    }
+
+    private String resolvePaymentAction(PaymentTransactionStatus paymentStatus, String paymentProvider) {
+        if (paymentStatus == null || paymentStatus == PaymentTransactionStatus.SUCCESS) {
+            return "NONE";
+        }
+        if (paymentStatus == PaymentTransactionStatus.PENDING) {
+            if ("pg-ready".equalsIgnoreCase(paymentProvider) && paymentProperties.isExternalLiveEnabled()) {
+                return "REDIRECT";
+            }
+            return "WAIT_WEBHOOK";
+        }
+        return "RETRY_CONFIRM";
+    }
+
+    private String resolvePaymentRedirectUrl(
+            String paymentAction,
+            Long reservationId,
+            Long userId,
+            Long paymentAmount,
+            String paymentMethod,
+            PaymentTransaction paymentTransaction
+    ) {
+        if (!"REDIRECT".equals(paymentAction)) {
+            return null;
+        }
+        String checkoutBaseUrl = paymentProperties.getPgReadyCheckoutBaseUrl();
+        if (!StringUtils.hasText(checkoutBaseUrl)) {
+            return null;
+        }
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(checkoutBaseUrl.trim())
+                .queryParam("reservationId", reservationId)
+                .queryParam("paymentTransactionId", paymentTransaction.getId())
+                .queryParam("userId", userId)
+                .queryParam("amount", paymentAmount)
+                .queryParam("paymentMethod", paymentMethod);
+        appendIfText(builder, "orderId", paymentTransaction.getIdempotencyKey());
+        appendIfText(builder, "callbackUrl", paymentProperties.getPgReadyCallbackUrl());
+        appendIfText(builder, "successRedirectUrl", paymentProperties.getPgReadySuccessRedirectUrl());
+        appendIfText(builder, "cancelRedirectUrl", paymentProperties.getPgReadyCancelRedirectUrl());
+        appendIfText(builder, "failureRedirectUrl", paymentProperties.getPgReadyFailureRedirectUrl());
+        return builder.build().encode().toUriString();
+    }
+
+    private void appendIfText(UriComponentsBuilder builder, String name, String value) {
+        if (StringUtils.hasText(value)) {
+            builder.queryParam(name, value.trim());
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
@@ -22,8 +23,20 @@ public class MockPaymentGateway implements PaymentGateway {
     private final UserRepository userRepository;
 
     @Override
+    public String provider() {
+        return "mock";
+    }
+
+    @Override
     @Transactional
-    public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
+    public PaymentTransaction payForReservation(
+            Long userId,
+            Long reservationId,
+            Long amount,
+            PaymentMethod paymentMethod,
+            String idempotencyKey
+    ) {
+        validateSupportedMethod(paymentMethod);
         String key = normalizeIdempotencyKey(idempotencyKey, "mock-payment-" + reservationId);
         PaymentTransaction existing = findByIdempotencyKey(key);
         if (existing != null) {
@@ -38,7 +51,10 @@ public class MockPaymentGateway implements PaymentGateway {
                 normalizedAmount,
                 user.getWalletBalanceAmountSafe(),
                 key,
-                "MOCK_RESERVATION_PAYMENT"
+                "MOCK_RESERVATION_PAYMENT",
+                PaymentTransactionStatus.SUCCESS,
+                paymentMethod,
+                provider()
         ));
     }
 
@@ -64,13 +80,21 @@ public class MockPaymentGateway implements PaymentGateway {
         }
 
         User user = getUser(userId);
+        PaymentMethod refundMethod = paidTransaction.getPaymentMethod() == null
+                ? PaymentMethod.WALLET
+                : paidTransaction.getPaymentMethod();
+        String refundProvider = StringUtils.hasText(paidTransaction.getPaymentProvider())
+                ? paidTransaction.getPaymentProvider()
+                : provider();
         return paymentTransactionRepository.save(PaymentTransaction.refund(
                 user,
                 reservationId,
                 paidTransaction.getAmount(),
                 user.getWalletBalanceAmountSafe(),
                 key,
-                "MOCK_RESERVATION_REFUND"
+                "MOCK_RESERVATION_REFUND",
+                refundMethod,
+                refundProvider
         ));
     }
 
@@ -95,5 +119,16 @@ public class MockPaymentGateway implements PaymentGateway {
             return fallback;
         }
         return value.trim();
+    }
+
+    private void validateSupportedMethod(PaymentMethod paymentMethod) {
+        if (paymentMethod == null) {
+            throw new IllegalStateException("paymentMethod is required");
+        }
+        switch (paymentMethod) {
+            case WALLET, CARD, KAKAOPAY, NAVERPAY, BANK_TRANSFER -> {
+            }
+            default -> throw new IllegalStateException("Unsupported payment method: " + paymentMethod);
+        }
     }
 }
