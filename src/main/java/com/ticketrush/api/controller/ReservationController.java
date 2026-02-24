@@ -153,7 +153,11 @@ public class ReservationController {
     public ResponseEntity<ReservationLifecycleResponse> confirm(
             @PathVariable Long reservationId,
             @RequestBody ReservationStateRequest request) {
-        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(reservationId, request.getUserId());
+        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(
+                reservationId,
+                request.getUserId(),
+                request.getPaymentMethod()
+        );
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 
@@ -279,9 +283,14 @@ public class ReservationController {
     @PostMapping("/v7/{reservationId}/confirm")
     public ResponseEntity<ReservationLifecycleResponse> confirmV7(
             @AuthenticationPrincipal AuthUserPrincipal principal,
-            @PathVariable Long reservationId
+            @PathVariable Long reservationId,
+            @RequestBody(required = false) ReservationStateRequest request
     ) {
-        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(reservationId, requiredUserId(principal));
+        ReservationLifecycleResult result = reservationLifecycleUseCase.confirm(
+                reservationId,
+                requiredUserId(principal),
+                request == null ? null : request.getPaymentMethod()
+        );
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
     }
 

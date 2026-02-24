@@ -9,7 +9,11 @@ public interface ReservationLifecycleUseCase {
 
     ReservationLifecycleResult startPaying(Long reservationId, Long userId);
 
-    ReservationLifecycleResult confirm(Long reservationId, Long userId);
+    default ReservationLifecycleResult confirm(Long reservationId, Long userId) {
+        return confirm(reservationId, userId, null);
+    }
+
+    ReservationLifecycleResult confirm(Long reservationId, Long userId, String paymentMethod);
 
     ReservationLifecycleResult cancel(Long reservationId, Long userId);
 

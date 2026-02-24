@@ -16,6 +16,9 @@ public class PaymentTransactionResponse {
     private Long reservationId;
     private String type;
     private String status;
+    private String paymentMethod;
+    private String paymentProvider;
+    private String providerTransactionId;
     private Long amount;
     private Long balanceAfterAmount;
     private String idempotencyKey;
@@ -29,6 +32,9 @@ public class PaymentTransactionResponse {
                 transaction.getReservationId(),
                 transaction.getType(),
                 transaction.getStatus(),
+                transaction.getPaymentMethod(),
+                transaction.getPaymentProvider(),
+                transaction.getProviderTransactionId(),
                 transaction.getAmount(),
                 transaction.getBalanceAfterAmount(),
                 transaction.getIdempotencyKey(),

@@ -1,6 +1,7 @@
 package com.ticketrush.application.payment.service;
 
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
 import com.ticketrush.domain.user.User;
 import com.ticketrush.domain.user.UserRepository;
@@ -33,6 +34,8 @@ class PaymentServiceIntegrationTest {
         );
 
         assertThat(tx.getType()).isEqualTo(PaymentTransactionType.CHARGE);
+        assertThat(tx.getPaymentMethod()).isEqualTo(PaymentMethod.WALLET);
+        assertThat(tx.getPaymentProvider()).isEqualTo("wallet");
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(250_000L);
     }
 
@@ -48,6 +51,8 @@ class PaymentServiceIntegrationTest {
         );
 
         assertThat(tx.getType()).isEqualTo(PaymentTransactionType.PAYMENT);
+        assertThat(tx.getPaymentMethod()).isEqualTo(PaymentMethod.WALLET);
+        assertThat(tx.getPaymentProvider()).isEqualTo("wallet");
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(80_000L);
     }
 
@@ -76,6 +81,8 @@ class PaymentServiceIntegrationTest {
         );
 
         assertThat(refundTx.getType()).isEqualTo(PaymentTransactionType.REFUND);
+        assertThat(refundTx.getPaymentMethod()).isEqualTo(PaymentMethod.WALLET);
+        assertThat(refundTx.getPaymentProvider()).isEqualTo("wallet");
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
     }
 

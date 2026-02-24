@@ -1,5 +1,6 @@
 package com.ticketrush.infrastructure.reservation.adapter.outbound;
 
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
 import com.ticketrush.domain.reservation.port.outbound.ReservationPaymentPort;
@@ -15,8 +16,14 @@ public class ReservationPaymentPortAdapter implements ReservationPaymentPort {
 
     @Override
     @Transactional
-    public PaymentTransaction payForReservation(Long userId, Long reservationId, Long amount, String idempotencyKey) {
-        return paymentGateway.payForReservation(userId, reservationId, amount, idempotencyKey);
+    public PaymentTransaction payForReservation(
+            Long userId,
+            Long reservationId,
+            Long amount,
+            PaymentMethod paymentMethod,
+            String idempotencyKey
+    ) {
+        return paymentGateway.payForReservation(userId, reservationId, amount, paymentMethod, idempotencyKey);
     }
 
     @Override

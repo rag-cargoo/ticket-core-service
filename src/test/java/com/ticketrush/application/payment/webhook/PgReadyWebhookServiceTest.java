@@ -13,6 +13,7 @@ import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
@@ -40,7 +41,7 @@ class PgReadyWebhookServiceTest {
 
     @TestConfiguration
     static class TestConfig {
-        @Bean
+        @Bean(name = "reservationStatusPushNotifier")
         ReservationStatusPushPort pushNotifier() {
             return mock(ReservationStatusPushPort.class);
         }
@@ -99,7 +100,9 @@ class PgReadyWebhookServiceTest {
                         user.getWalletBalanceAmountSafe(),
                         idempotencyKey,
                         "PG_READY_PAYMENT_PENDING",
-                        PaymentTransactionStatus.PENDING
+                        PaymentTransactionStatus.PENDING,
+                        PaymentMethod.CARD,
+                        "pg-ready"
                 )
         );
 
@@ -127,6 +130,8 @@ class PgReadyWebhookServiceTest {
         assertThat(updatedSeat.getStatus()).isEqualTo(Seat.SeatStatus.RESERVED);
         assertThat(updatedPaymentTransaction.getStatus()).isEqualTo(PaymentTransactionStatus.SUCCESS);
         assertThat(updatedPaymentTransaction.getDescription()).contains("PG_READY_PAYMENT_APPROVED");
+        assertThat(updatedPaymentTransaction.getPaymentProvider()).isEqualTo("pg-ready");
+        assertThat(updatedPaymentTransaction.getProviderTransactionId()).isEqualTo("evt-approved-1");
         verify(pushNotifier).sendReservationStatus(user.getId(), seat.getId(), Reservation.ReservationStatus.CONFIRMED.name());
     }
 
@@ -148,7 +153,9 @@ class PgReadyWebhookServiceTest {
                         user.getWalletBalanceAmountSafe(),
                         idempotencyKey,
                         "PG_READY_PAYMENT_PENDING",
-                        PaymentTransactionStatus.PENDING
+                        PaymentTransactionStatus.PENDING,
+                        PaymentMethod.CARD,
+                        "pg-ready"
                 )
         );
 
@@ -176,6 +183,8 @@ class PgReadyWebhookServiceTest {
         assertThat(updatedSeat.getStatus()).isEqualTo(Seat.SeatStatus.TEMP_RESERVED);
         assertThat(updatedPaymentTransaction.getStatus()).isEqualTo(PaymentTransactionStatus.FAILED);
         assertThat(updatedPaymentTransaction.getDescription()).contains("PG_READY_PAYMENT_FAILED");
+        assertThat(updatedPaymentTransaction.getPaymentProvider()).isEqualTo("pg-ready");
+        assertThat(updatedPaymentTransaction.getProviderTransactionId()).isEqualTo("evt-failed-1");
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.ticketrush.application.payment.service;
 
 import com.ticketrush.application.payment.model.PaymentTransactionResult;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransactionStatus;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
 import com.ticketrush.domain.payment.repository.PaymentTransactionRepository;
@@ -91,13 +92,22 @@ public class PaymentServiceImpl implements PaymentService {
         User user = getUserForUpdate(userId);
         user.chargeWallet(paidTransaction.getAmount());
 
+        PaymentMethod refundMethod = paidTransaction.getPaymentMethod() == null
+                ? PaymentMethod.WALLET
+                : paidTransaction.getPaymentMethod();
+        String refundProvider = StringUtils.hasText(paidTransaction.getPaymentProvider())
+                ? paidTransaction.getPaymentProvider()
+                : "wallet";
+
         return paymentTransactionRepository.save(PaymentTransaction.refund(
                 user,
                 reservationId,
                 paidTransaction.getAmount(),
                 user.getWalletBalanceAmountSafe(),
                 key,
-                "RESERVATION_REFUND"
+                "RESERVATION_REFUND",
+                refundMethod,
+                refundProvider
         ));
     }
 

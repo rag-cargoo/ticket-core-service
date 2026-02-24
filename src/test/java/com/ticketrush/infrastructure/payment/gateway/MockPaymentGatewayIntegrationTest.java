@@ -1,5 +1,6 @@
 package com.ticketrush.infrastructure.payment.gateway;
 
+import com.ticketrush.domain.payment.entity.PaymentMethod;
 import com.ticketrush.domain.payment.entity.PaymentTransaction;
 import com.ticketrush.domain.payment.entity.PaymentTransactionType;
 import com.ticketrush.domain.payment.gateway.PaymentGateway;
@@ -32,11 +33,14 @@ class MockPaymentGatewayIntegrationTest {
                 user.getId(),
                 7001L,
                 80_000L,
+                PaymentMethod.CARD,
                 "mock-payment-7001"
         );
 
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
         assertThat(tx.getType()).isEqualTo(PaymentTransactionType.PAYMENT);
+        assertThat(tx.getPaymentMethod()).isEqualTo(PaymentMethod.CARD);
+        assertThat(tx.getPaymentProvider()).isEqualTo("mock");
         assertThat(reloaded.getWalletBalanceAmountSafe()).isEqualTo(initialBalance);
     }
 
@@ -44,7 +48,7 @@ class MockPaymentGatewayIntegrationTest {
     void refundReservation_shouldRecordRefundWithoutChangingWalletBalance() {
         User user = userRepository.save(new User("mock-gateway-refund-user-" + System.nanoTime()));
         long initialBalance = user.getWalletBalanceAmountSafe();
-        paymentGateway.payForReservation(user.getId(), 7002L, 90_000L, "mock-payment-7002");
+        paymentGateway.payForReservation(user.getId(), 7002L, 90_000L, PaymentMethod.CARD, "mock-payment-7002");
 
         PaymentTransaction refund = paymentGateway.refundReservation(
                 user.getId(),
@@ -54,6 +58,8 @@ class MockPaymentGatewayIntegrationTest {
 
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
         assertThat(refund.getType()).isEqualTo(PaymentTransactionType.REFUND);
+        assertThat(refund.getPaymentMethod()).isEqualTo(PaymentMethod.CARD);
+        assertThat(refund.getPaymentProvider()).isEqualTo("mock");
         assertThat(reloaded.getWalletBalanceAmountSafe()).isEqualTo(initialBalance);
     }
 }
