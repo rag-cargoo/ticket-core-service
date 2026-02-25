@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -72,7 +73,23 @@ public class ConcertServiceImpl implements ConcertService {
         String normalizedKeyword = normalize(keyword);
         String normalizedArtistName = normalize(artistName);
         String normalizedEntertainmentName = normalize(entertainmentName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedEntertainmentName, pageable);
+        Long keywordId = parseKeywordId(normalizedKeyword);
+        boolean hasKeyword = normalizedKeyword != null;
+        String keywordLike = hasKeyword ? "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%" : "";
+        boolean hasArtistFilter = normalizedArtistName != null;
+        String artistNameLower = toLowerOrEmpty(normalizedArtistName);
+        boolean hasEntertainmentFilter = normalizedEntertainmentName != null;
+        String entertainmentNameLower = toLowerOrEmpty(normalizedEntertainmentName);
+        return concertRepository.searchPaged(
+                keywordLike,
+                hasKeyword,
+                keywordId,
+                artistNameLower,
+                hasArtistFilter,
+                entertainmentNameLower,
+                hasEntertainmentFilter,
+                pageable
+        );
     }
 
     @Override
@@ -627,6 +644,22 @@ public class ConcertServiceImpl implements ConcertService {
             throw new IllegalArgumentException(fieldName + " is required");
         }
         return normalized;
+    }
+
+    private Long parseKeywordId(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        try {
+            long parsed = Long.parseLong(keyword);
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private String toLowerOrEmpty(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
     }
 
     private Long normalizeTicketPriceAmount(Long ticketPriceAmount) {

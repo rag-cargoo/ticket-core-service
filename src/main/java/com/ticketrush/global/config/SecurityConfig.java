@@ -98,7 +98,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.frontend.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}") List<String> allowedOrigins
+            @Value("${app.frontend.allowed-origins:}") List<String> allowedOrigins
     ) {
         List<String> normalizedOrigins = allowedOrigins.stream()
                 .map(String::trim)
