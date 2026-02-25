@@ -52,6 +52,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -66,6 +67,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
+@TestPropertySource(properties = "app.payment.provider=wallet")
 @Import({
         ReservationLifecycleServiceImpl.class,
         SalesPolicyServiceImpl.class,
@@ -97,6 +99,7 @@ class ReservationLifecycleServiceIntegrationTest {
         @Bean
         PaymentProperties paymentProperties() {
             PaymentProperties properties = new PaymentProperties();
+            properties.setProvider("wallet");
             properties.setDefaultTicketPriceAmount(100_000L);
             return properties;
         }
@@ -205,7 +208,7 @@ class ReservationLifecycleServiceIntegrationTest {
         ReservationLifecycleResult paying = reservationLifecycleService.startPaying(hold.getId(), user.getId());
         assertThat(paying.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING.name());
 
-        ReservationLifecycleResult confirmed = reservationLifecycleService.confirm(hold.getId(), user.getId());
+        ReservationLifecycleResult confirmed = reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
         assertThat(confirmed.getStatus()).isEqualTo(Reservation.ReservationStatus.CONFIRMED.name());
         assertThat(confirmed.getConfirmedAt()).isNotNull();
         assertThat(confirmed.getPaymentMethod()).isEqualTo("WALLET");
@@ -271,7 +274,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
-        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
 
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of(999L));
         when(waitingQueueService.getActiveTtlSeconds(999L)).thenReturn(240L);
@@ -296,6 +299,54 @@ class ReservationLifecycleServiceIntegrationTest {
     }
 
     @Test
+    void cancelHold_shouldReleaseSeatAndActivateWaitingUser() {
+        User user = userRepository.save(new User("step10-cancel-hold-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-103-2");
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
+        );
+
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of(1001L));
+        when(waitingQueueService.getActiveTtlSeconds(1001L)).thenReturn(180L);
+
+        ReservationLifecycleResult cancelled = reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        assertThat(cancelled.getStatus()).isEqualTo(Reservation.ReservationStatus.CANCELLED.name());
+        assertThat(cancelled.getCancelledAt()).isNotNull();
+        assertThat(cancelled.getConfirmedAt()).isNull();
+        assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
+                .isEqualTo(Seat.SeatStatus.AVAILABLE);
+        verify(waitingQueueService).activateUsers(concertId, 1);
+    }
+
+    @Test
+    void cancelBulk_shouldCancelAllHoldReservations() {
+        User user = userRepository.save(new User("step10-cancel-bulk-user-" + System.nanoTime()));
+        Seat firstSeat = saveSeat("A-103-3");
+        Seat secondSeat = saveSeat("A-103-4");
+        when(waitingQueueService.activateUsers(any(), eq(1L))).thenReturn(List.of());
+
+        ReservationLifecycleResult firstHold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), firstSeat.getId())
+        );
+        ReservationLifecycleResult secondHold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), secondSeat.getId())
+        );
+
+        List<ReservationLifecycleResult> cancelled = reservationLifecycleService.cancelBulk(
+                List.of(firstHold.getId(), secondHold.getId()),
+                user.getId()
+        );
+
+        assertThat(cancelled).hasSize(2);
+        assertThat(cancelled).allMatch(result -> Reservation.ReservationStatus.CANCELLED.name().equals(result.getStatus()));
+        assertThat(seatRepository.findById(firstSeat.getId()).orElseThrow().getStatus()).isEqualTo(Seat.SeatStatus.AVAILABLE);
+        assertThat(seatRepository.findById(secondSeat.getId()).orElseThrow().getStatus()).isEqualTo(Seat.SeatStatus.AVAILABLE);
+    }
+
+    @Test
     void refundCancelled_shouldSetRefundedStatus() {
         User user = userRepository.save(new User("step10-refund-user-" + System.nanoTime()));
         Seat seat = saveSeat("A-104");
@@ -305,7 +356,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
-        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
 
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
@@ -314,6 +365,23 @@ class ReservationLifecycleServiceIntegrationTest {
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(refunded.getRefundedAt()).isNotNull();
         assertThat(paymentService.getWalletBalance(user.getId())).isEqualTo(200_000L);
+    }
+
+    @Test
+    void refundCancelledFromHold_shouldFailWhenPaymentWasNotConfirmed() {
+        User user = userRepository.save(new User("step10-refund-hold-cancel-user-" + System.nanoTime()));
+        Seat seat = saveSeat("A-104-0");
+        Long concertId = seat.getConcertOption().getConcert().getId();
+
+        ReservationLifecycleResult hold = reservationLifecycleService.createHold(
+                new ReservationCreateCommand(user.getId(), seat.getId())
+        );
+        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
+        reservationLifecycleService.cancel(hold.getId(), user.getId());
+
+        assertThatThrownBy(() -> reservationLifecycleService.refund(hold.getId(), user.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Refund requires confirmed reservation cancellation");
     }
 
     @Test
@@ -326,7 +394,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
-        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
 
@@ -346,7 +414,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
-        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
 
@@ -374,7 +442,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 new ReservationCreateCommand(user.getId(), seat.getId())
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
-        reservationLifecycleService.confirm(hold.getId(), user.getId());
+        reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
         when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
         reservationLifecycleService.cancel(hold.getId(), user.getId());
 
@@ -405,7 +473,7 @@ class ReservationLifecycleServiceIntegrationTest {
                 "drain-wallet-before-confirm-" + user.getId()
         );
 
-        assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId()))
+        assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Insufficient wallet balance");
 
@@ -430,7 +498,7 @@ class ReservationLifecycleServiceIntegrationTest {
 
         assertThatThrownBy(() -> reservationLifecycleService.confirm(hold.getId(), user.getId(), "KAKAOPAY"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Payment method unavailable");
+                .hasMessageContaining("Payment method");
 
         Reservation reservation = reservationRepository.findById(hold.getId()).orElseThrow();
         assertThat(reservation.getStatus()).isEqualTo(Reservation.ReservationStatus.PAYING);

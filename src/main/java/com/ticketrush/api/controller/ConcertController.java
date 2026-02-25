@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,10 +47,24 @@ public class ConcertController {
                 request.getPromoterCountryCode(),
                 request.getPromoterHomepageUrl()
         );
-        var option = concertUseCase.addOptionResult(concert.getId(), request.getConcertDate(), null);
-        concertUseCase.createSeats(option.getId(), request.getSeatCount());
+        int optionCount = Math.max(1, request.getOptionCount());
+        List<Long> optionIds = new ArrayList<>(optionCount);
+        for (int index = 0; index < optionCount; index++) {
+            var option = concertUseCase.addOptionResult(
+                    concert.getId(),
+                    request.getConcertDate().plusDays(index),
+                    null
+            );
+            concertUseCase.createSeats(option.getId(), request.getSeatCount());
+            optionIds.add(option.getId());
+        }
 
-        return ResponseEntity.ok("Setup completed: ConcertID=" + concert.getId() + ", OptionID=" + option.getId());
+        return ResponseEntity.ok(
+                "Setup completed: ConcertID=" + concert.getId()
+                        + ", OptionID=" + optionIds.get(0)
+                        + ", OptionCount=" + optionIds.size()
+                        + ", OptionIDs=" + optionIds
+        );
     }
 
     /**
@@ -118,6 +133,19 @@ public class ConcertController {
     @GetMapping("/options/{optionId}/seats")
     public ResponseEntity<List<SeatResponse>> getAvailableSeats(@PathVariable Long optionId) {
         return ResponseEntity.ok(concertUseCase.getAvailableSeatResults(optionId).stream()
+                .map(SeatResponse::from)
+                .collect(Collectors.toList()));
+    }
+
+    /**
+     * 특정 공연 옵션의 좌석 상태맵 조회(AVAILABLE/TEMP_RESERVED/RESERVED)
+     */
+    @GetMapping("/options/{optionId}/seat-map")
+    public ResponseEntity<List<SeatResponse>> getSeatMap(
+            @PathVariable Long optionId,
+            @RequestParam(required = false, name = "status") List<String> statuses
+    ) {
+        return ResponseEntity.ok(concertUseCase.getSeatMapResults(optionId, statuses).stream()
                 .map(SeatResponse::from)
                 .collect(Collectors.toList()));
     }

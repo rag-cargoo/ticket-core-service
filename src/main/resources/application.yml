@@ -35,7 +35,7 @@ app:
     expire-check-delay-millis: 5000
     refund-cutoff-hours-before-concert: 24
   payment:
-    provider: ${APP_PAYMENT_PROVIDER:wallet}
+    provider: ${APP_PAYMENT_PROVIDER:mock}
     external-live-enabled: ${APP_PAYMENT_EXTERNAL_LIVE_ENABLED:false}
     pg-ready-checkout-base-url: ${APP_PAYMENT_PG_READY_CHECKOUT_BASE_URL:https://pg-ready.example.com/checkout}
     pg-ready-callback-url: ${APP_PAYMENT_PG_READY_CALLBACK_URL:/api/payments/webhooks/pg-ready}

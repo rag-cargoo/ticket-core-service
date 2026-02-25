@@ -33,7 +33,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -215,6 +217,16 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     @Transactional
+    public List<ReservationLifecycleResult> cancelBulk(List<Long> reservationIds, Long userId) {
+        List<Long> normalizedReservationIds = normalizeReservationIds(reservationIds);
+        List<ReservationLifecycleResult> results = new ArrayList<>(normalizedReservationIds.size());
+        for (Long reservationId : normalizedReservationIds) {
+            results.add(cancel(reservationId, userId));
+        }
+        return List.copyOf(results);
+    }
+
+    @Transactional
     public ReservationLifecycleResult refund(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
         return refundInternal(reservation, userId, userId, false);
@@ -337,6 +349,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
             Long actorUserId,
             boolean allowAdminOverride
     ) {
+        ensureRefundableCancellation(reservation);
         LocalDateTime now = LocalDateTime.now();
         validateRefundCutoff(reservation, now, allowAdminOverride, actorUserId);
         Long reservationId = reservation.getId();
@@ -352,6 +365,35 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         }
         reservation.refund(now);
         return ReservationLifecycleResult.from(reservation);
+    }
+
+    private void ensureRefundableCancellation(Reservation reservation) {
+        if (reservation.getStatus() != Reservation.ReservationStatus.CANCELLED) {
+            return;
+        }
+        if (reservation.getConfirmedAt() != null) {
+            return;
+        }
+        throw new IllegalStateException(
+                "Refund requires confirmed reservation cancellation. reservationId=" + reservation.getId()
+        );
+    }
+
+    private List<Long> normalizeReservationIds(List<Long> reservationIds) {
+        if (reservationIds == null || reservationIds.isEmpty()) {
+            throw new IllegalArgumentException("reservationIds must not be empty");
+        }
+        Set<Long> deduped = new LinkedHashSet<>();
+        for (Long reservationId : reservationIds) {
+            if (reservationId == null || reservationId <= 0) {
+                continue;
+            }
+            deduped.add(reservationId);
+        }
+        if (deduped.isEmpty()) {
+            throw new IllegalArgumentException("reservationIds must include positive ids");
+        }
+        return List.copyOf(deduped);
     }
 
     private void validateRefundCutoff(
@@ -417,13 +459,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private PaymentMethod resolvePaymentMethod(String value) {
+        String provider = paymentProperties.getProvider();
+        boolean walletProvider = provider != null && "wallet".equalsIgnoreCase(provider.trim());
+        PaymentMethod fallback = walletProvider ? PaymentMethod.WALLET : PaymentMethod.CARD;
+        String allowedMethods = walletProvider ? "WALLET,CARD,KAKAOPAY,NAVERPAY" : "CARD,KAKAOPAY,NAVERPAY";
         try {
-            return PaymentMethod.fromNullable(value, PaymentMethod.WALLET);
+            return PaymentMethod.fromNullable(value, fallback);
         } catch (IllegalArgumentException exception) {
             String safeValue = value == null ? "" : value.trim();
             throw new IllegalStateException(
                     "Unsupported payment method: " + safeValue
-                            + ". allowed=WALLET,CARD,KAKAOPAY,NAVERPAY,BANK_TRANSFER",
+                            + ". allowed=" + allowedMethods,
                     exception
             );
         }

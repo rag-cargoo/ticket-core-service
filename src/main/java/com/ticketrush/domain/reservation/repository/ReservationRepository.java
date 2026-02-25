@@ -36,4 +36,24 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("concertId") Long concertId,
             @Param("statuses") Collection<Reservation.ReservationStatus> statuses
     );
+
+    @Query("""
+            select distinct r
+            from Reservation r
+            join fetch r.seat s
+            join fetch s.concertOption o
+            join fetch o.concert c
+            where r.user.id = :userId
+              and (:concertId is null or c.id = :concertId)
+              and (:optionId is null or o.id = :optionId)
+              and (:statusesEmpty = true or r.status in :statuses)
+            order by r.id desc
+            """)
+    List<Reservation> findByUserIdWithFilters(
+            @Param("userId") Long userId,
+            @Param("concertId") Long concertId,
+            @Param("optionId") Long optionId,
+            @Param("statusesEmpty") boolean statusesEmpty,
+            @Param("statuses") Collection<Reservation.ReservationStatus> statuses
+    );
 }

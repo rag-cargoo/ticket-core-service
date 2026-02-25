@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface SeatRepository extends JpaRepository<Seat, Long> {
@@ -15,6 +17,8 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("SELECT s FROM Seat s WHERE s.id = :id")
     Optional<Seat> findByIdWithPessimisticLock(@Param("id") Long id);
 
-    java.util.List<Seat> findByConcertOptionIdAndStatus(Long concertOptionId, Seat.SeatStatus status);
+    List<Seat> findByConcertOptionIdAndStatus(Long concertOptionId, Seat.SeatStatus status);
+    List<Seat> findByConcertOptionIdOrderBySeatNumberAsc(Long concertOptionId);
+    List<Seat> findByConcertOptionIdAndStatusInOrderBySeatNumberAsc(Long concertOptionId, Collection<Seat.SeatStatus> statuses);
     boolean existsByConcertOptionId(Long concertOptionId);
 }

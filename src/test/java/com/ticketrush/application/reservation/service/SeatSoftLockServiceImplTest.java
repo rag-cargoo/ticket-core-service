@@ -8,6 +8,8 @@ import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
+import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
+import com.ticketrush.domain.user.User;
 import com.ticketrush.global.config.ReservationProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,12 @@ class SeatSoftLockServiceImplTest {
     private ReservationSeatPort reservationSeatPort;
 
     @Mock
+    private ReservationUserPort reservationUserPort;
+
+    @Mock
+    private SalesPolicyService salesPolicyService;
+
+    @Mock
     private SeatMapPushPort pushNotifier;
 
     private SeatSoftLockServiceImpl seatSoftLockService;
@@ -50,11 +58,14 @@ class SeatSoftLockServiceImplTest {
         seatSoftLockService = new SeatSoftLockServiceImpl(
                 seatSoftLockStore,
                 reservationSeatPort,
+                reservationUserPort,
+                salesPolicyService,
                 reservationProperties,
                 pushNotifier
         );
 
         lenient().when(reservationSeatPort.getSeat(55L)).thenReturn(buildSeat(11L, 55L));
+        lenient().when(reservationUserPort.getUser(200L)).thenReturn(new User("soft-lock-user-200"));
     }
 
     @Test

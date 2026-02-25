@@ -129,13 +129,8 @@ public class PgReadyPaymentGateway implements PaymentGateway {
         if (paymentMethod == null) {
             throw new IllegalStateException("paymentMethod is required");
         }
-        if (paymentMethod == PaymentMethod.WALLET) {
-            throw new IllegalStateException("Unsupported payment method for pg-ready provider. requested=WALLET");
-        }
-        switch (paymentMethod) {
-            case CARD, KAKAOPAY, NAVERPAY, BANK_TRANSFER -> {
-            }
-            default -> throw new IllegalStateException("Unsupported payment method: " + paymentMethod);
+        if (paymentMethod != PaymentMethod.CARD) {
+            throw new IllegalStateException("Unsupported payment method for pg-ready provider. requested=" + paymentMethod + ", supported=CARD");
         }
     }
 }

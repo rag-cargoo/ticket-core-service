@@ -21,6 +21,8 @@ import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
 import com.ticketrush.api.dto.reservation.AdminRefundAuditResponse;
 import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
+import com.ticketrush.api.dto.reservation.ReservationBulkCancelRequest;
+import com.ticketrush.api.dto.reservation.ReservationBulkCancelResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockAcquireResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
@@ -37,7 +39,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -307,6 +311,21 @@ public class ReservationController {
     }
 
     /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 CANCELLED 벌크 전이
+     */
+    @PostMapping("/v7/cancel/bulk")
+    public ResponseEntity<ReservationBulkCancelResponse> cancelBulkV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestBody ReservationBulkCancelRequest request
+    ) {
+        List<ReservationLifecycleResult> results = reservationLifecycleUseCase.cancelBulk(
+                request == null ? null : request.getReservationIds(),
+                requiredUserId(principal)
+        );
+        return ResponseEntity.ok(ReservationBulkCancelResponse.from(results));
+    }
+
+    /**
      * [v7] Auth Track A2 - 인증 사용자 기반 REFUNDED 전이
      */
     @PostMapping("/v7/{reservationId}/refund")
@@ -348,9 +367,18 @@ public class ReservationController {
      */
     @GetMapping("/v7/me")
     public ResponseEntity<List<ReservationResponse>> getMyReservationsV7(
-            @AuthenticationPrincipal AuthUserPrincipal principal
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestParam(required = false) Long concertId,
+            @RequestParam(required = false) Long optionId,
+            @RequestParam(required = false, name = "status") List<String> statuses
     ) {
-        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(requiredUserId(principal))
+        List<String> parsedStatuses = parseReservationStatuses(statuses);
+        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(
+                        requiredUserId(principal),
+                        concertId,
+                        optionId,
+                        parsedStatuses
+                )
                 .stream()
                 .map(ReservationResponse::from)
                 .toList();
@@ -443,5 +471,20 @@ public class ReservationController {
                 request.getRequestFingerprint(),
                 request.getDeviceFingerprint()
         );
+    }
+
+    private List<String> parseReservationStatuses(List<String> rawStatuses) {
+        if (rawStatuses == null || rawStatuses.isEmpty()) {
+            return List.of();
+        }
+
+        LinkedHashSet<String> parsed = new LinkedHashSet<>();
+        for (String rawStatus : rawStatuses) {
+            if (rawStatus == null || rawStatus.isBlank()) {
+                continue;
+            }
+            parsed.add(rawStatus.trim().toUpperCase(Locale.ROOT));
+        }
+        return List.copyOf(parsed);
     }
 }

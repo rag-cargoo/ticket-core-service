@@ -3,6 +3,7 @@ package com.ticketrush.application.reservation.service;
 import com.ticketrush.application.reservation.port.outbound.SeatSoftLockStore;
 import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.domain.reservation.port.outbound.ReservationUserPort;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
 import com.ticketrush.application.reservation.port.outbound.ReservationConfigPort;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,23 +24,30 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
 
     private final SeatSoftLockStore seatSoftLockStore;
     private final ReservationSeatPort reservationSeatPort;
+    private final ReservationUserPort reservationUserPort;
+    private final SalesPolicyService salesPolicyService;
     private final ReservationConfigPort reservationProperties;
     private final SeatMapPushPort pushNotifier;
 
     public SeatSoftLockServiceImpl(
             SeatSoftLockStore seatSoftLockStore,
             ReservationSeatPort reservationSeatPort,
+            ReservationUserPort reservationUserPort,
+            SalesPolicyService salesPolicyService,
             ReservationConfigPort reservationProperties,
             @Qualifier("seatMapPushNotifier") SeatMapPushPort pushNotifier
     ) {
         this.seatSoftLockStore = seatSoftLockStore;
         this.reservationSeatPort = reservationSeatPort;
+        this.reservationUserPort = reservationUserPort;
+        this.salesPolicyService = salesPolicyService;
         this.reservationProperties = reservationProperties;
         this.pushNotifier = pushNotifier;
     }
 
     @Override
     public SeatSoftLockAcquireResult acquire(Long userId, Long seatId, String requestId) {
+        ensureSeatSelectableByUser(userId, seatId);
         SeatContext context = seatContext(seatId);
         long ttlSeconds = normalizedTtlSeconds();
         String resolvedRequestId = resolveRequestId(requestId, userId, seatId);
@@ -105,6 +113,18 @@ public class SeatSoftLockServiceImpl implements SeatSoftLockService {
                 STATUS_HOLD,
                 userId,
                 holdExpiresAt == null ? null : holdExpiresAt.toInstant(ZoneOffset.UTC).toString()
+        );
+    }
+
+    private void ensureSeatSelectableByUser(Long userId, Long seatId) {
+        Seat seat = reservationSeatPort.getSeat(seatId);
+        if (seat.getStatus() != Seat.SeatStatus.AVAILABLE) {
+            throw new IllegalStateException("Seat is not available for selecting. seatId=" + seatId);
+        }
+        salesPolicyService.validateHoldRequest(
+                reservationUserPort.getUser(userId),
+                seat,
+                LocalDateTime.now()
         );
     }
 

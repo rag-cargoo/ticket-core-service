@@ -1,6 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationListItemResult;
 import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,6 +79,48 @@ public class ReservationServiceImpl implements ReservationService {
         return reservationRepository.findByUserId(userId).stream()
                 .map(ReservationResult::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationListItemResult> getReservationsByUserId(
+            Long userId,
+            Long concertId,
+            Long optionId,
+            List<String> statuses
+    ) {
+        List<Reservation.ReservationStatus> normalizedStatuses = statuses == null
+                ? List.of()
+                : statuses.stream()
+                .filter(status -> status != null && !status.isBlank())
+                .map(status -> status.trim().toUpperCase(Locale.ROOT))
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new))
+                .stream()
+                .map(this::parseReservationStatus)
+                .toList();
+        boolean statusesEmpty = normalizedStatuses.isEmpty();
+        List<Reservation.ReservationStatus> queryStatuses = statusesEmpty
+                ? List.of(Reservation.ReservationStatus.PENDING)
+                : normalizedStatuses;
+
+        return reservationRepository.findByUserIdWithFilters(
+                        userId,
+                        concertId,
+                        optionId,
+                        statusesEmpty,
+                        queryStatuses
+                ).stream()
+                .map(ReservationListItemResult::from)
+                .toList();
+    }
+
+    private Reservation.ReservationStatus parseReservationStatus(String rawStatus) {
+        try {
+            return Reservation.ReservationStatus.valueOf(rawStatus);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid status filter: " + rawStatus + ". allowed=PENDING,HOLD,PAYING,CONFIRMED,EXPIRED,CANCELLED,REFUNDED"
+            );
+        }
     }
 
     /**

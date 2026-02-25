@@ -12,22 +12,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentMethodCatalogServiceTest {
 
     @Test
-    void walletProvider_shouldExposeWalletOnlyAsAvailable() {
+    void mockProvider_shouldExposeCardOnlyAsAvailable() {
         PaymentProperties properties = new PaymentProperties();
-        properties.setProvider("wallet");
+        properties.setProvider("mock");
 
         PaymentMethodCatalogService service = new PaymentMethodCatalogService(properties);
         PaymentMethodCatalogResult catalog = service.getCatalog();
 
-        assertThat(catalog.getProvider()).isEqualTo("wallet");
-        assertThat(catalog.getDefaultMethod()).isEqualTo("WALLET");
-        assertThat(catalog.getMethods()).anyMatch(item ->
-                item.getCode().equals("WALLET")
-                        && item.isEnabled()
-                        && item.getStatus().equals("AVAILABLE")
-        );
+        assertThat(catalog.getProvider()).isEqualTo("mock");
+        assertThat(catalog.getDefaultMethod()).isEqualTo("CARD");
         assertThat(catalog.getMethods()).anyMatch(item ->
                 item.getCode().equals("CARD")
+                        && item.isEnabled()
+                        && item.getStatus().equals("AVAILABLE")
+                        && item.getMessage().contains("가상 테스트 카드")
+        );
+        assertThat(catalog.getMethods()).anyMatch(item ->
+                item.getCode().equals("KAKAOPAY")
                         && !item.isEnabled()
                         && item.getStatus().equals("PLANNED")
         );
@@ -36,15 +37,15 @@ class PaymentMethodCatalogServiceTest {
     @Test
     void overrides_shouldChangeStatusAndMessage() {
         PaymentProperties properties = new PaymentProperties();
-        properties.setProvider("wallet");
-        properties.setMethodStatusOverrides(Map.of("wallet", "maintenance"));
-        properties.setMethodMessageOverrides(Map.of("wallet", "점검중"));
+        properties.setProvider("mock");
+        properties.setMethodStatusOverrides(Map.of("card", "maintenance"));
+        properties.setMethodMessageOverrides(Map.of("card", "점검중"));
 
         PaymentMethodCatalogService service = new PaymentMethodCatalogService(properties);
         PaymentMethodCatalogResult catalog = service.getCatalog();
 
         assertThat(catalog.getMethods()).anyMatch(item ->
-                item.getCode().equals("WALLET")
+                item.getCode().equals("CARD")
                         && !item.isEnabled()
                         && item.getStatus().equals("MAINTENANCE")
                         && item.getMessage().equals("점검중")
@@ -73,11 +74,11 @@ class PaymentMethodCatalogServiceTest {
     @Test
     void assertMethodAvailable_shouldThrowWhenMethodIsUnavailable() {
         PaymentProperties properties = new PaymentProperties();
-        properties.setProvider("wallet");
+        properties.setProvider("mock");
 
         PaymentMethodCatalogService service = new PaymentMethodCatalogService(properties);
 
-        assertThatThrownBy(() -> service.assertMethodAvailable("CARD"))
+        assertThatThrownBy(() -> service.assertMethodAvailable("KAKAOPAY"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Payment method unavailable");
     }

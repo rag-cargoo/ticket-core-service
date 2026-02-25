@@ -28,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -70,9 +73,17 @@ public class ConcertServiceImpl implements ConcertService {
     )
     public Page<Concert> searchConcerts(String keyword, String artistName, String entertainmentName, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
-        String normalizedArtistName = normalize(artistName);
-        String normalizedEntertainmentName = normalize(entertainmentName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedEntertainmentName, pageable);
+        String keywordPattern = toLowerContainsPattern(normalizedKeyword);
+        Long keywordId = parseKeywordId(normalizedKeyword);
+        String normalizedArtistName = normalizeLower(artistName);
+        String normalizedEntertainmentName = normalizeLower(entertainmentName);
+        return concertRepository.searchPaged(
+                keywordPattern,
+                keywordId,
+                normalizedArtistName,
+                normalizedEntertainmentName,
+                pageable
+        );
     }
 
     @Override
@@ -116,6 +127,18 @@ public class ConcertServiceImpl implements ConcertService {
     @Cacheable(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, key = "#concertOptionId")
     public List<SeatResult> getAvailableSeatResults(Long concertOptionId) {
         return getAvailableSeats(concertOptionId).stream()
+                .map(SeatResult::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SeatResult> getSeatMapResults(Long concertOptionId, List<String> statuses) {
+        Set<Seat.SeatStatus> targetStatuses = parseSeatStatuses(statuses);
+        List<Seat> seats = targetStatuses.isEmpty()
+                ? seatRepository.findByConcertOptionIdOrderBySeatNumberAsc(concertOptionId)
+                : seatRepository.findByConcertOptionIdAndStatusInOrderBySeatNumberAsc(concertOptionId, targetStatuses);
+        return seats.stream()
                 .map(SeatResult::from)
                 .toList();
     }
@@ -621,6 +644,50 @@ public class ConcertServiceImpl implements ConcertService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private Set<Seat.SeatStatus> parseSeatStatuses(List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return Set.of();
+        }
+        Set<Seat.SeatStatus> parsed = new LinkedHashSet<>();
+        for (String status : statuses) {
+            String normalized = normalize(status);
+            if (normalized == null) {
+                continue;
+            }
+            try {
+                parsed.add(Seat.SeatStatus.valueOf(normalized.toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("Unsupported seat status filter: " + status, error);
+            }
+        }
+        return parsed;
+    }
+
+    private String normalizeLower(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private String toLowerContainsPattern(String value) {
+        if (value == null) {
+            return null;
+        }
+        return "%" + value.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private Long parseKeywordId(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(keyword);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
     private String normalizeRequired(String value, String fieldName) {
         String normalized = normalize(value);
         if (normalized == null) {

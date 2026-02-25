@@ -18,9 +18,9 @@ public class PaymentProperties implements PaymentConfigPort, PaymentMethodConfig
 
     /**
      * 예약 결제 처리 게이트웨이 provider.
-     * 지원값: wallet, mock, pg-ready
+     * 지원값: mock, pg-ready
      */
-    private String provider = "wallet";
+    private String provider = "mock";
 
     /**
      * 예약 확정 시 차감되는 기본 티켓 금액.

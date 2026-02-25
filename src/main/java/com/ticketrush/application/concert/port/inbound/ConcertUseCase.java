@@ -24,6 +24,12 @@ public interface ConcertUseCase {
 
     List<SeatResult> getAvailableSeatResults(Long concertOptionId);
 
+    default List<SeatResult> getSeatMapResults(Long concertOptionId) {
+        return getSeatMapResults(concertOptionId, null);
+    }
+
+    List<SeatResult> getSeatMapResults(Long concertOptionId, List<String> statuses);
+
     default ConcertResult createConcertResult(String title, String artistName, String entertainmentName) {
         return createConcertResult(title, artistName, entertainmentName, null, null, null, null, null);
     }
