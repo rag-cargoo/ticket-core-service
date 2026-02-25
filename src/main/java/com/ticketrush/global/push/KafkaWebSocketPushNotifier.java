@@ -27,17 +27,23 @@ public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, Reserva
 
     @Override
     public void sendReservationStatus(Long userId, Long seatId, String status) {
-        producer.publish(
-                PushEvent.builder()
-                        .type(PushEvent.Type.RESERVATION_STATUS)
-                        .userId(userId)
-                        .seatId(seatId)
-                        .status(status)
-                        .timestamp(Instant.now().toString())
-                        .build(),
-                reservationKey(userId, seatId)
-        );
-        PushMonitoringMetrics.increment("push", "kafka", "reservation_status");
+        String key = reservationKey(userId, seatId);
+        try {
+            producer.publish(
+                    PushEvent.builder()
+                            .type(PushEvent.Type.RESERVATION_STATUS)
+                            .userId(userId)
+                            .seatId(seatId)
+                            .status(status)
+                            .timestamp(Instant.now().toString())
+                            .build(),
+                    key
+            );
+            PushMonitoringMetrics.increment("push", "kafka", "reservation_status");
+        } catch (RuntimeException exception) {
+            log.warn("Kafka push publish failed: type=RESERVATION_STATUS, key={}", key, exception);
+            PushMonitoringMetrics.increment("push", "kafka", "send_failed");
+        }
     }
 
     @Override
@@ -83,34 +89,46 @@ public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, Reserva
 
     @Override
     public void sendSeatMapStatus(Long optionId, Long seatId, String status, Long ownerUserId, String expiresAt) {
-        producer.publish(
-                PushEvent.builder()
-                        .type(PushEvent.Type.SEAT_MAP_STATUS)
-                        .optionId(optionId)
-                        .seatId(seatId)
-                        .status(status)
-                        .ownerUserId(ownerUserId)
-                        .expiresAt(expiresAt)
-                        .timestamp(Instant.now().toString())
-                        .build(),
-                seatMapKey(optionId, seatId)
-        );
-        PushMonitoringMetrics.increment("push", "kafka", "seat_map_status");
+        String key = seatMapKey(optionId, seatId);
+        try {
+            producer.publish(
+                    PushEvent.builder()
+                            .type(PushEvent.Type.SEAT_MAP_STATUS)
+                            .optionId(optionId)
+                            .seatId(seatId)
+                            .status(status)
+                            .ownerUserId(ownerUserId)
+                            .expiresAt(expiresAt)
+                            .timestamp(Instant.now().toString())
+                            .build(),
+                    key
+            );
+            PushMonitoringMetrics.increment("push", "kafka", "seat_map_status");
+        } catch (RuntimeException exception) {
+            log.warn("Kafka push publish failed: type=SEAT_MAP_STATUS, key={}", key, exception);
+            PushMonitoringMetrics.increment("push", "kafka", "send_failed");
+        }
     }
 
     private void publishQueueEvent(Long userId, Long concertId, QueueEventName eventName, QueuePushPayload data) {
-        producer.publish(
-                PushEvent.builder()
-                        .type(PushEvent.Type.QUEUE_EVENT)
-                        .userId(userId)
-                        .concertId(concertId)
-                        .eventName(eventName)
-                        .data(data)
-                        .timestamp(Instant.now().toString())
-                        .build(),
-                queueKey(userId, concertId)
-        );
-        PushMonitoringMetrics.increment("push", "kafka", queueEventMetricName(eventName));
+        String key = queueKey(userId, concertId);
+        try {
+            producer.publish(
+                    PushEvent.builder()
+                            .type(PushEvent.Type.QUEUE_EVENT)
+                            .userId(userId)
+                            .concertId(concertId)
+                            .eventName(eventName)
+                            .data(data)
+                            .timestamp(Instant.now().toString())
+                            .build(),
+                    key
+            );
+            PushMonitoringMetrics.increment("push", "kafka", queueEventMetricName(eventName));
+        } catch (RuntimeException exception) {
+            log.warn("Kafka push publish failed: type=QUEUE_EVENT, event={}, key={}", eventName, key, exception);
+            PushMonitoringMetrics.increment("push", "kafka", "send_failed");
+        }
     }
 
     private String queueKey(Long userId, Long concertId) {
