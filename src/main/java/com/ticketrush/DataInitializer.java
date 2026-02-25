@@ -53,6 +53,7 @@ public class DataInitializer implements CommandLineRunner {
     private static final int DEFAULT_MAX_RESERVATIONS_PER_USER = 4;
     private static final int DEFAULT_SEAT_COUNT = 20;
     private static final int SOLD_OUT_SEAT_COUNT = 8;
+    private static final int DEFAULT_OPTION_COUNT_PER_CONCERT = 2;
     private static final long DEFAULT_TICKET_PRICE_AMOUNT = 132_000L;
 
     private final UserRepository userRepository;
@@ -270,12 +271,22 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         Concert concert = concertRepository.save(new Concert(normalizedTitle, artist, promoter));
-        ConcertOption option = concertOptionRepository.save(
-                new ConcertOption(concert, concertDate, venue, DEFAULT_TICKET_PRICE_AMOUNT)
-        );
-
         int seatCount = soldOut ? SOLD_OUT_SEAT_COUNT : DEFAULT_SEAT_COUNT;
-        List<Seat> seats = createSeats(option, seatCount);
+        for (int index = 0; index < DEFAULT_OPTION_COUNT_PER_CONCERT; index++) {
+            ConcertOption option = concertOptionRepository.save(
+                    new ConcertOption(
+                            concert,
+                            concertDate.plusDays(index),
+                            venue,
+                            DEFAULT_TICKET_PRICE_AMOUNT
+                    )
+            );
+            List<Seat> seats = createSeats(option, seatCount);
+            if (soldOut) {
+                seats.forEach(Seat::reserve);
+                seatRepository.saveAll(seats);
+            }
+        }
 
         if (generalSaleStartAt != null) {
             salesPolicyRepository.save(
@@ -288,11 +299,6 @@ public class DataInitializer implements CommandLineRunner {
                             DEFAULT_MAX_RESERVATIONS_PER_USER
                     )
             );
-        }
-
-        if (soldOut) {
-            seats.forEach(Seat::reserve);
-            seatRepository.saveAll(seats);
         }
     }
 

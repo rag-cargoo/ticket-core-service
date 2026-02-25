@@ -31,4 +31,5 @@ public class ConcertSetupRequest {
     private String venueAddress;
     private LocalDateTime concertDate;
     private int seatCount;
+    private int optionCount;
 }

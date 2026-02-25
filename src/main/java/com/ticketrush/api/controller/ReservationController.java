@@ -29,6 +29,7 @@ import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockRequest;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
+import com.ticketrush.domain.reservation.entity.Reservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -39,7 +40,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -365,9 +368,18 @@ public class ReservationController {
      */
     @GetMapping("/v7/me")
     public ResponseEntity<List<ReservationResponse>> getMyReservationsV7(
-            @AuthenticationPrincipal AuthUserPrincipal principal
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestParam(required = false) Long concertId,
+            @RequestParam(required = false) Long optionId,
+            @RequestParam(required = false, name = "status") List<String> statuses
     ) {
-        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(requiredUserId(principal))
+        List<Reservation.ReservationStatus> parsedStatuses = parseReservationStatuses(statuses);
+        List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(
+                        requiredUserId(principal),
+                        concertId,
+                        optionId,
+                        parsedStatuses
+                )
                 .stream()
                 .map(ReservationResponse::from)
                 .toList();
@@ -460,5 +472,26 @@ public class ReservationController {
                 request.getRequestFingerprint(),
                 request.getDeviceFingerprint()
         );
+    }
+
+    private List<Reservation.ReservationStatus> parseReservationStatuses(List<String> rawStatuses) {
+        if (rawStatuses == null || rawStatuses.isEmpty()) {
+            return List.of();
+        }
+
+        LinkedHashSet<Reservation.ReservationStatus> parsed = new LinkedHashSet<>();
+        for (String rawStatus : rawStatuses) {
+            if (rawStatus == null || rawStatus.isBlank()) {
+                continue;
+            }
+            try {
+                parsed.add(Reservation.ReservationStatus.valueOf(rawStatus.trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalArgumentException(
+                        "Invalid status filter: " + rawStatus + ". allowed=PENDING,HOLD,PAYING,CONFIRMED,EXPIRED,CANCELLED,REFUNDED"
+                );
+            }
+        }
+        return List.copyOf(parsed);
     }
 }

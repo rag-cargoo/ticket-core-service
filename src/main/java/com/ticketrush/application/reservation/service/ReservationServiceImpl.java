@@ -1,6 +1,7 @@
 package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.ReservationListItemResult;
 import com.ticketrush.application.reservation.model.ReservationResult;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.reservation.port.outbound.ReservationSeatPort;
@@ -77,6 +78,36 @@ public class ReservationServiceImpl implements ReservationService {
         return reservationRepository.findByUserId(userId).stream()
                 .map(ReservationResult::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationListItemResult> getReservationsByUserId(
+            Long userId,
+            Long concertId,
+            Long optionId,
+            List<Reservation.ReservationStatus> statuses
+    ) {
+        List<Reservation.ReservationStatus> normalizedStatuses = statuses == null
+                ? List.of()
+                : statuses.stream()
+                .filter(status -> status != null)
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new))
+                .stream()
+                .toList();
+        boolean statusesEmpty = normalizedStatuses.isEmpty();
+        List<Reservation.ReservationStatus> queryStatuses = statusesEmpty
+                ? List.of(Reservation.ReservationStatus.PENDING)
+                : normalizedStatuses;
+
+        return reservationRepository.findByUserIdWithFilters(
+                        userId,
+                        concertId,
+                        optionId,
+                        statusesEmpty,
+                        queryStatuses
+                ).stream()
+                .map(ReservationListItemResult::from)
+                .toList();
     }
 
     /**
