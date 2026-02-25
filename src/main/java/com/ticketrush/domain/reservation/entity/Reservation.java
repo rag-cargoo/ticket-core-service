@@ -90,13 +90,21 @@ public class Reservation {
     }
 
     public void cancel(LocalDateTime now) {
-        ensureStatus(ReservationStatus.CONFIRMED, "Only CONFIRMED reservation can transition to CANCELLED.");
+        if (this.status != ReservationStatus.HOLD && this.status != ReservationStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                    "Only HOLD or CONFIRMED reservation can transition to CANCELLED. currentStatus=" + this.status
+            );
+        }
         this.status = ReservationStatus.CANCELLED;
         this.cancelledAt = now;
+        this.holdExpiresAt = null;
     }
 
     public void refund(LocalDateTime now) {
         ensureStatus(ReservationStatus.CANCELLED, "Only CANCELLED reservation can transition to REFUNDED.");
+        if (this.confirmedAt == null) {
+            throw new IllegalStateException("Only paid cancellation can transition to REFUNDED.");
+        }
         this.status = ReservationStatus.REFUNDED;
         this.refundedAt = now;
     }
