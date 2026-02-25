@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -21,12 +20,18 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase {
 
+    private static final List<PaymentMethod> CATALOG_METHODS = List.of(
+            PaymentMethod.CARD,
+            PaymentMethod.KAKAOPAY,
+            PaymentMethod.NAVERPAY
+    );
+
     private final PaymentMethodConfigPort paymentConfig;
 
     @Override
     public PaymentMethodCatalogResult getCatalog() {
         String provider = normalizeProvider(paymentConfig.getProvider());
-        List<PaymentMethodStatusResult> methods = Arrays.stream(PaymentMethod.values())
+        List<PaymentMethodStatusResult> methods = catalogMethods(provider).stream()
                 .map(method -> toMethodStatus(provider, method))
                 .toList();
 
@@ -101,6 +106,9 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
         }
 
         if (status == PaymentMethodStatus.AVAILABLE) {
+            if ("mock".equals(provider) && method == PaymentMethod.CARD) {
+                return "현재 사용 가능 (가상 테스트 카드)";
+            }
             if ("pg-ready".equals(provider) && !paymentConfig.isExternalLiveEnabled()) {
                 return "승인콜백 준비 단계(실결제 미연동)";
             }
@@ -125,12 +133,8 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
         if (supported.contains(method)) {
             return PaymentMethodStatus.AVAILABLE;
         }
-
-        if ("wallet".equals(provider)) {
+        if (method == PaymentMethod.KAKAOPAY || method == PaymentMethod.NAVERPAY) {
             return PaymentMethodStatus.PLANNED;
-        }
-        if ("pg-ready".equals(provider) && method == PaymentMethod.WALLET) {
-            return PaymentMethodStatus.DISABLED;
         }
         return PaymentMethodStatus.DISABLED;
     }
@@ -139,17 +143,14 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
         if ("wallet".equals(provider)) {
             return EnumSet.of(PaymentMethod.WALLET);
         }
-        if ("pg-ready".equals(provider)) {
-            return EnumSet.of(PaymentMethod.CARD, PaymentMethod.KAKAOPAY, PaymentMethod.NAVERPAY, PaymentMethod.BANK_TRANSFER);
+        if ("pg-ready".equals(provider) || "mock".equals(provider)) {
+            return EnumSet.of(PaymentMethod.CARD);
         }
-        if ("mock".equals(provider)) {
-            return EnumSet.allOf(PaymentMethod.class);
-        }
-        return EnumSet.of(PaymentMethod.WALLET);
+        return EnumSet.noneOf(PaymentMethod.class);
     }
 
     private PaymentMethod resolveDefaultMethod(String provider, List<PaymentMethodStatusResult> methods) {
-        PaymentMethod preferred = "pg-ready".equals(provider) ? PaymentMethod.CARD : PaymentMethod.WALLET;
+        PaymentMethod preferred = "wallet".equals(provider) ? PaymentMethod.WALLET : PaymentMethod.CARD;
         boolean preferredEnabled = methods.stream()
                 .anyMatch(item -> item.getCode().equals(preferred.name()) && item.isEnabled());
         if (preferredEnabled) {
@@ -165,7 +166,7 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
 
     private String normalizeProvider(String value) {
         if (!StringUtils.hasText(value)) {
-            return "wallet";
+            return "mock";
         }
         return value.trim().toLowerCase(Locale.ROOT);
     }
@@ -191,7 +192,7 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
             case CARD -> "카드";
             case KAKAOPAY -> "카카오페이";
             case NAVERPAY -> "네이버페이";
-            case BANK_TRANSFER -> "무통장입금";
+            default -> method.name();
         };
     }
 
@@ -200,11 +201,18 @@ public class PaymentMethodCatalogService implements PaymentMethodCatalogUseCase 
             return "WALLET_LEDGER";
         }
         if ("mock".equals(provider)) {
-            return "MOCK_SIMULATION";
+            return "CARD_MOCK_SIMULATION";
         }
         if ("pg-ready".equals(provider)) {
             return paymentConfig.isExternalLiveEnabled() ? "PG_EXTERNAL_LIVE" : "PG_WEBHOOK_READY";
         }
-        return "UNKNOWN";
+        return "CARD_ONLY_RESTRICTED";
+    }
+
+    private List<PaymentMethod> catalogMethods(String provider) {
+        if ("wallet".equals(provider)) {
+            return List.of(PaymentMethod.WALLET);
+        }
+        return CATALOG_METHODS;
     }
 }

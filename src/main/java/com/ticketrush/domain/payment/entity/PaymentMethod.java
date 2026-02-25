@@ -6,8 +6,7 @@ public enum PaymentMethod {
     WALLET,
     CARD,
     KAKAOPAY,
-    NAVERPAY,
-    BANK_TRANSFER;
+    NAVERPAY;
 
     public static PaymentMethod fromNullable(String rawValue, PaymentMethod fallback) {
         if (rawValue == null || rawValue.isBlank()) {

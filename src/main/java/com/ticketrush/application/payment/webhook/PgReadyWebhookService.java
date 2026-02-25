@@ -191,9 +191,9 @@ public class PgReadyWebhookService implements PgReadyWebhookUseCase {
         }
 
         PaymentMethod method = transaction.getPaymentMethod();
-        if (method == PaymentMethod.WALLET) {
+        if (method != null && method != PaymentMethod.CARD) {
             throw new IllegalStateException(
-                    "PG_READY webhook cannot approve wallet transaction. txId=" + transaction.getId()
+                    "PG_READY webhook supports CARD only. txId=" + transaction.getId() + ", method=" + method
             );
         }
     }

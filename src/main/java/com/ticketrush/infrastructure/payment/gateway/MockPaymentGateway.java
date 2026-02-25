@@ -81,7 +81,7 @@ public class MockPaymentGateway implements PaymentGateway {
 
         User user = getUser(userId);
         PaymentMethod refundMethod = paidTransaction.getPaymentMethod() == null
-                ? PaymentMethod.WALLET
+                ? PaymentMethod.CARD
                 : paidTransaction.getPaymentMethod();
         String refundProvider = StringUtils.hasText(paidTransaction.getPaymentProvider())
                 ? paidTransaction.getPaymentProvider()
@@ -125,10 +125,8 @@ public class MockPaymentGateway implements PaymentGateway {
         if (paymentMethod == null) {
             throw new IllegalStateException("paymentMethod is required");
         }
-        switch (paymentMethod) {
-            case WALLET, CARD, KAKAOPAY, NAVERPAY, BANK_TRANSFER -> {
-            }
-            default -> throw new IllegalStateException("Unsupported payment method: " + paymentMethod);
+        if (paymentMethod != PaymentMethod.CARD) {
+            throw new IllegalStateException("Unsupported payment method for mock provider. requested=" + paymentMethod + ", supported=CARD");
         }
     }
 }

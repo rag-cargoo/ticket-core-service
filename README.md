@@ -135,7 +135,7 @@ make test-auth-social-real-provider
   - `APP_KAFKA_PUSH_CONSUMER_GROUP_ID` (기본 `${spring.application.name}-${random.uuid}`; 인스턴스별 고유 group)
 - 운영 오버라이드 가능한 핵심 설정:
   - `APP_RESERVATION_SOFT_LOCK_TTL_SECONDS` (기본 `30`)
-  - `APP_PAYMENT_PROVIDER` (기본 `wallet`)
+  - `APP_PAYMENT_PROVIDER` (기본 `mock`, 카드 결제 시뮬레이션)
 - 초기 시드 전략:
   - 관리 계정 시드: `APP_SEED_ADMIN_ENABLED` (기본 `true`, `admin` 계정 1회 생성)
   - 포트폴리오 샘플 시드: `APP_PORTFOLIO_SEED_ENABLED=true`일 때만 실행
@@ -151,6 +151,7 @@ make test-auth-social-real-provider
   - `POST /api/users/{userId}/wallet/charges`
   - `GET /api/users/{userId}/wallet/transactions`
 - 예약 결제 연동:
+  - `v6/v7 confirm`은 `CARD` 결제만 허용(월렛/무통장 미지원)
   - `v6/v7 confirm`에서 기본 티켓 금액(`app.payment.default-ticket-price-amount`) 차감
   - `v6/v7 refund`에서 해당 예약 결제 금액 환불
 - 인증 세션 무효화:

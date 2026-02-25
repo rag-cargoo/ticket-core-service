@@ -459,13 +459,17 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     }
 
     private PaymentMethod resolvePaymentMethod(String value) {
+        String provider = paymentProperties.getProvider();
+        boolean walletProvider = provider != null && "wallet".equalsIgnoreCase(provider.trim());
+        PaymentMethod fallback = walletProvider ? PaymentMethod.WALLET : PaymentMethod.CARD;
+        String allowedMethods = walletProvider ? "WALLET,CARD,KAKAOPAY,NAVERPAY" : "CARD,KAKAOPAY,NAVERPAY";
         try {
-            return PaymentMethod.fromNullable(value, PaymentMethod.WALLET);
+            return PaymentMethod.fromNullable(value, fallback);
         } catch (IllegalArgumentException exception) {
             String safeValue = value == null ? "" : value.trim();
             throw new IllegalStateException(
                     "Unsupported payment method: " + safeValue
-                            + ". allowed=WALLET,CARD,KAKAOPAY,NAVERPAY,BANK_TRANSFER",
+                            + ". allowed=" + allowedMethods,
                     exception
             );
         }
