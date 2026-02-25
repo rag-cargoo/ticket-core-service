@@ -21,6 +21,8 @@ import com.ticketrush.api.dto.ReservationResponse;
 import com.ticketrush.api.dto.reservation.AuthenticatedHoldRequest;
 import com.ticketrush.api.dto.reservation.AdminRefundAuditResponse;
 import com.ticketrush.api.dto.reservation.AbuseAuditResponse;
+import com.ticketrush.api.dto.reservation.ReservationBulkCancelRequest;
+import com.ticketrush.api.dto.reservation.ReservationBulkCancelResponse;
 import com.ticketrush.api.dto.reservation.ReservationLifecycleResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockAcquireResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
@@ -304,6 +306,21 @@ public class ReservationController {
     ) {
         ReservationLifecycleResult result = reservationLifecycleUseCase.cancel(reservationId, requiredUserId(principal));
         return ResponseEntity.ok(ReservationLifecycleResponse.from(result));
+    }
+
+    /**
+     * [v7] Auth Track A2 - 인증 사용자 기반 CANCELLED 벌크 전이
+     */
+    @PostMapping("/v7/cancel/bulk")
+    public ResponseEntity<ReservationBulkCancelResponse> cancelBulkV7(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @RequestBody ReservationBulkCancelRequest request
+    ) {
+        List<ReservationLifecycleResult> results = reservationLifecycleUseCase.cancelBulk(
+                request == null ? null : request.getReservationIds(),
+                requiredUserId(principal)
+        );
+        return ResponseEntity.ok(ReservationBulkCancelResponse.from(results));
     }
 
     /**

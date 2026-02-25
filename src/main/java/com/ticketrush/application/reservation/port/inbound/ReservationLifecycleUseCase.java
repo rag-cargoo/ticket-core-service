@@ -3,6 +3,8 @@ package com.ticketrush.application.reservation.port.inbound;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.ReservationLifecycleResult;
 
+import java.util.List;
+
 public interface ReservationLifecycleUseCase {
 
     ReservationLifecycleResult createHold(ReservationCreateCommand command);
@@ -16,6 +18,8 @@ public interface ReservationLifecycleUseCase {
     ReservationLifecycleResult confirm(Long reservationId, Long userId, String paymentMethod);
 
     ReservationLifecycleResult cancel(Long reservationId, Long userId);
+
+    List<ReservationLifecycleResult> cancelBulk(List<Long> reservationIds, Long userId);
 
     ReservationLifecycleResult refund(Long reservationId, Long userId);
 

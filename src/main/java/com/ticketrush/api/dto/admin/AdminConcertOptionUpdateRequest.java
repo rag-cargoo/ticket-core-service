@@ -12,5 +12,6 @@ import java.time.LocalDateTime;
 public class AdminConcertOptionUpdateRequest {
     private LocalDateTime concertDate;
     private Long ticketPriceAmount;
+    private Integer maxSeatsPerOrder;
     private Long venueId;
 }

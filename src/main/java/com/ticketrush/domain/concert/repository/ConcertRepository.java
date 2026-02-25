@@ -25,35 +25,36 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
                     FROM Concert c
                     JOIN c.artist a
                     LEFT JOIN a.entertainment ag
-                    WHERE (:keyword IS NULL
-                           OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR str(c.id) = :keyword)
-                      AND (:artistName IS NULL
-                           OR lower(a.name) = lower(:artistName))
-                      AND (:entertainmentName IS NULL
-                           OR lower(ag.name) = lower(:entertainmentName))
+                    WHERE (:keywordPattern IS NULL
+                           OR lower(c.title) LIKE :keywordPattern
+                           OR lower(a.name) LIKE :keywordPattern
+                           OR lower(ag.name) LIKE :keywordPattern
+                           OR (:keywordId IS NOT NULL AND c.id = :keywordId))
+                      AND (:artistNameLower IS NULL
+                           OR lower(a.name) = :artistNameLower)
+                      AND (:entertainmentNameLower IS NULL
+                           OR lower(ag.name) = :entertainmentNameLower)
                     """,
             countQuery = """
                     SELECT count(c)
                     FROM Concert c
                     JOIN c.artist a
                     LEFT JOIN a.entertainment ag
-                    WHERE (:keyword IS NULL
-                           OR lower(c.title) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(a.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR lower(ag.name) LIKE lower(concat('%', :keyword, '%'))
-                           OR str(c.id) = :keyword)
-                      AND (:artistName IS NULL
-                           OR lower(a.name) = lower(:artistName))
-                      AND (:entertainmentName IS NULL
-                           OR lower(ag.name) = lower(:entertainmentName))
+                    WHERE (:keywordPattern IS NULL
+                           OR lower(c.title) LIKE :keywordPattern
+                           OR lower(a.name) LIKE :keywordPattern
+                           OR lower(ag.name) LIKE :keywordPattern
+                           OR (:keywordId IS NOT NULL AND c.id = :keywordId))
+                      AND (:artistNameLower IS NULL
+                           OR lower(a.name) = :artistNameLower)
+                      AND (:entertainmentNameLower IS NULL
+                           OR lower(ag.name) = :entertainmentNameLower)
                     """
     )
     @EntityGraph(attributePaths = {"artist", "artist.entertainment", "promoter"})
-    Page<Concert> searchPaged(@Param("keyword") String keyword,
-                              @Param("artistName") String artistName,
-                              @Param("entertainmentName") String entertainmentName,
+    Page<Concert> searchPaged(@Param("keywordPattern") String keywordPattern,
+                              @Param("keywordId") Long keywordId,
+                              @Param("artistNameLower") String artistNameLower,
+                              @Param("entertainmentNameLower") String entertainmentNameLower,
                               Pageable pageable);
 }

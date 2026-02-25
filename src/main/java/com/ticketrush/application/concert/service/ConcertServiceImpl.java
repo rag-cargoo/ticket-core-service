@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -70,9 +71,17 @@ public class ConcertServiceImpl implements ConcertService {
     )
     public Page<Concert> searchConcerts(String keyword, String artistName, String entertainmentName, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
-        String normalizedArtistName = normalize(artistName);
-        String normalizedEntertainmentName = normalize(entertainmentName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedEntertainmentName, pageable);
+        String keywordPattern = toLowerContainsPattern(normalizedKeyword);
+        Long keywordId = parseKeywordId(normalizedKeyword);
+        String normalizedArtistName = normalizeLower(artistName);
+        String normalizedEntertainmentName = normalizeLower(entertainmentName);
+        return concertRepository.searchPaged(
+                keywordPattern,
+                keywordId,
+                normalizedArtistName,
+                normalizedEntertainmentName,
+                pageable
+        );
     }
 
     @Override
@@ -421,7 +430,7 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertOption addOption(Long concertId, LocalDateTime date) {
-        return addOption(concertId, date, null, null);
+        return addOption(concertId, date, null, null, null);
     }
 
     @Override
@@ -433,7 +442,7 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId) {
-        return addOption(concertId, date, venueId, null);
+        return addOption(concertId, date, venueId, null, null);
     }
 
     @Override
@@ -444,11 +453,19 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
-    public ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
+    public ConcertOption addOption(
+            Long concertId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    ) {
         Concert concert = getConcert(concertId);
         Venue venue = resolveVenueById(venueId);
         Long normalizedTicketPriceAmount = normalizeTicketPriceAmount(ticketPriceAmount);
-        return concertOptionRepository.save(new ConcertOption(concert, date, venue, normalizedTicketPriceAmount));
+        return concertOptionRepository.save(
+                new ConcertOption(concert, date, venue, normalizedTicketPriceAmount, maxSeatsPerOrder)
+        );
     }
 
     @Override
@@ -459,8 +476,14 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
-    public ConcertOptionResult addOptionResult(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
-        return ConcertOptionResult.from(addOption(concertId, date, venueId, ticketPriceAmount));
+    public ConcertOptionResult addOptionResult(
+            Long concertId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    ) {
+        return ConcertOptionResult.from(addOption(concertId, date, venueId, ticketPriceAmount, maxSeatsPerOrder));
     }
 
     @Override
@@ -472,7 +495,7 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId) {
-        return updateOption(optionId, date, venueId, null);
+        return updateOption(optionId, date, venueId, null, null);
     }
 
     @Override
@@ -483,14 +506,20 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
-    public ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
+    public ConcertOption updateOption(
+            Long optionId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    ) {
         ConcertOption option = concertOptionRepository.findById(optionId)
                 .orElseThrow(() -> new IllegalArgumentException("Concert option not found: " + optionId));
         Venue venue = venueId == null ? option.getVenue() : resolveVenueById(venueId);
         Long resolvedTicketPriceAmount = ticketPriceAmount == null
                 ? option.getTicketPriceAmount()
                 : normalizeTicketPriceAmount(ticketPriceAmount);
-        option.updateSchedule(date, venue, resolvedTicketPriceAmount);
+        option.updateSchedule(date, venue, resolvedTicketPriceAmount, maxSeatsPerOrder);
         return option;
     }
 
@@ -502,8 +531,14 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true),
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
-    public ConcertOptionResult updateOptionResult(Long optionId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
-        return ConcertOptionResult.from(updateOption(optionId, date, venueId, ticketPriceAmount));
+    public ConcertOptionResult updateOptionResult(
+            Long optionId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    ) {
+        return ConcertOptionResult.from(updateOption(optionId, date, venueId, ticketPriceAmount, maxSeatsPerOrder));
     }
 
     @Override
@@ -619,6 +654,32 @@ public class ConcertServiceImpl implements ConcertService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeLower(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private String toLowerContainsPattern(String value) {
+        if (value == null) {
+            return null;
+        }
+        return "%" + value.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private Long parseKeywordId(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(keyword);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private String normalizeRequired(String value, String fieldName) {
