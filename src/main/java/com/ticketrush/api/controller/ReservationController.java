@@ -29,7 +29,6 @@ import com.ticketrush.api.dto.reservation.SeatSoftLockReleaseResponse;
 import com.ticketrush.api.dto.reservation.SeatSoftLockRequest;
 import com.ticketrush.api.dto.reservation.ReservationStateRequest;
 import com.ticketrush.application.auth.model.AuthUserPrincipal;
-import com.ticketrush.domain.reservation.entity.Reservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -373,7 +372,7 @@ public class ReservationController {
             @RequestParam(required = false) Long optionId,
             @RequestParam(required = false, name = "status") List<String> statuses
     ) {
-        List<Reservation.ReservationStatus> parsedStatuses = parseReservationStatuses(statuses);
+        List<String> parsedStatuses = parseReservationStatuses(statuses);
         List<ReservationResponse> responses = reservationUseCase.getReservationsByUserId(
                         requiredUserId(principal),
                         concertId,
@@ -474,23 +473,17 @@ public class ReservationController {
         );
     }
 
-    private List<Reservation.ReservationStatus> parseReservationStatuses(List<String> rawStatuses) {
+    private List<String> parseReservationStatuses(List<String> rawStatuses) {
         if (rawStatuses == null || rawStatuses.isEmpty()) {
             return List.of();
         }
 
-        LinkedHashSet<Reservation.ReservationStatus> parsed = new LinkedHashSet<>();
+        LinkedHashSet<String> parsed = new LinkedHashSet<>();
         for (String rawStatus : rawStatuses) {
             if (rawStatus == null || rawStatus.isBlank()) {
                 continue;
             }
-            try {
-                parsed.add(Reservation.ReservationStatus.valueOf(rawStatus.trim().toUpperCase(Locale.ROOT)));
-            } catch (IllegalArgumentException exception) {
-                throw new IllegalArgumentException(
-                        "Invalid status filter: " + rawStatus + ". allowed=PENDING,HOLD,PAYING,CONFIRMED,EXPIRED,CANCELLED,REFUNDED"
-                );
-            }
+            parsed.add(rawStatus.trim().toUpperCase(Locale.ROOT));
         }
         return List.copyOf(parsed);
     }

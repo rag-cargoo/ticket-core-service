@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -85,14 +86,16 @@ public class ReservationServiceImpl implements ReservationService {
             Long userId,
             Long concertId,
             Long optionId,
-            List<Reservation.ReservationStatus> statuses
+            List<String> statuses
     ) {
         List<Reservation.ReservationStatus> normalizedStatuses = statuses == null
                 ? List.of()
                 : statuses.stream()
-                .filter(status -> status != null)
+                .filter(status -> status != null && !status.isBlank())
+                .map(status -> status.trim().toUpperCase(Locale.ROOT))
                 .collect(Collectors.toCollection(java.util.LinkedHashSet::new))
                 .stream()
+                .map(this::parseReservationStatus)
                 .toList();
         boolean statusesEmpty = normalizedStatuses.isEmpty();
         List<Reservation.ReservationStatus> queryStatuses = statusesEmpty
@@ -108,6 +111,16 @@ public class ReservationServiceImpl implements ReservationService {
                 ).stream()
                 .map(ReservationListItemResult::from)
                 .toList();
+    }
+
+    private Reservation.ReservationStatus parseReservationStatus(String rawStatus) {
+        try {
+            return Reservation.ReservationStatus.valueOf(rawStatus);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid status filter: " + rawStatus + ". allowed=PENDING,HOLD,PAYING,CONFIRMED,EXPIRED,CANCELLED,REFUNDED"
+            );
+        }
     }
 
     /**
