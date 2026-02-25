@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -70,9 +71,17 @@ public class ConcertServiceImpl implements ConcertService {
     )
     public Page<Concert> searchConcerts(String keyword, String artistName, String entertainmentName, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
-        String normalizedArtistName = normalize(artistName);
-        String normalizedEntertainmentName = normalize(entertainmentName);
-        return concertRepository.searchPaged(normalizedKeyword, normalizedArtistName, normalizedEntertainmentName, pageable);
+        String keywordPattern = toLowerContainsPattern(normalizedKeyword);
+        Long keywordId = parseKeywordId(normalizedKeyword);
+        String normalizedArtistName = normalizeLower(artistName);
+        String normalizedEntertainmentName = normalizeLower(entertainmentName);
+        return concertRepository.searchPaged(
+                keywordPattern,
+                keywordId,
+                normalizedArtistName,
+                normalizedEntertainmentName,
+                pageable
+        );
     }
 
     @Override
@@ -645,6 +654,32 @@ public class ConcertServiceImpl implements ConcertService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeLower(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private String toLowerContainsPattern(String value) {
+        if (value == null) {
+            return null;
+        }
+        return "%" + value.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private Long parseKeywordId(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(keyword);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private String normalizeRequired(String value, String fieldName) {
