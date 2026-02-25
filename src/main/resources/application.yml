@@ -35,7 +35,7 @@ app:
     expire-check-delay-millis: 5000
     refund-cutoff-hours-before-concert: 24
   payment:
-    provider: ${APP_PAYMENT_PROVIDER:wallet}
+    provider: ${APP_PAYMENT_PROVIDER:pg-ready}
     external-live-enabled: ${APP_PAYMENT_EXTERNAL_LIVE_ENABLED:false}
     pg-ready-checkout-base-url: ${APP_PAYMENT_PG_READY_CHECKOUT_BASE_URL:https://pg-ready.example.com/checkout}
     pg-ready-callback-url: ${APP_PAYMENT_PG_READY_CALLBACK_URL:/api/payments/webhooks/pg-ready}
@@ -98,7 +98,7 @@ app:
       enabled: ${APP_AUTH_SOCIAL_REAL_E2E_ENABLED:false}
   frontend:
     u1-callback-url: ${U1_CALLBACK_URL:/ux/u1/callback.html}
-    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080}
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:}
   cache:
     concert:
       list-ttl: ${APP_CACHE_CONCERT_LIST_TTL:30s}

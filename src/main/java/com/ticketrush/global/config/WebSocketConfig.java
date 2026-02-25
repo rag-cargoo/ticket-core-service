@@ -20,7 +20,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final WebSocketBrokerProperties brokerProperties;
 
     public WebSocketConfig(
-            @Value("${app.frontend.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}") List<String> allowedOrigins,
+            @Value("${app.frontend.allowed-origins:}") List<String> allowedOrigins,
             WebSocketBrokerProperties brokerProperties
     ) {
         this.normalizedAllowedOrigins = allowedOrigins.stream()
