@@ -123,6 +123,19 @@ public class ConcertController {
     }
 
     /**
+     * 특정 공연 옵션의 좌석 상태맵 조회(AVAILABLE/TEMP_RESERVED/RESERVED)
+     */
+    @GetMapping("/options/{optionId}/seat-map")
+    public ResponseEntity<List<SeatResponse>> getSeatMap(
+            @PathVariable Long optionId,
+            @RequestParam(required = false, name = "status") List<String> statuses
+    ) {
+        return ResponseEntity.ok(concertUseCase.getSeatMapResults(optionId, statuses).stream()
+                .map(SeatResponse::from)
+                .collect(Collectors.toList()));
+    }
+
+    /**
      * [Admin/Test] Step 11 - 공연 판매 정책 생성/수정
      */
     @PutMapping("/{concertId}/sales-policy")
