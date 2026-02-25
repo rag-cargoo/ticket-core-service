@@ -77,14 +77,26 @@ class ReservationStateMachineTest {
     }
 
     @Test
-    void cancelFromPayingShouldFail() {
+    void cancelFromHoldShouldSetCancelled() {
         LocalDateTime now = LocalDateTime.now();
         Reservation reservation = Reservation.hold(buildUser(), buildSeat("A-6"), now, now.plusMinutes(5));
+
+        reservation.cancel(now.plusSeconds(10));
+
+        assertThat(reservation.getStatus()).isEqualTo(Reservation.ReservationStatus.CANCELLED);
+        assertThat(reservation.getCancelledAt()).isNotNull();
+        assertThat(reservation.getHoldExpiresAt()).isNull();
+    }
+
+    @Test
+    void cancelFromPayingShouldFail() {
+        LocalDateTime now = LocalDateTime.now();
+        Reservation reservation = Reservation.hold(buildUser(), buildSeat("A-7"), now, now.plusMinutes(5));
         reservation.startPaying(now.plusSeconds(10));
 
         assertThatIllegalStateException()
                 .isThrownBy(() -> reservation.cancel(now.plusSeconds(20)))
-                .withMessageContaining("Only CONFIRMED reservation can transition to CANCELLED.");
+                .withMessageContaining("Only HOLD or CONFIRMED reservation can transition to CANCELLED.");
     }
 
     private User buildUser() {
