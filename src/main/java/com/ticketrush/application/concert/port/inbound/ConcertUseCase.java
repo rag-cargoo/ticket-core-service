@@ -166,24 +166,44 @@ public interface ConcertUseCase {
     ConcertResult getConcertResult(Long concertId);
 
     default ConcertOptionResult addOptionResult(Long concertId, LocalDateTime date) {
-        return addOptionResult(concertId, date, null, null);
+        return addOptionResult(concertId, date, null, null, null);
     }
 
     default ConcertOptionResult addOptionResult(Long concertId, LocalDateTime date, Long venueId) {
-        return addOptionResult(concertId, date, venueId, null);
+        return addOptionResult(concertId, date, venueId, null, null);
     }
 
-    ConcertOptionResult addOptionResult(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount);
+    default ConcertOptionResult addOptionResult(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
+        return addOptionResult(concertId, date, venueId, ticketPriceAmount, null);
+    }
+
+    ConcertOptionResult addOptionResult(
+            Long concertId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    );
 
     default ConcertOptionResult updateOptionResult(Long optionId, LocalDateTime date, Long venueId) {
-        return updateOptionResult(optionId, date, venueId, null);
+        return updateOptionResult(optionId, date, venueId, null, null);
+    }
+
+    default ConcertOptionResult updateOptionResult(
+            Long optionId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount
+    ) {
+        return updateOptionResult(optionId, date, venueId, ticketPriceAmount, null);
     }
 
     ConcertOptionResult updateOptionResult(
             Long optionId,
             LocalDateTime date,
             Long venueId,
-            Long ticketPriceAmount
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
     );
 
     void deleteOption(Long optionId);

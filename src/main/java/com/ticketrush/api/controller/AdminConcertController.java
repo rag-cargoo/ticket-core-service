@@ -118,7 +118,8 @@ public class AdminConcertController {
                         concertId,
                         request.getConcertDate(),
                         request.getVenueId(),
-                        request.getTicketPriceAmount()
+                        request.getTicketPriceAmount(),
+                        request.getMaxSeatsPerOrder()
                 )
         );
         int seatCount = request.getSeatCount() == null ? 0 : request.getSeatCount();
@@ -138,7 +139,8 @@ public class AdminConcertController {
                         optionId,
                         request.getConcertDate(),
                         request.getVenueId(),
-                        request.getTicketPriceAmount()
+                        request.getTicketPriceAmount(),
+                        request.getMaxSeatsPerOrder()
                 )
         ));
     }

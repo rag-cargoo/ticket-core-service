@@ -14,6 +14,7 @@ public class ConcertOptionResult {
     private Long id;
     private LocalDateTime concertDate;
     private Long ticketPriceAmount;
+    private int maxSeatsPerOrder;
     private Long venueId;
     private String venueName;
     private String venueCity;
@@ -26,6 +27,7 @@ public class ConcertOptionResult {
                 option.getId(),
                 option.getConcertDate(),
                 option.getTicketPriceAmount(),
+                option.getMaxSeatsPerOrder(),
                 venue != null ? venue.getId() : null,
                 venue != null ? venue.getName() : null,
                 venue != null ? venue.getCity() : null,

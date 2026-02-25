@@ -144,20 +144,40 @@ public interface ConcertService extends ConcertUseCase {
     Concert getConcert(Long concertId);
 
     default ConcertOption addOption(Long concertId, LocalDateTime date) {
-        return addOption(concertId, date, null, null);
+        return addOption(concertId, date, null, null, null);
     }
 
     default ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId) {
-        return addOption(concertId, date, venueId, null);
+        return addOption(concertId, date, venueId, null, null);
     }
 
-    ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount);
+    default ConcertOption addOption(Long concertId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
+        return addOption(concertId, date, venueId, ticketPriceAmount, null);
+    }
+
+    ConcertOption addOption(
+            Long concertId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    );
 
     default ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId) {
-        return updateOption(optionId, date, venueId, null);
+        return updateOption(optionId, date, venueId, null, null);
     }
 
-    ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId, Long ticketPriceAmount);
+    default ConcertOption updateOption(Long optionId, LocalDateTime date, Long venueId, Long ticketPriceAmount) {
+        return updateOption(optionId, date, venueId, ticketPriceAmount, null);
+    }
+
+    ConcertOption updateOption(
+            Long optionId,
+            LocalDateTime date,
+            Long venueId,
+            Long ticketPriceAmount,
+            Integer maxSeatsPerOrder
+    );
 
     Concert updateThumbnail(Long concertId, byte[] imageBytes, String contentType);
 

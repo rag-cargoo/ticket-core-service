@@ -13,5 +13,6 @@ public class AdminConcertOptionCreateRequest {
     private LocalDateTime concertDate;
     private Integer seatCount;
     private Long ticketPriceAmount;
+    private Integer maxSeatsPerOrder;
     private Long venueId;
 }
