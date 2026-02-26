@@ -32,4 +32,5 @@ public class ConcertSetupRequest {
     private LocalDateTime concertDate;
     private int seatCount;
     private int optionCount;
+    private String youtubeVideoUrl;
 }

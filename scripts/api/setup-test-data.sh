@@ -15,16 +15,49 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 # ------------------
 
-CONCERT_TITLE="TEST_CONCERT_$(date +%s)"
+SAMPLE_TITLES=(
+  "Neon Skyline Live"
+  "Midnight Pulse Festival"
+  "City Lights Arena"
+  "Prime Time Stage"
+  "Rush Hour Live"
+)
+SAMPLE_ARTISTS=(
+  "Sample Star A"
+  "Sample Star B"
+  "Sample Star C"
+  "Sample Star D"
+  "Sample Star E"
+)
+SAMPLE_ENTERTAINMENTS=(
+  "Sample Wave Ent"
+  "Sample Orbit Ent"
+  "Sample Echo Ent"
+  "Sample Nova Ent"
+  "Sample Comet Ent"
+)
+SAMPLE_YOUTUBE_URLS=(
+  "https://www.youtube.com/watch?v=3JZ_D3ELwOQ"
+  "https://www.youtube.com/watch?v=OPf0YbXqDm0"
+  "https://www.youtube.com/watch?v=fJ9rUzIMcZQ"
+  "https://www.youtube.com/watch?v=60ItHLz5WEA"
+  "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
+)
+
+SCENARIO_INDEX=$((RANDOM % ${#SAMPLE_TITLES[@]}))
+CONCERT_TITLE="${SAMPLE_TITLES[$SCENARIO_INDEX]}_$(date +%s)"
 CONCERT_DATE=$(date -d "+10 days" +"%Y-%m-%dT%H:%M:%S")
 OPTION_COUNT="${OPTION_COUNT:-2}"
 SUFFIX=$(date +%s)
-ENTERTAINMENT_NAME="TEST_AGENCY_${SUFFIX}"
-ARTIST_NAME="TEST_ARTIST_${SUFFIX}"
+ENTERTAINMENT_NAME="${SAMPLE_ENTERTAINMENTS[$SCENARIO_INDEX]}_${SUFFIX}"
+ARTIST_NAME="${SAMPLE_ARTISTS[$SCENARIO_INDEX]}_${SUFFIX}"
+YOUTUBE_VIDEO_URL="${SAMPLE_YOUTUBE_URLS[$SCENARIO_INDEX]}"
 
 echo -e "${BLUE}====================================================${NC}"
 echo -e "${BLUE}[Admin] Setting up new test environment...${NC}"
 echo -e "${BLUE}====================================================${NC}"
+echo -e "${YELLOW}Scenario: ${CONCERT_TITLE} / ${ARTIST_NAME} / ${ENTERTAINMENT_NAME}${NC}"
+echo -e "${YELLOW}YouTube: ${YOUTUBE_VIDEO_URL}${NC}"
 
 if [ "${USE_DOMAIN_CRUD}" = "1" ]; then
     echo -e "${YELLOW}Step 0) Creating entertainment/artist via CRUD APIs...${NC}"
@@ -69,7 +102,8 @@ RESPONSE=$(curl -s -X POST "${SETUP_API}" \
        \"entertainmentName\": \"${ENTERTAINMENT_NAME}\",
        \"concertDate\": \"${CONCERT_DATE}\",
        \"seatCount\": 50,
-       \"optionCount\": ${OPTION_COUNT}
+       \"optionCount\": ${OPTION_COUNT},
+       \"youtubeVideoUrl\": \"${YOUTUBE_VIDEO_URL}\"
      }")
 
 echo -e "Response: ${RESPONSE}"

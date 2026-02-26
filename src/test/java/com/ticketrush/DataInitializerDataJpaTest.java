@@ -60,8 +60,8 @@ class DataInitializerDataJpaTest {
         assertThat(userRepository.existsByUsername("admin")).isTrue();
         assertThat(markerCountAfterFirst).isEqualTo(1L);
         assertThat(concertCountAfterFirst).isEqualTo(6L);
-        assertThat(optionCountAfterFirst).isEqualTo(6L);
-        assertThat(seatCountAfterFirst).isEqualTo(108L);
+        assertThat(optionCountAfterFirst).isEqualTo(12L);
+        assertThat(seatCountAfterFirst).isEqualTo(216L);
         assertThat(policyCountAfterFirst).isEqualTo(5L);
 
         initializer.run();

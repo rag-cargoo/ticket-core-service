@@ -46,7 +46,8 @@ public class ConcertController {
                 request.getEntertainmentHomepageUrl(),
                 request.getPromoterName(),
                 request.getPromoterCountryCode(),
-                request.getPromoterHomepageUrl()
+                request.getPromoterHomepageUrl(),
+                request.getYoutubeVideoUrl()
         );
         int optionCount = Math.max(1, request.getOptionCount());
         List<Long> optionIds = new ArrayList<>(optionCount);

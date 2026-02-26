@@ -175,69 +175,75 @@ public class DataInitializer implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
 
         seedPortfolioConcert(
-                "Portfolio Concert UNSCHEDULED",
-                "Portfolio Artist Unscheduled",
-                "Portfolio Entertainment Unscheduled",
+                "Seoul Skyline Rehearsal Night",
+                "Astra Nova",
+                "Lumen Stage",
                 promoter,
                 venue,
                 now.plusDays(10).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 null,
-                false
+                false,
+                "https://www.youtube.com/watch?v=3JZ_D3ELwOQ"
         );
 
         seedPortfolioConcert(
-                "Portfolio Concert PREOPEN",
-                "Portfolio Artist Preopen",
-                "Portfolio Entertainment Preopen",
+                "Midnight Pulse Opening Show",
+                "Neon Harbor",
+                "Waveform Entertainment",
                 promoter,
                 venue,
                 now.plusDays(11).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.plusHours(2),
-                false
+                false,
+                "https://www.youtube.com/watch?v=OPf0YbXqDm0"
         );
 
         seedPortfolioConcert(
-                "Portfolio Concert OPEN_SOON_1H",
-                "Portfolio Artist Soon1H",
-                "Portfolio Entertainment Soon1H",
+                "City Lights Countdown Live",
+                "Orbit Five",
+                "Moonline Records",
                 promoter,
                 venue,
                 now.plusDays(12).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.plusMinutes(40),
-                false
+                false,
+                "https://www.youtube.com/watch?v=fJ9rUzIMcZQ"
         );
 
         seedPortfolioConcert(
-                "Portfolio Concert OPEN_SOON_5M",
-                "Portfolio Artist Soon5M",
-                "Portfolio Entertainment Soon5M",
+                "Rush Hour Arena Opening",
+                "Velvet Signal",
+                "Comet Sound",
                 promoter,
                 venue,
                 now.plusDays(13).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.plusMinutes(3),
-                false
+                false,
+                "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
         );
 
         seedPortfolioConcert(
-                "Portfolio Concert OPEN",
-                "Portfolio Artist Open",
-                "Portfolio Entertainment Open",
+                "Prime Time Stage Session",
+                "Solar Echo",
+                "Bluewave Studio",
                 promoter,
                 venue,
                 now.plusDays(14).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.minusMinutes(30),
-                false
+                false,
+                "https://www.youtube.com/watch?v=60ItHLz5WEA"
         );
 
         seedPortfolioConcert(
-                "Portfolio Concert SOLD_OUT",
-                "Portfolio Artist SoldOut",
-                "Portfolio Entertainment SoldOut",
+                "Finale Dome Sold-Out Night",
+                "Crimson Beat",
+                "Summit Live",
                 promoter,
                 venue,
                 now.plusDays(15).withHour(20).withMinute(0).withSecond(0).withNano(0),
                 now.minusMinutes(30),
-                true
+                true,
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         );
     }
 
@@ -249,7 +255,8 @@ public class DataInitializer implements CommandLineRunner {
             Venue venue,
             LocalDateTime concertDate,
             LocalDateTime generalSaleStartAt,
-            boolean soldOut
+            boolean soldOut,
+            String youtubeVideoUrl
     ) {
         String normalizedTitle = normalizeRequired(title, "title");
         if (concertRepository.findByTitleIgnoreCase(normalizedTitle).isPresent()) {
@@ -270,7 +277,7 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.of(2020, 1, 1)
         );
 
-        Concert concert = concertRepository.save(new Concert(normalizedTitle, artist, promoter));
+        Concert concert = concertRepository.save(new Concert(normalizedTitle, artist, promoter, youtubeVideoUrl));
         int seatCount = soldOut ? SOLD_OUT_SEAT_COUNT : DEFAULT_SEAT_COUNT;
         for (int index = 0; index < DEFAULT_OPTION_COUNT_PER_CONCERT; index++) {
             ConcertOption option = concertOptionRepository.save(
