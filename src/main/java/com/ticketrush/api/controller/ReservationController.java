@@ -299,7 +299,8 @@ public class ReservationController {
     }
 
     /**
-     * [v7] Auth Track A2 - 인증 사용자 기반 CANCELLED 전이
+     * [v7] Auth Track A2 - 인증 사용자 기반 취소 처리
+     * HOLD -> CANCELLED, CONFIRMED -> (자동 환불 포함) REFUNDED
      */
     @PostMapping("/v7/{reservationId}/cancel")
     public ResponseEntity<ReservationLifecycleResponse> cancelV7(
@@ -311,7 +312,7 @@ public class ReservationController {
     }
 
     /**
-     * [v7] Auth Track A2 - 인증 사용자 기반 CANCELLED 벌크 전이
+     * [v7] Auth Track A2 - 인증 사용자 기반 취소 처리(벌크)
      */
     @PostMapping("/v7/cancel/bulk")
     public ResponseEntity<ReservationBulkCancelResponse> cancelBulkV7(

@@ -2,6 +2,8 @@ package com.ticketrush.application.concert.service;
 
 import com.ticketrush.application.concert.model.ConcertOptionResult;
 import com.ticketrush.application.concert.model.ConcertResult;
+import com.ticketrush.application.concert.model.ConcertHighlightItemResult;
+import com.ticketrush.application.concert.model.ConcertHighlightsResult;
 import com.ticketrush.application.concert.model.SeatResult;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
@@ -10,11 +12,14 @@ import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.ConcertOption;
 import com.ticketrush.domain.concert.entity.Seat;
+import com.ticketrush.domain.concert.repository.ConcertSeatStatsProjection;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.promoter.Promoter;
 import com.ticketrush.domain.promoter.PromoterRepository;
+import com.ticketrush.domain.reservation.entity.SalesPolicy;
+import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.venue.Venue;
 import com.ticketrush.domain.venue.VenueRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +33,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -40,6 +52,13 @@ public class ConcertServiceImpl implements ConcertService {
     private static final String CACHE_CONCERT_SEARCH = "concert:search";
     private static final String CACHE_CONCERT_OPTIONS = "concert:options";
     private static final String CACHE_CONCERT_AVAILABLE_SEATS = "concert:available-seats";
+    private static final ZoneId KST_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private static final int DEFAULT_HIGHLIGHT_LIMIT = 3;
+    private static final int MAX_HIGHLIGHT_LIMIT = 20;
+    private static final int OPENING_SOON_WITHIN_HOURS = 12;
+    private static final long OPENING_SOON_WITHIN_SECONDS = OPENING_SOON_WITHIN_HOURS * 3600L;
+    private static final int SELL_OUT_RISK_SEAT_THRESHOLD = 30;
+    private static final double SELL_OUT_RISK_RATIO_THRESHOLD = 0.18d;
 
     private final ConcertRepository concertRepository;
     private final ConcertOptionRepository concertOptionRepository;
@@ -48,6 +67,7 @@ public class ConcertServiceImpl implements ConcertService {
     private final ArtistRepository artistRepository;
     private final PromoterRepository promoterRepository;
     private final VenueRepository venueRepository;
+    private final SalesPolicyRepository salesPolicyRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,6 +83,68 @@ public class ConcertServiceImpl implements ConcertService {
         return getConcerts().stream()
                 .map(ConcertResult::from)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ConcertHighlightsResult getConcertHighlights(int openingSoonLimit, int sellOutRiskLimit) {
+        int normalizedOpeningSoonLimit = normalizeHighlightLimit(openingSoonLimit);
+        int normalizedSellOutRiskLimit = normalizeHighlightLimit(sellOutRiskLimit);
+
+        List<Concert> concerts = concertRepository.findAllWithArtistAndEntertainment();
+        if (concerts.isEmpty()) {
+            return new ConcertHighlightsResult(
+                    List.of(),
+                    List.of(),
+                    LocalDateTime.now(),
+                    OPENING_SOON_WITHIN_HOURS,
+                    SELL_OUT_RISK_SEAT_THRESHOLD,
+                    SELL_OUT_RISK_RATIO_THRESHOLD
+            );
+        }
+
+        List<Long> concertIds = concerts.stream()
+                .map(Concert::getId)
+                .toList();
+        Map<Long, SalesPolicy> salesPolicyByConcertId = toSalesPolicyMap(salesPolicyRepository.findByConcertIdIn(concertIds));
+        Map<Long, SeatStats> seatStatsByConcertId = toSeatStatsMap(
+                seatRepository.findSeatStatsByConcertIds(concertIds, Seat.SeatStatus.AVAILABLE)
+        );
+
+        ZonedDateTime nowKst = ZonedDateTime.now(KST_ZONE_ID);
+        LocalDate todayKst = nowKst.toLocalDate();
+        LocalDateTime now = nowKst.toLocalDateTime();
+
+        List<ConcertHighlightCandidate> openingSoonCandidates = concerts.stream()
+                .map(concert -> toHighlightCandidate(concert, salesPolicyByConcertId, seatStatsByConcertId, now))
+                .filter(candidate -> candidate != null && candidate.saleOpensInSeconds > 0)
+                .filter(candidate -> candidate.saleOpensInSeconds <= OPENING_SOON_WITHIN_SECONDS)
+                .filter(candidate -> isSameKstDate(candidate.saleOpensAt, todayKst))
+                .sorted(Comparator
+                        .comparingLong((ConcertHighlightCandidate candidate) -> candidate.saleOpensInSeconds)
+                        .thenComparing(candidate -> candidate.concert.getTitle(), String.CASE_INSENSITIVE_ORDER))
+                .limit(normalizedOpeningSoonLimit)
+                .toList();
+
+        List<ConcertHighlightCandidate> sellOutRiskCandidates = concerts.stream()
+                .map(concert -> toHighlightCandidate(concert, salesPolicyByConcertId, seatStatsByConcertId, now))
+                .filter(candidate -> candidate != null && candidate.saleOpensInSeconds <= 0)
+                .filter(candidate -> isSellOutRisk(candidate.availableSeatCount, candidate.totalSeatCount))
+                .sorted(Comparator
+                        .comparingDouble((ConcertHighlightCandidate candidate) -> candidate.remainingRatio)
+                        .thenComparingLong(candidate -> candidate.availableSeatCount)
+                        .thenComparing(candidate -> candidate.concert.getTitle(), String.CASE_INSENSITIVE_ORDER))
+                .limit(normalizedSellOutRiskLimit)
+                .toList();
+
+        return new ConcertHighlightsResult(
+                openingSoonCandidates.stream().map(this::toHighlightItem).toList(),
+                sellOutRiskCandidates.stream().map(this::toHighlightItem).toList(),
+                now,
+                OPENING_SOON_WITHIN_HOURS,
+                SELL_OUT_RISK_SEAT_THRESHOLD,
+                SELL_OUT_RISK_RATIO_THRESHOLD
+        );
     }
 
     @Override
@@ -636,6 +718,105 @@ public class ConcertServiceImpl implements ConcertService {
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found"));
     }
 
+    private Map<Long, SalesPolicy> toSalesPolicyMap(Collection<SalesPolicy> policies) {
+        Map<Long, SalesPolicy> result = new HashMap<>();
+        for (SalesPolicy policy : policies) {
+            if (policy.getConcert() == null || policy.getConcert().getId() == null) {
+                continue;
+            }
+            result.put(policy.getConcert().getId(), policy);
+        }
+        return result;
+    }
+
+    private Map<Long, SeatStats> toSeatStatsMap(Collection<ConcertSeatStatsProjection> rows) {
+        Map<Long, SeatStats> result = new HashMap<>();
+        for (ConcertSeatStatsProjection row : rows) {
+            Long concertId = row.getConcertId();
+            if (concertId == null) {
+                continue;
+            }
+            result.put(
+                    concertId,
+                    new SeatStats(
+                            row.getTotalSeatCount() == null ? 0L : Math.max(0L, row.getTotalSeatCount()),
+                            row.getAvailableSeatCount() == null ? 0L : Math.max(0L, row.getAvailableSeatCount())
+                    )
+            );
+        }
+        return result;
+    }
+
+    private ConcertHighlightCandidate toHighlightCandidate(
+            Concert concert,
+            Map<Long, SalesPolicy> salesPolicyByConcertId,
+            Map<Long, SeatStats> seatStatsByConcertId,
+            LocalDateTime now
+    ) {
+        Long concertId = concert.getId();
+        if (concertId == null) {
+            return null;
+        }
+        SalesPolicy salesPolicy = salesPolicyByConcertId.get(concertId);
+        if (salesPolicy == null || salesPolicy.getGeneralSaleStartAt() == null) {
+            return null;
+        }
+        SeatStats seatStats = seatStatsByConcertId.getOrDefault(concertId, SeatStats.EMPTY);
+        long totalSeatCount = seatStats.totalSeatCount;
+        long availableSeatCount = seatStats.availableSeatCount;
+        if (totalSeatCount <= 0 || availableSeatCount <= 0) {
+            return null;
+        }
+        LocalDateTime saleOpensAt = salesPolicy.getGeneralSaleStartAt();
+        long saleOpensInSeconds = ChronoUnit.SECONDS.between(now, saleOpensAt);
+        double remainingRatio = totalSeatCount == 0 ? 0d : (double) availableSeatCount / (double) totalSeatCount;
+        return new ConcertHighlightCandidate(
+                concert,
+                saleOpensAt,
+                saleOpensInSeconds,
+                availableSeatCount,
+                totalSeatCount,
+                remainingRatio
+        );
+    }
+
+    private boolean isSellOutRisk(long availableSeatCount, long totalSeatCount) {
+        if (availableSeatCount <= 0 || totalSeatCount <= 0) {
+            return false;
+        }
+        double remainingRatio = (double) availableSeatCount / (double) totalSeatCount;
+        return availableSeatCount <= SELL_OUT_RISK_SEAT_THRESHOLD || remainingRatio <= SELL_OUT_RISK_RATIO_THRESHOLD;
+    }
+
+    private boolean isSameKstDate(LocalDateTime target, LocalDate kstDate) {
+        return target != null && target.atZone(KST_ZONE_ID).toLocalDate().isEqual(kstDate);
+    }
+
+    private ConcertHighlightItemResult toHighlightItem(ConcertHighlightCandidate candidate) {
+        long ratioPercent = Math.round(candidate.remainingRatio * 100d);
+        int clampedRatioPercent = (int) Math.max(0L, Math.min(100L, ratioPercent));
+        return new ConcertHighlightItemResult(
+                candidate.concert.getId(),
+                candidate.concert.getTitle(),
+                candidate.concert.getArtist().getName(),
+                candidate.concert.getArtist().getEntertainment() == null
+                        ? null
+                        : candidate.concert.getArtist().getEntertainment().getName(),
+                candidate.saleOpensAt,
+                candidate.saleOpensInSeconds,
+                candidate.availableSeatCount,
+                candidate.totalSeatCount,
+                clampedRatioPercent
+        );
+    }
+
+    private int normalizeHighlightLimit(int candidate) {
+        if (candidate <= 0) {
+            return DEFAULT_HIGHLIGHT_LIMIT;
+        }
+        return Math.min(candidate, MAX_HIGHLIGHT_LIMIT);
+    }
+
     private String normalize(String value) {
         if (value == null) {
             return null;
@@ -760,5 +941,19 @@ public class ConcertServiceImpl implements ConcertService {
                     return existing;
                 })
                 .orElseGet(() -> artistRepository.save(new Artist(normalizedArtistName, entertainment, artistDisplayName, artistGenre, artistDebutDate)));
+    }
+
+    private record SeatStats(long totalSeatCount, long availableSeatCount) {
+        private static final SeatStats EMPTY = new SeatStats(0L, 0L);
+    }
+
+    private record ConcertHighlightCandidate(
+            Concert concert,
+            LocalDateTime saleOpensAt,
+            long saleOpensInSeconds,
+            long availableSeatCount,
+            long totalSeatCount,
+            double remainingRatio
+    ) {
     }
 }

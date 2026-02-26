@@ -19,6 +19,10 @@ public interface ConcertRepository extends JpaRepository<Concert, Long> {
     @Query("SELECT c FROM Concert c JOIN FETCH c.options")
     List<Concert> findAllWithOptions();
 
+    @EntityGraph(attributePaths = {"artist", "artist.entertainment"})
+    @Query("SELECT c FROM Concert c")
+    List<Concert> findAllWithArtistAndEntertainment();
+
     @Query(
             value = """
                     SELECT c

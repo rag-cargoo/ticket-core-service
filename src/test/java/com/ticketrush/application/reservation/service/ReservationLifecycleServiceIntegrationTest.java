@@ -281,8 +281,9 @@ class ReservationLifecycleServiceIntegrationTest {
 
         ReservationLifecycleResult cancelled = reservationLifecycleService.cancel(hold.getId(), user.getId());
 
-        assertThat(cancelled.getStatus()).isEqualTo(Reservation.ReservationStatus.CANCELLED.name());
+        assertThat(cancelled.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
         assertThat(cancelled.getCancelledAt()).isNotNull();
+        assertThat(cancelled.getRefundedAt()).isNotNull();
         assertThat(cancelled.getResaleActivatedUserIds()).containsExactly(999L);
         assertThat(seatRepository.findById(seat.getId()).orElseThrow().getStatus())
                 .isEqualTo(Seat.SeatStatus.AVAILABLE);
@@ -358,8 +359,9 @@ class ReservationLifecycleServiceIntegrationTest {
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
 
-        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
-        reservationLifecycleService.cancel(hold.getId(), user.getId());
+        Reservation confirmed = reservationRepository.findById(hold.getId()).orElseThrow();
+        confirmed.cancel(LocalDateTime.now());
+        reservationRepository.saveAndFlush(confirmed);
         ReservationLifecycleResult refunded = reservationLifecycleService.refund(hold.getId(), user.getId());
 
         assertThat(refunded.getStatus()).isEqualTo(Reservation.ReservationStatus.REFUNDED.name());
@@ -395,8 +397,9 @@ class ReservationLifecycleServiceIntegrationTest {
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
-        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
-        reservationLifecycleService.cancel(hold.getId(), user.getId());
+        Reservation confirmed = reservationRepository.findById(hold.getId()).orElseThrow();
+        confirmed.cancel(LocalDateTime.now());
+        reservationRepository.saveAndFlush(confirmed);
 
         assertThatThrownBy(() -> reservationLifecycleService.refund(hold.getId(), user.getId()))
                 .isInstanceOf(IllegalStateException.class)
@@ -415,8 +418,9 @@ class ReservationLifecycleServiceIntegrationTest {
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
-        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
-        reservationLifecycleService.cancel(hold.getId(), user.getId());
+        Reservation confirmed = reservationRepository.findById(hold.getId()).orElseThrow();
+        confirmed.cancel(LocalDateTime.now());
+        reservationRepository.saveAndFlush(confirmed);
 
         ReservationLifecycleResult refunded = reservationLifecycleService.refundAsAdmin(hold.getId(), admin.getId());
 
@@ -443,8 +447,9 @@ class ReservationLifecycleServiceIntegrationTest {
         );
         reservationLifecycleService.startPaying(hold.getId(), user.getId());
         reservationLifecycleService.confirm(hold.getId(), user.getId(), "WALLET");
-        when(waitingQueueService.activateUsers(concertId, 1)).thenReturn(List.of());
-        reservationLifecycleService.cancel(hold.getId(), user.getId());
+        Reservation confirmed = reservationRepository.findById(hold.getId()).orElseThrow();
+        confirmed.cancel(LocalDateTime.now());
+        reservationRepository.saveAndFlush(confirmed);
 
         assertThatThrownBy(() -> reservationLifecycleService.refundAsAdmin(hold.getId(), nonAdmin.getId()))
                 .isInstanceOf(IllegalStateException.class)

@@ -4,6 +4,7 @@ import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
 import com.ticketrush.application.concert.port.inbound.ConcertUseCase;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
+import com.ticketrush.api.dto.ConcertHighlightsResponse;
 import com.ticketrush.api.dto.ConcertSearchPageResponse;
 import com.ticketrush.api.dto.ConcertSetupRequest;
 import com.ticketrush.api.dto.SeatResponse;
@@ -107,6 +108,19 @@ public class ConcertController {
                 .map(ConcertResponse::from);
 
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
+    }
+
+    /**
+     * 오늘 오픈 임박 / 매진 임박 하이라이트 조회
+     */
+    @GetMapping("/highlights")
+    public ResponseEntity<ConcertHighlightsResponse> getHighlights(
+            @RequestParam(defaultValue = "3") int openingSoonLimit,
+            @RequestParam(defaultValue = "3") int sellOutRiskLimit
+    ) {
+        return ResponseEntity.ok(ConcertHighlightsResponse.from(
+                concertUseCase.getConcertHighlights(openingSoonLimit, sellOutRiskLimit)
+        ));
     }
 
     /**

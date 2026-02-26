@@ -197,6 +197,7 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
     @Transactional
     public ReservationLifecycleResult cancel(Long reservationId, Long userId) {
         Reservation reservation = getOwnedReservation(reservationId, userId);
+        boolean wasConfirmed = reservation.getStatus() == Reservation.ReservationStatus.CONFIRMED;
         LocalDateTime now = LocalDateTime.now();
         reservation.cancel(now);
         reservation.getSeat().cancel();
@@ -212,6 +213,10 @@ public class ReservationLifecycleServiceImpl implements ReservationLifecycleServ
         Long concertId = reservation.getSeat().getConcertOption().getConcert().getId();
         List<Long> activatedUsers = reservationWaitingQueuePort.activateUsers(concertId, 1);
         notifyActivatedUsers(concertId, activatedUsers);
+
+        if (wasConfirmed) {
+            refundInternal(reservation, userId, userId, false);
+        }
 
         return ReservationLifecycleResult.from(reservation, activatedUsers);
     }

@@ -1,6 +1,8 @@
 package com.ticketrush.application.concert.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
+import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.user.User;
@@ -38,6 +40,9 @@ class ConcertExplorerIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SalesPolicyUseCase salesPolicyUseCase;
 
     @Autowired
     private CacheManager cacheManager;
@@ -111,5 +116,42 @@ class ConcertExplorerIntegrationTest {
         List<Seat> secondRead = concertService.getAvailableSeats(option.getId());
         assertThat(secondRead).hasSize(2);
         assertThat(secondRead).extracting(Seat::getId).doesNotContain(selectedSeatId);
+    }
+
+    @Test
+    void highlightsEndpointReturnsOpeningSoonAndSellOutRiskItems() throws Exception {
+        User user = userRepository.save(new User("highlight-user-" + System.nanoTime(), UserTier.BASIC));
+        LocalDateTime now = LocalDateTime.now();
+
+        var openingSoonConcert = concertService.createConcert("Opening Soon Showcase", "Artist-Open", "Entertainment-Open");
+        var openingSoonOption = concertService.addOption(openingSoonConcert.getId(), now.plusDays(3));
+        concertService.createSeats(openingSoonOption.getId(), 120);
+        salesPolicyUseCase.upsert(
+                openingSoonConcert.getId(),
+                new SalesPolicyUpsertCommand(null, null, null, now.plusMinutes(30), 2)
+        );
+
+        var sellOutConcert = concertService.createConcert("Low Stock Showcase", "Artist-Low", "Entertainment-Low");
+        var sellOutOption = concertService.addOption(sellOutConcert.getId(), now.plusDays(3));
+        concertService.createSeats(sellOutOption.getId(), 40);
+        salesPolicyUseCase.upsert(
+                sellOutConcert.getId(),
+                new SalesPolicyUpsertCommand(null, null, null, now.minusHours(1), 2)
+        );
+        List<Seat> sellOutAvailableSeats = concertService.getAvailableSeats(sellOutOption.getId());
+        for (int index = 0; index < 20; index++) {
+            reservationService.createReservation(new ReservationCreateCommand(user.getId(), sellOutAvailableSeats.get(index).getId()));
+        }
+
+        mockMvc.perform(get("/api/concerts/highlights")
+                        .param("openingSoonLimit", "3")
+                        .param("sellOutRiskLimit", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.openingSoon").isArray())
+                .andExpect(jsonPath("$.sellOutRisk").isArray())
+                .andExpect(jsonPath("$.openingSoon[0].title").value("Opening Soon Showcase"))
+                .andExpect(jsonPath("$.sellOutRisk[0].title").value("Low Stock Showcase"))
+                .andExpect(jsonPath("$.sellOutRisk[0].availableSeatCount").value(20))
+                .andExpect(jsonPath("$.sellOutRisk[0].totalSeatCount").value(40));
     }
 }

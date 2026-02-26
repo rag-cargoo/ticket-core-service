@@ -2,6 +2,7 @@ package com.ticketrush.application.concert.port.inbound;
 
 import com.ticketrush.application.concert.model.ConcertOptionResult;
 import com.ticketrush.application.concert.model.ConcertResult;
+import com.ticketrush.application.concert.model.ConcertHighlightsResult;
 import com.ticketrush.application.concert.model.SeatResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,12 @@ public interface ConcertUseCase {
     }
 
     List<SeatResult> getSeatMapResults(Long concertOptionId, List<String> statuses);
+
+    default ConcertHighlightsResult getConcertHighlights() {
+        return getConcertHighlights(3, 3);
+    }
+
+    ConcertHighlightsResult getConcertHighlights(int openingSoonLimit, int sellOutRiskLimit);
 
     default ConcertResult createConcertResult(String title, String artistName, String entertainmentName) {
         return createConcertResult(title, artistName, entertainmentName, null, null, null, null, null);
