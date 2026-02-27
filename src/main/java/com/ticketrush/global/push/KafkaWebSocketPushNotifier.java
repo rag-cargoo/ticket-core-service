@@ -2,6 +2,7 @@ package com.ticketrush.global.push;
 
 import com.ticketrush.application.port.outbound.PushEvent;
 import com.ticketrush.application.port.outbound.PushEventPublisherPort;
+import com.ticketrush.application.port.outbound.ConcertRefreshPushPort;
 import com.ticketrush.application.port.outbound.QueueEventName;
 import com.ticketrush.application.port.outbound.QueuePushPayload;
 import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
@@ -20,7 +21,7 @@ import java.util.Set;
 @Slf4j
 @Component("kafkaWebSocketPushNotifier")
 @RequiredArgsConstructor
-public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, ReservationStatusPushPort, SeatMapPushPort {
+public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, ReservationStatusPushPort, SeatMapPushPort, ConcertRefreshPushPort {
 
     private final PushEventPublisherPort producer;
     private final QueueSubscriberQueryPort queueSubscriberQueryPort;
@@ -98,6 +99,19 @@ public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, Reserva
         PushMonitoringMetrics.increment("push", "kafka", "seat_map_status");
     }
 
+    @Override
+    public void sendConcertsRefresh(Long optionId) {
+        producer.publish(
+                PushEvent.builder()
+                        .type(PushEvent.Type.CONCERTS_REFRESH)
+                        .optionId(optionId)
+                        .timestamp(Instant.now().toString())
+                        .build(),
+                concertsRefreshKey(optionId)
+        );
+        PushMonitoringMetrics.increment("push", "kafka", "concerts_refresh");
+    }
+
     private void publishQueueEvent(Long userId, Long concertId, QueueEventName eventName, QueuePushPayload data) {
         producer.publish(
                 PushEvent.builder()
@@ -123,6 +137,13 @@ public class KafkaWebSocketPushNotifier implements QueueRuntimePushPort, Reserva
 
     private String seatMapKey(Long optionId, Long seatId) {
         return "seat-map:" + optionId + ":" + seatId;
+    }
+
+    private String concertsRefreshKey(Long optionId) {
+        if (optionId == null) {
+            return "concerts:refresh:all";
+        }
+        return "concerts:refresh:" + optionId;
     }
 
     private String queueEventMetricName(QueueEventName eventName) {

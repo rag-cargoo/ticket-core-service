@@ -88,6 +88,17 @@ class WebSocketPushNotifierTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/reservations/500/100"), anyMap());
     }
 
+    @Test
+    void sendConcertsRefresh_shouldPublishToConcertsLiveTopic() {
+        SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
+        WebSocketQueueSubscriptionStorePort subscriptionStore = mock(WebSocketQueueSubscriptionStorePort.class);
+
+        WebSocketPushNotifier notifier = new WebSocketPushNotifier(messagingTemplate, subscriptionStore, waitingQueueProperties());
+        notifier.sendConcertsRefresh(77L, "2026-02-28T05:15:00Z");
+
+        verify(messagingTemplate).convertAndSend(eq("/topic/concerts/live"), anyMap());
+    }
+
     private WaitingQueueProperties waitingQueueProperties() {
         WaitingQueueProperties properties = new WaitingQueueProperties();
         properties.setWsSubscriberZsetKeyPrefix("ws:queue:subs:");

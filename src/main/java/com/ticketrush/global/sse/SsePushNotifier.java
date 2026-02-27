@@ -5,6 +5,7 @@ import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.port.outbound.SeatMapPushPort;
 import com.ticketrush.application.port.outbound.SsePushPort;
+import com.ticketrush.application.port.outbound.ConcertRefreshPushPort;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
 import com.ticketrush.global.monitoring.PushMonitoringMetrics;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component("ssePushNotifier")
 @RequiredArgsConstructor
-public class SsePushNotifier implements QueueRuntimePushPort, ReservationStatusPushPort, SeatMapPushPort, SsePushPort {
+public class SsePushNotifier implements QueueRuntimePushPort, ReservationStatusPushPort, SeatMapPushPort, SsePushPort, ConcertRefreshPushPort {
 
     private static final String RESERVATION_KEY_PREFIX = "res:";
     private static final String QUEUE_KEY_PREFIX = "queue:";
@@ -119,6 +120,11 @@ public class SsePushNotifier implements QueueRuntimePushPort, ReservationStatusP
                 .map(this::extractUserIdFromQueueKey)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public void sendConcertsRefresh(Long optionId) {
+        // Service card live refresh is delivered over WebSocket transport.
     }
 
     private void sendAndComplete(String key, String eventName, Object data) {

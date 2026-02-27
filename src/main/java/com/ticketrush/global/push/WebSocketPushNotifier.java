@@ -31,6 +31,7 @@ public class WebSocketPushNotifier implements QueueRuntimePushPort, WebSocketSub
     private static final String WAITING_QUEUE_TOPIC_PREFIX = "/topic/waiting-queue";
     private static final String RESERVATION_TOPIC_PREFIX = "/topic/reservations";
     private static final String SEAT_MAP_TOPIC_PREFIX = "/topic/seats";
+    private static final String CONCERTS_LIVE_TOPIC = "/topic/concerts/live";
 
     private final SimpMessagingTemplate messagingTemplate;
     private final WebSocketQueueSubscriptionStorePort queueSubscriptionStore;
@@ -191,6 +192,19 @@ public class WebSocketPushNotifier implements QueueRuntimePushPort, WebSocketSub
                 )
         );
         PushMonitoringMetrics.increment("push", "websocket", queueEventMetricName(eventName));
+    }
+
+    @Override
+    public void sendConcertsRefresh(Long optionId, String timestamp) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("event", "CONCERTS_REFRESH");
+        payload.put("transport", "websocket");
+        if (optionId != null) {
+            payload.put("optionId", optionId);
+        }
+        payload.put("timestamp", StringUtils.hasText(timestamp) ? timestamp : Instant.now().toString());
+        messagingTemplate.convertAndSend(CONCERTS_LIVE_TOPIC, payload);
+        PushMonitoringMetrics.increment("push", "websocket", "concerts_refresh");
     }
 
     private String queueDestination(Long userId, Long concertId) {

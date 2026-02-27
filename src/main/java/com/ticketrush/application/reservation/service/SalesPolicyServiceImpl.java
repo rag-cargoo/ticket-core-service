@@ -2,6 +2,7 @@ package com.ticketrush.application.reservation.service;
 
 import com.ticketrush.application.reservation.model.SalesPolicyResult;
 import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import com.ticketrush.domain.concert.entity.Concert;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
@@ -32,6 +33,7 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
     private final SalesPolicyRepository salesPolicyRepository;
     private final ReservationRepository reservationRepository;
     private final ConcertRepository concertRepository;
+    private final ConcertReadCacheEvictPort concertReadCacheEvictPort;
 
     @Transactional
     public SalesPolicyResult upsert(Long concertId, SalesPolicyUpsertCommand command) {
@@ -58,7 +60,9 @@ public class SalesPolicyServiceImpl implements SalesPolicyService {
             );
         }
 
-        return SalesPolicyResult.from(salesPolicyRepository.save(policy));
+        SalesPolicyResult result = SalesPolicyResult.from(salesPolicyRepository.save(policy));
+        concertReadCacheEvictPort.evictConcertCards();
+        return result;
     }
 
     @Transactional(readOnly = true)

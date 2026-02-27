@@ -3,6 +3,7 @@ package com.ticketrush.global.config;
 import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.port.outbound.SeatMapPushPort;
+import com.ticketrush.application.port.outbound.ConcertRefreshPushPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -60,6 +61,22 @@ public class PushNotifierConfig {
         }
 
         log.info("Seat-map notifier mode: SSE");
+        return ssePushNotifier;
+    }
+
+    @Bean
+    @Primary
+    public ConcertRefreshPushPort concertRefreshPushNotifier(
+            PushProperties properties,
+            @Qualifier("ssePushNotifier") ConcertRefreshPushPort ssePushNotifier,
+            @Qualifier("kafkaWebSocketPushNotifier") ConcertRefreshPushPort kafkaWebSocketPushNotifier
+    ) {
+        if (properties.getMode() == PushProperties.Mode.WEBSOCKET) {
+            log.info("Concert refresh notifier mode: WEBSOCKET (Kafka fanout)");
+            return kafkaWebSocketPushNotifier;
+        }
+
+        log.info("Concert refresh notifier mode: SSE");
         return ssePushNotifier;
     }
 }

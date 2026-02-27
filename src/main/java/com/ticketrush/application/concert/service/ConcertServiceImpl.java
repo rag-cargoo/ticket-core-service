@@ -3,6 +3,7 @@ package com.ticketrush.application.concert.service;
 import com.ticketrush.application.concert.model.ConcertOptionResult;
 import com.ticketrush.application.concert.model.ConcertResult;
 import com.ticketrush.application.concert.model.SeatResult;
+import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import com.ticketrush.domain.entertainment.Entertainment;
 import com.ticketrush.domain.entertainment.EntertainmentRepository;
 import com.ticketrush.domain.artist.Artist;
@@ -48,6 +49,7 @@ public class ConcertServiceImpl implements ConcertService {
     private final ArtistRepository artistRepository;
     private final PromoterRepository promoterRepository;
     private final VenueRepository venueRepository;
+    private final ConcertReadCacheEvictPort concertReadCacheEvictPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -219,7 +221,9 @@ public class ConcertServiceImpl implements ConcertService {
         );
 
         Promoter promoter = resolvePromoter(promoterName, promoterCountryCode, promoterHomepageUrl);
-        return concertRepository.save(new Concert(normalizedTitle, artist, promoter, youtubeVideoUrl));
+        Concert concert = concertRepository.save(new Concert(normalizedTitle, artist, promoter, youtubeVideoUrl));
+        concertReadCacheEvictPort.evictConcertCards();
+        return concert;
     }
 
     @Override
@@ -299,6 +303,7 @@ public class ConcertServiceImpl implements ConcertService {
                 : resolvePromoter(promoterName, promoterCountryCode, promoterHomepageUrl);
         concert.updateBasicInfo(normalizedTitle, artist, promoter);
         concert.updateYoutubeVideoUrl(youtubeVideoUrl);
+        concertReadCacheEvictPort.evictConcertCards();
         return concert;
     }
 
@@ -361,7 +366,9 @@ public class ConcertServiceImpl implements ConcertService {
         Artist artist = artistRepository.findById(artistId)
                 .orElseThrow(() -> new IllegalArgumentException("Artist not found: " + artistId));
         Promoter promoter = resolvePromoterById(promoterId);
-        return concertRepository.save(new Concert(normalizedTitle, artist, promoter, youtubeVideoUrl));
+        Concert concert = concertRepository.save(new Concert(normalizedTitle, artist, promoter, youtubeVideoUrl));
+        concertReadCacheEvictPort.evictConcertCards();
+        return concert;
     }
 
     @Override
@@ -401,6 +408,7 @@ public class ConcertServiceImpl implements ConcertService {
         Promoter promoter = promoterId == null ? concert.getPromoter() : resolvePromoterById(promoterId);
         concert.updateBasicInfo(normalizedTitle, artist, promoter);
         concert.updateYoutubeVideoUrl(youtubeVideoUrl);
+        concertReadCacheEvictPort.evictConcertCards();
         return concert;
     }
 
@@ -471,7 +479,9 @@ public class ConcertServiceImpl implements ConcertService {
         Concert concert = getConcert(concertId);
         Venue venue = resolveVenueById(venueId);
         Long normalizedTicketPriceAmount = normalizeTicketPriceAmount(ticketPriceAmount);
-        return concertOptionRepository.save(new ConcertOption(concert, date, venue, normalizedTicketPriceAmount));
+        ConcertOption option = concertOptionRepository.save(new ConcertOption(concert, date, venue, normalizedTicketPriceAmount));
+        concertReadCacheEvictPort.evictConcertCards();
+        return option;
     }
 
     @Override
@@ -514,6 +524,7 @@ public class ConcertServiceImpl implements ConcertService {
                 ? option.getTicketPriceAmount()
                 : normalizeTicketPriceAmount(ticketPriceAmount);
         option.updateSchedule(date, venue, resolvedTicketPriceAmount);
+        concertReadCacheEvictPort.evictConcertCards();
         return option;
     }
 
@@ -545,6 +556,7 @@ public class ConcertServiceImpl implements ConcertService {
             throw new IllegalStateException("Concert option is referenced by seats: " + optionId);
         }
         concertOptionRepository.deleteById(optionId);
+        concertReadCacheEvictPort.evictConcertCards();
     }
 
     @Override
@@ -561,6 +573,7 @@ public class ConcertServiceImpl implements ConcertService {
         for (int i = 1; i <= count; i++) {
             seatRepository.save(new Seat(option, "A-" + i));
         }
+        concertReadCacheEvictPort.evictConcertCards();
     }
 
     @Override
@@ -573,6 +586,7 @@ public class ConcertServiceImpl implements ConcertService {
     })
     public void deleteConcert(Long concertId) {
         concertRepository.deleteById(concertId);
+        concertReadCacheEvictPort.evictConcertCards();
     }
 
     @Override
@@ -584,6 +598,7 @@ public class ConcertServiceImpl implements ConcertService {
     public Concert updateThumbnail(Long concertId, byte[] imageBytes, String contentType) {
         Concert concert = getConcert(concertId);
         concert.updateThumbnail(imageBytes, contentType, LocalDateTime.now());
+        concertReadCacheEvictPort.evictConcertCards();
         return concert;
     }
 
@@ -606,6 +621,7 @@ public class ConcertServiceImpl implements ConcertService {
     public void deleteThumbnail(Long concertId) {
         Concert concert = getConcert(concertId);
         concert.clearThumbnail();
+        concertReadCacheEvictPort.evictConcertCards();
     }
 
     @Override
