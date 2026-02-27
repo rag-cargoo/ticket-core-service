@@ -11,7 +11,10 @@ import com.ticketrush.api.dto.SeatResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyResponse;
 import com.ticketrush.api.dto.reservation.SalesPolicyUpsertRequest;
 import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
+import com.ticketrush.domain.venue.Venue;
+import com.ticketrush.domain.venue.VenueRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
@@ -19,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +33,7 @@ public class ConcertController {
 
     private final ConcertUseCase concertUseCase;
     private final SalesPolicyUseCase salesPolicyUseCase;
+    private final VenueRepository venueRepository;
 
     /**
      * [Admin/Test] 공연 및 좌석 일괄 생성
@@ -49,13 +54,14 @@ public class ConcertController {
                 request.getPromoterHomepageUrl(),
                 request.getYoutubeVideoUrl()
         );
+        Long venueId = resolveVenueId(request);
         int optionCount = Math.max(1, request.getOptionCount());
         List<Long> optionIds = new ArrayList<>(optionCount);
         for (int index = 0; index < optionCount; index++) {
             var option = concertUseCase.addOptionResult(
                     concert.getId(),
                     request.getConcertDate().plusDays(index),
-                    null
+                    venueId
             );
             concertUseCase.createSeats(option.getId(), request.getSeatCount());
             optionIds.add(option.getId());
@@ -101,14 +107,75 @@ public class ConcertController {
             @RequestParam(defaultValue = "id,asc") String sort
     ) {
         String[] sortTokens = sort.split(",");
-        String sortField = resolveSortField(sortTokens.length > 0 ? sortTokens[0] : "id");
+        String requestedSortField = sortTokens.length > 0 ? sortTokens[0] : "id";
+        boolean queueSortBySaleOpen = isQueueSortField(requestedSortField);
+        String sortField = resolveSortField(queueSortBySaleOpen ? "id" : requestedSortField);
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
         var result = concertUseCase.searchConcertResults(keyword, artistName, entertainmentName, pageable)
                 .map(ConcertResponse::from);
 
+        if (queueSortBySaleOpen) {
+            return ResponseEntity.ok(toQueueSortedPage(keyword, artistName, entertainmentName, page, size, direction, result));
+        }
+
         return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
+    }
+
+    private ConcertSearchPageResponse toQueueSortedPage(
+            String keyword,
+            String artistName,
+            String entertainmentName,
+            int page,
+            int size,
+            Sort.Direction direction,
+            Page<ConcertResponse> initialPage
+    ) {
+        int normalizedPage = Math.max(0, page);
+        int normalizedSize = Math.max(1, size);
+        long totalElements = initialPage.getTotalElements();
+
+        Page<ConcertResponse> fullPage = initialPage;
+        if (normalizedPage != 0 || initialPage.getContent().size() < totalElements) {
+            int fetchSize = totalElements > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) totalElements;
+            fetchSize = Math.max(fetchSize, normalizedSize);
+            fullPage = concertUseCase.searchConcertResults(
+                    keyword,
+                    artistName,
+                    entertainmentName,
+                    PageRequest.of(0, fetchSize, Sort.by(Sort.Direction.ASC, "id"))
+            ).map(ConcertResponse::from);
+            totalElements = fullPage.getTotalElements();
+        }
+
+        List<ConcertResponse> sortedItems = new ArrayList<>(fullPage.getContent());
+        sortedItems.sort(queueSortComparator(direction));
+
+        long fromIndexLong = Math.min((long) normalizedPage * normalizedSize, (long) sortedItems.size());
+        long toIndexLong = Math.min(fromIndexLong + normalizedSize, (long) sortedItems.size());
+        int fromIndex = (int) fromIndexLong;
+        int toIndex = (int) toIndexLong;
+
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / normalizedSize);
+        boolean hasNext = normalizedPage + 1 < totalPages;
+
+        return ConcertSearchPageResponse.builder()
+                .items(sortedItems.subList(fromIndex, toIndex))
+                .page(normalizedPage)
+                .size(normalizedSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    private Comparator<ConcertResponse> queueSortComparator(Sort.Direction direction) {
+        Comparator<ConcertResponse> comparator = Comparator
+                .comparing(ConcertResponse::getSaleOpensAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(ConcertResponse::getTitle, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(ConcertResponse::getId);
+        return direction == Sort.Direction.DESC ? comparator.reversed() : comparator;
     }
 
     /**
@@ -204,11 +271,46 @@ public class ConcertController {
         return "id";
     }
 
+    private boolean isQueueSortField(String candidate) {
+        if (candidate == null) {
+            return false;
+        }
+        return "saleOpensAt".equalsIgnoreCase(candidate)
+                || "saleOpensInSeconds".equalsIgnoreCase(candidate);
+    }
+
     private Sort.Direction resolveDirection(String candidate) {
         try {
             return Sort.Direction.fromString(candidate);
         } catch (IllegalArgumentException ignored) {
             return Sort.Direction.ASC;
         }
+    }
+
+    private Long resolveVenueId(ConcertSetupRequest request) {
+        String venueName = normalize(request.getVenueName());
+        if (venueName == null) {
+            return null;
+        }
+
+        String venueCity = normalize(request.getVenueCity());
+        String venueCountryCode = normalize(request.getVenueCountryCode());
+        String venueAddress = normalize(request.getVenueAddress());
+        return venueRepository.findByNameIgnoreCase(venueName)
+                .map(existing -> {
+                    existing.update(venueName, venueCity, venueCountryCode, venueAddress);
+                    return existing.getId();
+                })
+                .orElseGet(() -> venueRepository.save(
+                        new Venue(venueName, venueCity, venueCountryCode, venueAddress)
+                ).getId());
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

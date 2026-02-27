@@ -18,7 +18,9 @@ import com.ticketrush.domain.concert.repository.ConcertRepository;
 import com.ticketrush.domain.concert.repository.SeatRepository;
 import com.ticketrush.domain.promoter.Promoter;
 import com.ticketrush.domain.promoter.PromoterRepository;
+import com.ticketrush.domain.reservation.entity.Reservation;
 import com.ticketrush.domain.reservation.entity.SalesPolicy;
+import com.ticketrush.domain.reservation.repository.ReservationRepository;
 import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import com.ticketrush.domain.venue.Venue;
 import com.ticketrush.domain.venue.VenueRepository;
@@ -43,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -67,6 +70,7 @@ public class ConcertServiceImpl implements ConcertService {
     private final ArtistRepository artistRepository;
     private final PromoterRepository promoterRepository;
     private final VenueRepository venueRepository;
+    private final ReservationRepository reservationRepository;
     private final SalesPolicyRepository salesPolicyRepository;
 
     @Override
@@ -80,8 +84,11 @@ public class ConcertServiceImpl implements ConcertService {
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = CACHE_CONCERT_LIST)
     public List<ConcertResult> getConcertResults() {
-        return getConcerts().stream()
-                .map(ConcertResult::from)
+        List<Concert> concerts = getConcerts();
+        Map<Long, SeatStats> seatStatsByConcertId = loadSeatStatsMap(concerts);
+        Map<Long, SalesPolicy> salesPolicyByConcertId = loadSalesPolicyMap(concerts);
+        return concerts.stream()
+                .map(concert -> toConcertResultWithSeatStats(concert, seatStatsByConcertId, salesPolicyByConcertId))
                 .toList();
     }
 
@@ -175,8 +182,10 @@ public class ConcertServiceImpl implements ConcertService {
             key = "#keyword + '|' + #artistName + '|' + #entertainmentName + '|' + #pageable.pageNumber + '|' + #pageable.pageSize + '|' + #pageable.sort.toString()"
     )
     public Page<ConcertResult> searchConcertResults(String keyword, String artistName, String entertainmentName, Pageable pageable) {
-        return searchConcerts(keyword, artistName, entertainmentName, pageable)
-                .map(ConcertResult::from);
+        Page<Concert> concertPage = searchConcerts(keyword, artistName, entertainmentName, pageable);
+        Map<Long, SeatStats> seatStatsByConcertId = loadSeatStatsMap(concertPage.getContent());
+        Map<Long, SalesPolicy> salesPolicyByConcertId = loadSalesPolicyMap(concertPage.getContent());
+        return concertPage.map(concert -> toConcertResultWithSeatStats(concert, seatStatsByConcertId, salesPolicyByConcertId));
     }
 
     @Override
@@ -326,7 +335,7 @@ public class ConcertServiceImpl implements ConcertService {
             String promoterHomepageUrl,
             String youtubeVideoUrl
     ) {
-        return ConcertResult.from(
+        return toConcertResultWithSeatStats(
                 createConcert(
                         title,
                         artistName,
@@ -407,7 +416,7 @@ public class ConcertServiceImpl implements ConcertService {
             String promoterHomepageUrl,
             String youtubeVideoUrl
     ) {
-        return ConcertResult.from(
+        return toConcertResultWithSeatStats(
                 updateConcert(
                         concertId,
                         title,
@@ -455,7 +464,7 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public ConcertResult createConcertByReferencesResult(String title, Long artistId, Long promoterId, String youtubeVideoUrl) {
-        return ConcertResult.from(createConcertByReferences(title, artistId, promoterId, youtubeVideoUrl));
+        return toConcertResultWithSeatStats(createConcertByReferences(title, artistId, promoterId, youtubeVideoUrl));
     }
 
     @Override
@@ -501,7 +510,7 @@ public class ConcertServiceImpl implements ConcertService {
             Long promoterId,
             String youtubeVideoUrl
     ) {
-        return ConcertResult.from(updateConcertByReferences(concertId, title, artistId, promoterId, youtubeVideoUrl));
+        return toConcertResultWithSeatStats(updateConcertByReferences(concertId, title, artistId, promoterId, youtubeVideoUrl));
     }
 
     @Override
@@ -514,7 +523,7 @@ public class ConcertServiceImpl implements ConcertService {
     @Override
     @Transactional(readOnly = true)
     public ConcertResult getConcertResult(Long concertId) {
-        return ConcertResult.from(getConcert(concertId));
+        return toConcertResultWithSeatStats(getConcert(concertId));
     }
 
     @Override
@@ -654,7 +663,29 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public void deleteConcert(Long concertId) {
-        concertRepository.deleteById(concertId);
+        Concert concert = getConcert(concertId);
+        List<ConcertOption> options = concert.getOptions();
+
+        for (ConcertOption option : options) {
+            List<Seat> seats = seatRepository.findByConcertOptionIdOrderBySeatNumberAsc(option.getId());
+            for (Seat seat : seats) {
+                List<Reservation> reservations = reservationRepository.findBySeatId(seat.getId());
+                if (!reservations.isEmpty()) {
+                    reservationRepository.deleteAll(reservations);
+                }
+            }
+            if (!seats.isEmpty()) {
+                seatRepository.deleteAll(seats);
+            }
+        }
+
+        salesPolicyRepository.findByConcertId(concertId)
+                .ifPresent(salesPolicyRepository::delete);
+
+        if (!options.isEmpty()) {
+            concertOptionRepository.deleteAll(options);
+        }
+        concertRepository.delete(concert);
     }
 
     @Override
@@ -745,6 +776,85 @@ public class ConcertServiceImpl implements ConcertService {
             );
         }
         return result;
+    }
+
+    private Map<Long, SeatStats> loadSeatStatsMap(Collection<Concert> concerts) {
+        Set<Long> concertIds = concerts.stream()
+                .map(Concert::getId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (concertIds.isEmpty()) {
+            return Map.of();
+        }
+        return toSeatStatsMap(seatRepository.findSeatStatsByConcertIds(concertIds, Seat.SeatStatus.AVAILABLE));
+    }
+
+    private Map<Long, SalesPolicy> loadSalesPolicyMap(Collection<Concert> concerts) {
+        Set<Long> concertIds = concerts.stream()
+                .map(Concert::getId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (concertIds.isEmpty()) {
+            return Map.of();
+        }
+        return toSalesPolicyMap(salesPolicyRepository.findByConcertIdIn(concertIds));
+    }
+
+    private ConcertResult toConcertResultWithSeatStats(Concert concert) {
+        Map<Long, SeatStats> seatStatsByConcertId = loadSeatStatsMap(List.of(concert));
+        Map<Long, SalesPolicy> salesPolicyByConcertId = loadSalesPolicyMap(List.of(concert));
+        return toConcertResultWithSeatStats(concert, seatStatsByConcertId, salesPolicyByConcertId);
+    }
+
+    private ConcertResult toConcertResultWithSeatStats(Concert concert, Map<Long, SeatStats> seatStatsByConcertId) {
+        return toConcertResultWithSeatStats(concert, seatStatsByConcertId, Map.of());
+    }
+
+    private ConcertResult toConcertResultWithSeatStats(
+            Concert concert,
+            Map<Long, SeatStats> seatStatsByConcertId,
+            Map<Long, SalesPolicy> salesPolicyByConcertId
+    ) {
+        SeatStats seatStats = seatStatsByConcertId.getOrDefault(concert.getId(), SeatStats.EMPTY);
+        SalesPolicy salesPolicy = salesPolicyByConcertId.get(concert.getId());
+        QueueUiState queueUiState = resolveQueueUiState(seatStats, salesPolicy, LocalDateTime.now(KST_ZONE_ID));
+        return ConcertResult.from(
+                concert,
+                seatStats.availableSeatCount(),
+                seatStats.totalSeatCount(),
+                queueUiState.saleStatus(),
+                queueUiState.saleOpensAt(),
+                queueUiState.saleOpensInSeconds(),
+                queueUiState.reservationButtonVisible(),
+                queueUiState.reservationButtonEnabled()
+        );
+    }
+
+    private QueueUiState resolveQueueUiState(SeatStats seatStats, SalesPolicy salesPolicy, LocalDateTime now) {
+        long total = Math.max(0L, seatStats.totalSeatCount());
+        long available = Math.max(0L, seatStats.availableSeatCount());
+        if (total <= 0L) {
+            return new QueueUiState("UNSCHEDULED", null, null, false, false);
+        }
+        if (available <= 0L) {
+            return new QueueUiState("SOLD_OUT", null, null, true, false);
+        }
+        if (salesPolicy == null || salesPolicy.getGeneralSaleStartAt() == null) {
+            return new QueueUiState("UNSCHEDULED", null, null, false, false);
+        }
+
+        LocalDateTime saleOpensAt = salesPolicy.getGeneralSaleStartAt();
+        long saleOpensInSeconds = ChronoUnit.SECONDS.between(now, saleOpensAt);
+        if (saleOpensInSeconds <= 0L) {
+            return new QueueUiState("OPEN", saleOpensAt, 0L, true, true);
+        }
+        if (saleOpensInSeconds <= 300L) {
+            return new QueueUiState("OPEN_SOON_5M", saleOpensAt, saleOpensInSeconds, true, false);
+        }
+        if (saleOpensInSeconds <= 3600L) {
+            return new QueueUiState("OPEN_SOON_1H", saleOpensAt, saleOpensInSeconds, true, false);
+        }
+        return new QueueUiState("PREOPEN", saleOpensAt, saleOpensInSeconds, true, false);
     }
 
     private ConcertHighlightCandidate toHighlightCandidate(
@@ -945,6 +1055,15 @@ public class ConcertServiceImpl implements ConcertService {
 
     private record SeatStats(long totalSeatCount, long availableSeatCount) {
         private static final SeatStats EMPTY = new SeatStats(0L, 0L);
+    }
+
+    private record QueueUiState(
+            String saleStatus,
+            LocalDateTime saleOpensAt,
+            Long saleOpensInSeconds,
+            boolean reservationButtonVisible,
+            boolean reservationButtonEnabled
+    ) {
     }
 
     private record ConcertHighlightCandidate(

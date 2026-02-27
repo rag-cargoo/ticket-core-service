@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -27,6 +28,13 @@ public class ConcertResponse {
     private String promoterName;
     private String promoterCountryCode;
     private String promoterHomepageUrl;
+    private Long availableSeatCount;
+    private Long totalSeatCount;
+    private String saleStatus;
+    private LocalDateTime saleOpensAt;
+    private Long saleOpensInSeconds;
+    private boolean reservationButtonVisible;
+    private boolean reservationButtonEnabled;
 
     public static ConcertResponse from(ConcertResult concert) {
         return new ConcertResponse(
@@ -45,7 +53,14 @@ public class ConcertResponse {
                 concert.getPromoterId(),
                 concert.getPromoterName(),
                 concert.getPromoterCountryCode(),
-                concert.getPromoterHomepageUrl()
+                concert.getPromoterHomepageUrl(),
+                concert.getAvailableSeatCount(),
+                concert.getTotalSeatCount(),
+                concert.getSaleStatus(),
+                concert.getSaleOpensAt(),
+                concert.getSaleOpensInSeconds(),
+                concert.isReservationButtonVisible(),
+                concert.isReservationButtonEnabled()
         );
     }
 }

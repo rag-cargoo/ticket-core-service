@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -33,11 +34,48 @@ public class ConcertResult {
     private String promoterName;
     private String promoterCountryCode;
     private String promoterHomepageUrl;
+    private Long availableSeatCount;
+    private Long totalSeatCount;
+    private String saleStatus;
+    private LocalDateTime saleOpensAt;
+    private Long saleOpensInSeconds;
+    private boolean reservationButtonVisible;
+    private boolean reservationButtonEnabled;
 
     public static ConcertResult from(Concert concert) {
+        return from(concert, null, null, "OPEN", null, null, true, true);
+    }
+
+    public static ConcertResult from(Concert concert, Long availableSeatCount, Long totalSeatCount) {
+        return from(concert, availableSeatCount, totalSeatCount, "OPEN", null, null, true, true);
+    }
+
+    public static ConcertResult from(
+            Concert concert,
+            Long availableSeatCount,
+            Long totalSeatCount,
+            String saleStatus,
+            LocalDateTime saleOpensAt,
+            Long saleOpensInSeconds,
+            boolean reservationButtonVisible,
+            boolean reservationButtonEnabled
+    ) {
         var artist = concert.getArtist();
         var entertainment = artist.getEntertainment();
         var promoter = concert.getPromoter();
+        Long normalizedAvailableSeatCount = normalizeSeatCount(availableSeatCount);
+        Long normalizedTotalSeatCount = normalizeSeatCount(totalSeatCount);
+        if (normalizedAvailableSeatCount == null && normalizedTotalSeatCount != null) {
+            normalizedAvailableSeatCount = normalizedTotalSeatCount;
+        }
+        if (normalizedTotalSeatCount == null && normalizedAvailableSeatCount != null) {
+            normalizedTotalSeatCount = normalizedAvailableSeatCount;
+        }
+        if (normalizedAvailableSeatCount != null
+                && normalizedTotalSeatCount != null
+                && normalizedTotalSeatCount < normalizedAvailableSeatCount) {
+            normalizedTotalSeatCount = normalizedAvailableSeatCount;
+        }
         return new ConcertResult(
                 concert.getId(),
                 concert.getTitle(),
@@ -54,7 +92,14 @@ public class ConcertResult {
                 promoter != null ? promoter.getId() : null,
                 promoter != null ? promoter.getName() : null,
                 promoter != null ? promoter.getCountryCode() : null,
-                promoter != null ? promoter.getHomepageUrl() : null
+                promoter != null ? promoter.getHomepageUrl() : null,
+                normalizedAvailableSeatCount,
+                normalizedTotalSeatCount,
+                saleStatus,
+                saleOpensAt,
+                saleOpensInSeconds,
+                reservationButtonVisible,
+                reservationButtonEnabled
         );
     }
 
@@ -165,5 +210,12 @@ public class ConcertResult {
             return null;
         }
         return normalized;
+    }
+
+    private static Long normalizeSeatCount(Long value) {
+        if (value == null) {
+            return null;
+        }
+        return Math.max(0L, value);
     }
 }
