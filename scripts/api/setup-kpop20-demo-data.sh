@@ -221,6 +221,109 @@ compute_general_sale_start() {
   esac
 }
 
+build_seat_layout_payload() {
+  local seat_count="${1:?seat_count required}"
+  jq -nc --argjson seatCount "${seat_count}" '
+    def row_label($i): ("R" + (($i + 1) | tostring));
+    def row_counts($seat_total; $rows):
+      [range(0; $rows) as $i
+        | (($seat_total / $rows | floor) + (if $i < ($seat_total % $rows) then 1 else 0 end))
+      ];
+    def make_rows($counts):
+      [range(0; ($counts | length)) as $i
+        | {label: row_label($i), from: 1, to: ($counts[$i])}
+        | select(.to > 0)
+      ];
+
+    ($seatCount | tonumber) as $total
+    | ($total * 18 / 100 | floor) as $a_base
+    | ($total * 37 / 100 | floor) as $b_base
+    | ($total - $a_base - $b_base) as $c_base
+    | ($a_base | if . < 24 then 24 elif . > ($total - 60) then ($total - 60) else . end) as $a_count
+    | ($b_base | if . < 48 then 48 else . end) as $b_base_adjusted
+    | ($total - $a_count) as $remaining
+    | ($b_base_adjusted | if . > ($remaining - 12) then ($remaining - 12) else . end) as $b_count
+    | ($total - $a_count - $b_count) as $c_count
+    | ($a_count | if . >= 54 then 3 else 2 end) as $a_rows
+    | ($b_count | if . >= 125 then 5 else 4 end) as $b_rows
+    | ($c_count | if . >= 135 then 6 elif . >= 95 then 5 else 4 end) as $c_rows
+    | {
+        sections: [
+          {code: "A", rows: make_rows(row_counts($a_count; $a_rows))},
+          {code: "B", rows: make_rows(row_counts($b_count; $b_rows))},
+          {code: "C", rows: make_rows(row_counts($c_count; $c_rows))}
+        ]
+      }'
+}
+
+build_seat_numbers_from_layout() {
+  local seat_layout="${1:?seat_layout required}"
+  printf '%s' "${seat_layout}" | jq -r '
+    [
+      .sections[] as $section
+      | if (($section.rows // []) | length) > 0 then
+          (
+            $section.rows[] as $row
+            | range(($row.from // 1); (($row.to // 0) + 1))
+            | "\($section.code)-\($row.label)-\(.)"
+          )
+        else
+          (range(1; (($section.capacity // 0) + 1)) | "\($section.code)-\(.)")
+        end
+    ][]
+  '
+}
+
+rewrite_option_seat_numbers_with_layout() {
+  local option_id="${1:?option_id required}"
+  local seat_layout="${2:?seat_layout required}"
+
+  if ! command -v docker >/dev/null 2>&1; then
+    return 1
+  fi
+  if ! docker ps --format '{{.Names}}' | grep -qx "${PG_CONTAINER}"; then
+    return 1
+  fi
+
+  local -a seat_ids=()
+  local -a seat_numbers=()
+  local index escaped values_file
+
+  mapfile -t seat_ids < <(
+    docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" -tA \
+      -c "SELECT id FROM seats WHERE concert_option_id = ${option_id} ORDER BY id;"
+  )
+  mapfile -t seat_numbers < <(build_seat_numbers_from_layout "${seat_layout}")
+
+  if (( ${#seat_ids[@]} == 0 || ${#seat_numbers[@]} == 0 )); then
+    return 1
+  fi
+  if (( ${#seat_ids[@]} != ${#seat_numbers[@]} )); then
+    return 1
+  fi
+
+  values_file="${TMP_DIR}/seat-values-${option_id}.sql"
+  : > "${values_file}"
+  for ((index=0; index<${#seat_ids[@]}; index++)); do
+    escaped="$(printf '%s' "${seat_numbers[index]}" | sed "s/'/''/g")"
+    if (( index > 0 )); then
+      printf ',\n' >> "${values_file}"
+    fi
+    printf '(%s, %s, %s)' "${seat_ids[index]}" "${option_id}" "'${escaped}'" >> "${values_file}"
+  done
+
+  docker exec -i "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" >/dev/null <<SQL
+UPDATE seats AS s
+SET seat_number = v.seat_number
+FROM (
+  VALUES
+$(cat "${values_file}")
+) AS v(id, concert_option_id, seat_number)
+WHERE s.id = v.id
+  AND s.concert_option_id = v.concert_option_id;
+SQL
+}
+
 upload_thumbnail_from_youtube() {
   local concert_id="${1:?concert_id required}"
   local youtube_url="${2:-}"
@@ -298,7 +401,7 @@ apply_open_state_distribution() {
   mapfile -t seat_ids < <(printf '%s' "${seats_response}" | jq -r '.[]?.id')
   seat_count="${#seat_ids[@]}"
   if (( seat_count == 0 )); then
-    printf '%s|%s|%s' 0 0 0
+    printf '%s|%s|%s|%s' 0 0 0 0
     return 0
   fi
 
@@ -335,7 +438,7 @@ apply_open_state_distribution() {
       fi
     fi
   else
-    printf '%s|%s|%s' 0 0 0
+    printf '%s|%s|%s|%s' "${seat_count}" 0 0 0
     return 0
   fi
 
@@ -365,7 +468,7 @@ apply_open_state_distribution() {
     fi
   done
 
-  printf '%s|%s|%s' "${hold_success}" "${paying_success}" "${confirmed_success}"
+  printf '%s|%s|%s|%s' "${seat_count}" "${hold_success}" "${paying_success}" "${confirmed_success}"
 }
 
 seed_single_concert() {
@@ -373,12 +476,12 @@ seed_single_concert() {
   local artist="${2:?artist required}"
   local entertainment="${3:?ent required}"
   local youtube_url="${4:?youtube required}"
-  local seat_count="${5:?seat_count required}"
+  local target_seat_count="${5:?seat_count required}"
   local sale_bucket="${6:?sale_bucket required}"
 
   local title artist_slug entertainment_slug debut_date concert_date ticket_price sale_start_at
   local create_payload create_response concert_id option_payload option_response option_id policy_payload occupancy
-  local hold_count paying_count confirmed_count
+  local seat_layout actual_seat_count hold_count paying_count confirmed_count
 
   artist_slug="$(slugify "${artist}")"
   entertainment_slug="$(slugify "${entertainment}")"
@@ -418,11 +521,13 @@ seed_single_concert() {
     exit 1
   fi
 
+  seat_layout="$(build_seat_layout_payload "${target_seat_count}")"
   option_payload="$(jq -nc \
     --arg concertDate "${concert_date}" \
-    --argjson seatCount "${seat_count}" \
+    --argjson seatCount "${target_seat_count}" \
+    --argjson seatLayout "${seat_layout}" \
     --argjson ticketPriceAmount "${ticket_price}" \
-    '{concertDate:$concertDate,seatCount:$seatCount,ticketPriceAmount:$ticketPriceAmount,venueId:null}')"
+    '{concertDate:$concertDate,seatCount:$seatCount,seatLayout:$seatLayout,ticketPriceAmount:$ticketPriceAmount,venueId:null}')"
   option_response="$(api_json POST "/admin/concerts/${concert_id}/options" "${option_payload}" 1)"
   option_id="$(printf '%s' "${option_response}" | jq -r '.id // empty')"
   if [[ -z "${option_id}" ]]; then
@@ -443,11 +548,20 @@ seed_single_concert() {
   api_json PUT "/admin/concerts/${concert_id}/sales-policy" "${policy_payload}" 1 >/dev/null
 
   upload_thumbnail_from_youtube "${concert_id}" "${youtube_url}"
+  if ! rewrite_option_seat_numbers_with_layout "${option_id}" "${seat_layout}"; then
+    log "seat number rewrite skipped (optionId=${option_id}, docker/postgres unavailable or shape mismatch)"
+  fi
   occupancy="$(apply_open_state_distribution "${option_id}" "${sale_bucket}")"
-  hold_count="$(printf '%s' "${occupancy}" | cut -d'|' -f1)"
-  paying_count="$(printf '%s' "${occupancy}" | cut -d'|' -f2)"
-  confirmed_count="$(printf '%s' "${occupancy}" | cut -d'|' -f3)"
-  SUMMARY_LINES+=("${concert_id}|${artist}|${sale_bucket}|${seat_count}|${hold_count}|${paying_count}|${confirmed_count}")
+  actual_seat_count="$(printf '%s' "${occupancy}" | cut -d'|' -f1)"
+  hold_count="$(printf '%s' "${occupancy}" | cut -d'|' -f2)"
+  paying_count="$(printf '%s' "${occupancy}" | cut -d'|' -f3)"
+  confirmed_count="$(printf '%s' "${occupancy}" | cut -d'|' -f4)"
+  if [[ "${actual_seat_count}" == "0" ]]; then
+    echo "[ERROR] seat map empty after option creation: concertId=${concert_id} optionId=${option_id}" >&2
+    echo "[ERROR] check backend build/version and seatLayout support; request sent seatCount=${target_seat_count}" >&2
+    exit 1
+  fi
+  SUMMARY_LINES+=("${concert_id}|${artist}|${sale_bucket}|${actual_seat_count}|${hold_count}|${paying_count}|${confirmed_count}")
 }
 
 main() {
