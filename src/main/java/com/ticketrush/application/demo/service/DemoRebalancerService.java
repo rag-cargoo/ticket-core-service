@@ -122,7 +122,7 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
                 List<Concert> targetConcerts = concertRepository.findAllWithOptions().stream()
                         .filter(concert -> {
                             String title = concert.getTitle();
-                            return title != null && title.contains("KPOP20_");
+                            return title != null && title.contains("KPOP20");
                         })
                         .sorted(Comparator.comparing(Concert::getId))
                         .toList();

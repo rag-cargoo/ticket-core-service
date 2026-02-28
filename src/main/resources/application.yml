@@ -48,6 +48,13 @@ app:
     portfolio-enabled: ${APP_PORTFOLIO_SEED_ENABLED:false}
     portfolio-marker-key: ${APP_PORTFOLIO_SEED_MARKER_KEY:portfolio_seed_marker_v1}
     portfolio-profiles: ${APP_PORTFOLIO_SEED_PROFILES:local,demo}
+    kpop20-enabled: ${APP_SEED_KPOP20_ENABLED:false}
+    kpop20-marker-key: ${APP_SEED_KPOP20_MARKER_KEY:kpop20_seed_marker_v1}
+    kpop20-profiles: ${APP_SEED_KPOP20_PROFILES:local,demo}
+    kpop20-dataset-resource: ${APP_SEED_KPOP20_DATASET_RESOURCE:classpath:seed/kpop20-demo-dataset.json}
+    kpop20-title-tag: ${APP_SEED_KPOP20_TITLE_TAG:KPOP20}
+    kpop20-max-reservations-per-user: ${APP_SEED_KPOP20_MAX_RESERVATIONS_PER_USER:8}
+    kpop20-ticket-price-amount: ${APP_SEED_KPOP20_TICKET_PRICE_AMOUNT:132000}
   admin-console:
     minimum-role: USER
   push:
