@@ -1,5 +1,7 @@
 package com.ticketrush.application.concert.service;
 
+import com.ticketrush.application.concert.model.SeatLayoutCommand;
+import com.ticketrush.application.concert.model.SeatResult;
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
 import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
 import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
@@ -15,17 +17,21 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -184,5 +190,95 @@ class ConcertExplorerIntegrationTest {
                 .andExpect(jsonPath("$.sellOutRiskRatioThreshold").value(18))
                 .andExpect(content().string(containsString("Highlights Soon Concert")))
                 .andExpect(content().string(containsString("Highlights Low Stock Concert")));
+    }
+
+    @Test
+    void seatMapSupportsLayoutInputAndNaturalSortOrder() {
+        var concert = concertService.createConcert("Layout Sort Concert", "Layout Artist", "Layout Entertainment");
+        var option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
+
+        concertService.createSeats(
+                option.getId(),
+                new SeatLayoutCommand(
+                        List.of(
+                                new SeatLayoutCommand.Section(
+                                        "B",
+                                        null,
+                                        List.of(new SeatLayoutCommand.Row("A", 1, 2))
+                                ),
+                                new SeatLayoutCommand.Section(
+                                        "A",
+                                        null,
+                                        List.of(new SeatLayoutCommand.Row("A", 1, 12))
+                                )
+                        )
+                )
+        );
+
+        List<String> seatNumbers = concertService.getSeatMapResults(option.getId(), List.of("AVAILABLE")).stream()
+                .map(SeatResult::getSeatNumber)
+                .toList();
+
+        List<String> expected = new ArrayList<>();
+        for (int seatNo = 1; seatNo <= 12; seatNo++) {
+            expected.add("A-A-" + seatNo);
+        }
+        expected.add("B-A-1");
+        expected.add("B-A-2");
+
+        assertThat(seatNumbers).containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    void legacySeatCountCreationRemainsCompatible() {
+        var concert = concertService.createConcert("Legacy Seat Concert", "Legacy Artist", "Legacy Entertainment");
+        var option = concertService.addOption(concert.getId(), LocalDateTime.now().plusDays(1));
+
+        concertService.createSeats(option.getId(), 3);
+
+        List<String> seatNumbers = concertService.getSeatMapResults(option.getId(), List.of("AVAILABLE")).stream()
+                .map(SeatResult::getSeatNumber)
+                .toList();
+
+        assertThat(seatNumbers).containsExactly("A-1", "A-2", "A-3");
+    }
+
+    @Test
+    void setupConcertSupportsSeatLayoutPayload() throws Exception {
+        String title = "Setup Layout Concert " + System.nanoTime();
+        String concertDate = LocalDateTime.now().plusDays(2).withNano(0).toString();
+
+        String requestBody = """
+                {
+                  "title": "%s",
+                  "artistName": "Setup Layout Artist",
+                  "entertainmentName": "Setup Layout Entertainment",
+                  "concertDate": "%s",
+                  "seatCount": 0,
+                  "optionCount": 1,
+                  "seatLayout": {
+                    "sections": [
+                      {"code": "VIP", "rows": [{"label": "R", "from": 1, "to": 2}]},
+                      {"code": "GA", "capacity": 2}
+                    ]
+                  }
+                }
+                """.formatted(title, concertDate);
+
+        MvcResult result = mockMvc.perform(post("/api/concerts/setup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("OptionID=")))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        Long optionId = Long.parseLong(body.replaceAll(".*OptionID=(\\d+).*", "$1"));
+
+        List<String> seatNumbers = concertService.getSeatMapResults(optionId, List.of("AVAILABLE")).stream()
+                .map(SeatResult::getSeatNumber)
+                .toList();
+
+        assertThat(seatNumbers).containsExactly("GA-1", "GA-2", "VIP-R-1", "VIP-R-2");
     }
 }

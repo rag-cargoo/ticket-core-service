@@ -65,7 +65,11 @@ public class ConcertController {
                     request.getConcertDate().plusDays(index),
                     null
             );
-            concertUseCase.createSeats(option.getId(), request.getSeatCount());
+            if (request.getSeatLayout() != null) {
+                concertUseCase.createSeats(option.getId(), request.getSeatLayout().toCommand());
+            } else if (request.getSeatCount() > 0) {
+                concertUseCase.createSeats(option.getId(), request.getSeatCount());
+            }
             optionIds.add(option.getId());
         }
 

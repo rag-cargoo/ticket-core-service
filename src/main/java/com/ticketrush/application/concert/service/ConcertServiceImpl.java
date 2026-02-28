@@ -2,6 +2,7 @@ package com.ticketrush.application.concert.service;
 
 import com.ticketrush.application.concert.model.ConcertOptionResult;
 import com.ticketrush.application.concert.model.ConcertResult;
+import com.ticketrush.application.concert.model.SeatLayoutCommand;
 import com.ticketrush.application.concert.model.SeatResult;
 import com.ticketrush.application.concert.port.outbound.ConcertReadCacheEvictPort;
 import com.ticketrush.domain.entertainment.Entertainment;
@@ -27,12 +28,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +48,9 @@ public class ConcertServiceImpl implements ConcertService {
     private static final String CACHE_CONCERT_SEARCH = "concert:search";
     private static final String CACHE_CONCERT_OPTIONS = "concert:options";
     private static final String CACHE_CONCERT_AVAILABLE_SEATS = "concert:available-seats";
+    private static final Pattern NATURAL_TOKEN_PATTERN = Pattern.compile("\\d+|\\D+");
+    private static final Comparator<Seat> SEAT_NUMBER_COMPARATOR =
+            Comparator.comparing(Seat::getSeatNumber, ConcertServiceImpl::compareNaturalStrings);
 
     private final ConcertRepository concertRepository;
     private final ConcertOptionRepository concertOptionRepository;
@@ -121,7 +131,9 @@ public class ConcertServiceImpl implements ConcertService {
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, key = "#concertOptionId")
     public List<Seat> getAvailableSeats(Long concertOptionId) {
-        return seatRepository.findByConcertOptionIdAndStatus(concertOptionId, Seat.SeatStatus.AVAILABLE);
+        List<Seat> seats = seatRepository.findByConcertOptionIdAndStatus(concertOptionId, Seat.SeatStatus.AVAILABLE);
+        seats.sort(SEAT_NUMBER_COMPARATOR);
+        return seats;
     }
 
     @Override
@@ -138,8 +150,9 @@ public class ConcertServiceImpl implements ConcertService {
     public List<SeatResult> getSeatMapResults(Long concertOptionId, List<String> statuses) {
         Set<Seat.SeatStatus> targetStatuses = parseSeatStatuses(statuses);
         List<Seat> seats = targetStatuses.isEmpty()
-                ? seatRepository.findByConcertOptionIdOrderBySeatNumberAsc(concertOptionId)
-                : seatRepository.findByConcertOptionIdAndStatusInOrderBySeatNumberAsc(concertOptionId, targetStatuses);
+                ? seatRepository.findByConcertOptionId(concertOptionId)
+                : seatRepository.findByConcertOptionIdAndStatusIn(concertOptionId, targetStatuses);
+        seats.sort(SEAT_NUMBER_COMPARATOR);
         return seats.stream()
                 .map(SeatResult::from)
                 .toList();
@@ -568,11 +581,25 @@ public class ConcertServiceImpl implements ConcertService {
             @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
     })
     public void createSeats(Long optionId, int count) {
+        if (count <= 0) {
+            return;
+        }
+        createSeats(optionId, SeatLayoutCommand.singleSectionCount(count));
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CONCERT_LIST, allEntries = true),
+            @CacheEvict(cacheNames = CACHE_CONCERT_OPTIONS, allEntries = true),
+            @CacheEvict(cacheNames = CACHE_CONCERT_SEARCH, allEntries = true),
+            @CacheEvict(cacheNames = CACHE_CONCERT_AVAILABLE_SEATS, allEntries = true)
+    })
+    public void createSeats(Long optionId, SeatLayoutCommand seatLayout) {
         ConcertOption option = concertOptionRepository.findById(optionId)
                 .orElseThrow(() -> new IllegalArgumentException("Concert option not found"));
-        for (int i = 1; i <= count; i++) {
-            seatRepository.save(new Seat(option, "A-" + i));
-        }
+        List<Seat> seats = buildSeatsFromLayout(option, seatLayout);
+        seatRepository.saveAll(seats);
         concertReadCacheEvictPort.evictConcertCards();
     }
 
@@ -677,6 +704,112 @@ public class ConcertServiceImpl implements ConcertService {
             }
         }
         return parsed;
+    }
+
+    private List<Seat> buildSeatsFromLayout(ConcertOption option, SeatLayoutCommand seatLayout) {
+        if (seatLayout == null || seatLayout.sections() == null || seatLayout.sections().isEmpty()) {
+            throw new IllegalArgumentException("seatLayout.sections is required");
+        }
+        List<Seat> seats = new ArrayList<>();
+        Set<String> seenSeatNumbers = new HashSet<>();
+        for (SeatLayoutCommand.Section section : seatLayout.sections()) {
+            String sectionCode = normalizeRequired(section.code(), "seatLayout.sections[].code");
+            List<SeatLayoutCommand.Row> rows = section.rows() == null ? List.of() : section.rows();
+            if (!rows.isEmpty()) {
+                for (SeatLayoutCommand.Row row : rows) {
+                    String rowLabel = normalizeRequired(row.label(), "seatLayout.sections[].rows[].label");
+                    Integer from = row.from();
+                    Integer to = row.to();
+                    if (from == null || to == null || from <= 0 || to <= 0 || from > to) {
+                        throw new IllegalArgumentException("invalid seat range in seatLayout row");
+                    }
+                    for (int seatNo = from; seatNo <= to; seatNo++) {
+                        String seatNumber = sectionCode + "-" + rowLabel + "-" + seatNo;
+                        addSeat(option, seats, seenSeatNumbers, seatNumber);
+                    }
+                }
+                continue;
+            }
+            Integer capacity = section.capacity();
+            if (capacity == null || capacity <= 0) {
+                throw new IllegalArgumentException("seatLayout section requires rows or positive capacity");
+            }
+            for (int seatNo = 1; seatNo <= capacity; seatNo++) {
+                String seatNumber = sectionCode + "-" + seatNo;
+                addSeat(option, seats, seenSeatNumbers, seatNumber);
+            }
+        }
+        if (seats.isEmpty()) {
+            throw new IllegalArgumentException("seatLayout must generate at least one seat");
+        }
+        return seats;
+    }
+
+    private void addSeat(ConcertOption option, List<Seat> target, Set<String> seenSeatNumbers, String seatNumber) {
+        String dedupeKey = seatNumber.toUpperCase(Locale.ROOT);
+        if (!seenSeatNumbers.add(dedupeKey)) {
+            throw new IllegalArgumentException("duplicated seat number in seatLayout: " + seatNumber);
+        }
+        target.add(new Seat(option, seatNumber));
+    }
+
+    private static int compareNaturalStrings(String left, String right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+
+        List<String> leftTokens = tokenizeNatural(left);
+        List<String> rightTokens = tokenizeNatural(right);
+        int max = Math.max(leftTokens.size(), rightTokens.size());
+        for (int index = 0; index < max; index++) {
+            if (index >= leftTokens.size()) {
+                return -1;
+            }
+            if (index >= rightTokens.size()) {
+                return 1;
+            }
+            String l = leftTokens.get(index);
+            String r = rightTokens.get(index);
+            boolean lDigit = isAllDigits(l);
+            boolean rDigit = isAllDigits(r);
+            int compared;
+            if (lDigit && rDigit) {
+                compared = new BigInteger(l).compareTo(new BigInteger(r));
+            } else {
+                compared = l.compareToIgnoreCase(r);
+                if (compared == 0) {
+                    compared = l.compareTo(r);
+                }
+            }
+            if (compared != 0) {
+                return compared;
+            }
+        }
+        return 0;
+    }
+
+    private static List<String> tokenizeNatural(String value) {
+        List<String> tokens = new ArrayList<>();
+        Matcher matcher = NATURAL_TOKEN_PATTERN.matcher(value);
+        while (matcher.find()) {
+            tokens.add(matcher.group());
+        }
+        return tokens;
+    }
+
+    private static boolean isAllDigits(String value) {
+        for (int index = 0; index < value.length(); index++) {
+            if (!Character.isDigit(value.charAt(index))) {
+                return false;
+            }
+        }
+        return !value.isEmpty();
     }
 
     private String normalizeLower(String value) {

@@ -18,6 +18,7 @@ NC='\033[0m'
 CONCERT_TITLE="TEST_CONCERT_$(date +%s)"
 CONCERT_DATE=$(date -d "+10 days" +"%Y-%m-%dT%H:%M:%S")
 OPTION_COUNT="${OPTION_COUNT:-2}"
+USE_SEAT_LAYOUT="${USE_SEAT_LAYOUT:-0}"
 SUFFIX=$(date +%s)
 ENTERTAINMENT_NAME="TEST_AGENCY_${SUFFIX}"
 ARTIST_NAME="TEST_ARTIST_${SUFFIX}"
@@ -61,16 +62,36 @@ if [ "${USE_DOMAIN_CRUD}" = "1" ]; then
 fi
 
 # 1. 공연 및 좌석 생성
+if [ "${USE_SEAT_LAYOUT}" = "1" ]; then
+    SETUP_PAYLOAD="{
+      \"title\": \"${CONCERT_TITLE}\",
+      \"artistName\": \"${ARTIST_NAME}\",
+      \"entertainmentName\": \"${ENTERTAINMENT_NAME}\",
+      \"concertDate\": \"${CONCERT_DATE}\",
+      \"seatCount\": 0,
+      \"seatLayout\": {
+        \"sections\": [
+          {\"code\": \"A\", \"rows\": [{\"label\": \"R\", \"from\": 1, \"to\": 20}]},
+          {\"code\": \"B\", \"rows\": [{\"label\": \"R\", \"from\": 1, \"to\": 20}]},
+          {\"code\": \"C\", \"capacity\": 10}
+        ]
+      },
+      \"optionCount\": ${OPTION_COUNT}
+    }"
+else
+    SETUP_PAYLOAD="{
+      \"title\": \"${CONCERT_TITLE}\",
+      \"artistName\": \"${ARTIST_NAME}\",
+      \"entertainmentName\": \"${ENTERTAINMENT_NAME}\",
+      \"concertDate\": \"${CONCERT_DATE}\",
+      \"seatCount\": 50,
+      \"optionCount\": ${OPTION_COUNT}
+    }"
+fi
+
 RESPONSE=$(curl -s -X POST "${SETUP_API}" \
      -H "${CONTENT_TYPE}" \
-     -d "{
-       \"title\": \"${CONCERT_TITLE}\",
-       \"artistName\": \"${ARTIST_NAME}\",
-       \"entertainmentName\": \"${ENTERTAINMENT_NAME}\",
-       \"concertDate\": \"${CONCERT_DATE}\",
-       \"seatCount\": 50,
-       \"optionCount\": ${OPTION_COUNT}
-     }")
+     -d "${SETUP_PAYLOAD}")
 
 echo -e "Response: ${RESPONSE}"
 
