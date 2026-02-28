@@ -1,0 +1,55 @@
+name: ecr-backend-publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "Dockerfile"
+      - ".github/workflows/ecr-backend-publish.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
+  ECR_REPOSITORY: ${{ vars.ECR_BACKEND_REPOSITORY || 'ticketrush/backend' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE_URI_SHA="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG_SHA}"
+          IMAGE_URI_LATEST="${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+
+          docker build -t "${IMAGE_URI_SHA}" .
+          docker push "${IMAGE_URI_SHA}"
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            docker tag "${IMAGE_URI_SHA}" "${IMAGE_URI_LATEST}"
+            docker push "${IMAGE_URI_LATEST}"
+          fi
