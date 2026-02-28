@@ -1,5 +1,6 @@
 package com.ticketrush.application.concert.port.inbound;
 
+import com.ticketrush.application.concert.model.SeatLayoutCommand;
 import com.ticketrush.application.concert.model.ConcertOptionResult;
 import com.ticketrush.application.concert.model.ConcertResult;
 import com.ticketrush.application.concert.model.SeatResult;
@@ -195,6 +196,7 @@ public interface ConcertUseCase {
     void deleteOption(Long optionId);
 
     void createSeats(Long optionId, int count);
+    void createSeats(Long optionId, SeatLayoutCommand seatLayout);
 
     void deleteConcert(Long concertId);
 

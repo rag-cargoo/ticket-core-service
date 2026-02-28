@@ -18,8 +18,8 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     Optional<Seat> findByIdWithPessimisticLock(@Param("id") Long id);
 
     List<Seat> findByConcertOptionIdAndStatus(Long concertOptionId, Seat.SeatStatus status);
-    List<Seat> findByConcertOptionIdOrderBySeatNumberAsc(Long concertOptionId);
-    List<Seat> findByConcertOptionIdAndStatusInOrderBySeatNumberAsc(Long concertOptionId, Collection<Seat.SeatStatus> statuses);
+    List<Seat> findByConcertOptionId(Long concertOptionId);
+    List<Seat> findByConcertOptionIdAndStatusIn(Long concertOptionId, Collection<Seat.SeatStatus> statuses);
     boolean existsByConcertOptionId(Long concertOptionId);
 
     @Query("""

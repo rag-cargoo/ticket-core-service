@@ -122,7 +122,9 @@ public class AdminConcertController {
                 )
         );
         int seatCount = request.getSeatCount() == null ? 0 : request.getSeatCount();
-        if (seatCount > 0) {
+        if (request.getSeatLayout() != null) {
+            concertUseCase.createSeats(response.getId(), request.getSeatLayout().toCommand());
+        } else if (seatCount > 0) {
             concertUseCase.createSeats(response.getId(), seatCount);
         }
         return ResponseEntity.status(201).body(response);
