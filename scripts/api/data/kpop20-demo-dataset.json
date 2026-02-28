@@ -1,0 +1,170 @@
+[
+  {
+    "artist": "Stray Kids",
+    "entertainment": "JYP Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=0P0aQreFs8w",
+    "seatCount": 260,
+    "saleBucket": "OPEN_SOON_5M"
+  },
+  {
+    "artist": "BTS",
+    "entertainment": "BIGHIT MUSIC",
+    "youtubeUrl": "https://www.youtube.com/watch?v=gdZLi9oWNZg",
+    "seatCount": 320,
+    "saleBucket": "OPEN"
+  },
+  {
+    "artist": "Saja Boys",
+    "entertainment": "Netflix",
+    "youtubeUrl": "https://www.youtube.com/watch?v=2FS3JAPTKXs",
+    "seatCount": 180,
+    "saleBucket": "OPEN"
+  },
+  {
+    "artist": "BLACKPINK",
+    "entertainment": "YG Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=IHNzOHi8sJs",
+    "seatCount": 300,
+    "saleBucket": "OPEN"
+  },
+  {
+    "artist": "NewJeans",
+    "entertainment": "ADOR",
+    "youtubeUrl": "https://youtu.be/DAEK5GrLb_Y?si=rhJGnEY4sB0jay5s",
+    "seatCount": 260,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "LE SSERAFIM",
+    "entertainment": "SOURCE MUSIC",
+    "youtubeUrl": "https://youtu.be/hLvWy2b857I?si=aS73yFYIc0l53Cyo",
+    "seatCount": 240,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "TOMORROW X TOGETHER",
+    "entertainment": "BIGHIT MUSIC",
+    "youtubeUrl": "https://youtu.be/C0EYKxF1oTI?si=p6Wn2VSfC2R0jNPX",
+    "seatCount": 230,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "ITZY",
+    "entertainment": "JYP Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=fE2h3lGlOsk",
+    "seatCount": 220,
+    "saleBucket": "PREOPEN"
+  },
+  {
+    "artist": "TWICE",
+    "entertainment": "JYP Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=i0p1bmr0EmE",
+    "seatCount": 280,
+    "saleBucket": "PREOPEN"
+  },
+  {
+    "artist": "SEVENTEEN",
+    "entertainment": "PLEDIS Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=-GQg25oP0S4",
+    "seatCount": 280,
+    "saleBucket": "PREOPEN"
+  },
+  {
+    "artist": "HUNTRIX",
+    "entertainment": "Sony Animation",
+    "youtubeUrl": "https://www.youtube.com/watch?v=yebNIHKAC4A",
+    "seatCount": 170,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "BIGBANG",
+    "entertainment": "YG Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=2ips2mM7Zqw",
+    "seatCount": 220,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "BABYMONSTER",
+    "entertainment": "YG Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=2wA_b6YHjqQ",
+    "seatCount": 210,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "KARA",
+    "entertainment": "DSP Media",
+    "youtubeUrl": "https://www.youtube.com/watch?v=XwcK-twSXB4",
+    "seatCount": 170,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "MAMAMOO",
+    "entertainment": "RBW",
+    "youtubeUrl": "https://www.youtube.com/watch?v=KhTeiaCezwM",
+    "seatCount": 200,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "(G)I-DLE",
+    "entertainment": "CUBE Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=Jh4QFaPmdss",
+    "seatCount": 230,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "NMIXX",
+    "entertainment": "JYP Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=Rd2wppggYxo",
+    "seatCount": 200,
+    "saleBucket": "SOLD_OUT"
+  },
+  {
+    "artist": "aespa",
+    "entertainment": "SM Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=4TWR90KJl84",
+    "seatCount": 250,
+    "saleBucket": "UNSCHEDULED"
+  },
+  {
+    "artist": "IVE",
+    "entertainment": "STARSHIP Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=6ZUIwj3FgUY",
+    "seatCount": 240,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "STAYC",
+    "entertainment": "High Up Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=SxHmoifp0oQ",
+    "seatCount": 190,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "KISS OF LIFE",
+    "entertainment": "S2 Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=oKVYm8mIUdo",
+    "seatCount": 180,
+    "saleBucket": "UNSCHEDULED"
+  },
+  {
+    "artist": "Red Velvet",
+    "entertainment": "SM Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=R9At2ICm4LQ",
+    "seatCount": 220,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "OH MY GIRL",
+    "entertainment": "WM Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=HzOjwL7IP_o",
+    "seatCount": 190,
+    "saleBucket": "OPEN_SOON_1H"
+  },
+  {
+    "artist": "Apink",
+    "entertainment": "IST Entertainment",
+    "youtubeUrl": "https://www.youtube.com/watch?v=K5H-GvnNz2Y",
+    "seatCount": 180,
+    "saleBucket": "UNSCHEDULED"
+  }
+]
