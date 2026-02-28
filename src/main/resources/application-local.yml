@@ -61,6 +61,10 @@ app:
     soft-lock-key-prefix: "seat:lock:"
     expire-check-delay-millis: 5000
     refund-cutoff-hours-before-concert: 24
+  concert-live:
+    mode: ${APP_CONCERT_LIVE_MODE:websocket}
+    hybrid-poll-interval-millis: ${APP_CONCERT_LIVE_HYBRID_POLL_INTERVAL_MILLIS:30000}
+    status-check-delay-millis: ${APP_CONCERT_LIVE_STATUS_CHECK_DELAY_MILLIS:1000}
   payment:
     provider: ${APP_PAYMENT_PROVIDER:mock}
     external-live-enabled: ${APP_PAYMENT_EXTERNAL_LIVE_ENABLED:false}

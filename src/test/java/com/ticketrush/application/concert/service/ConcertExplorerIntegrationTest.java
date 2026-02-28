@@ -1,6 +1,8 @@
 package com.ticketrush.application.concert.service;
 
 import com.ticketrush.application.reservation.model.ReservationCreateCommand;
+import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
+import com.ticketrush.application.reservation.port.inbound.SalesPolicyUseCase;
 import com.ticketrush.domain.concert.entity.Seat;
 import com.ticketrush.application.reservation.service.ReservationService;
 import com.ticketrush.domain.user.User;
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +42,9 @@ class ConcertExplorerIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SalesPolicyUseCase salesPolicyUseCase;
 
     @Autowired
     private CacheManager cacheManager;
@@ -92,6 +99,26 @@ class ConcertExplorerIntegrationTest {
     }
 
     @Test
+    void searchEndpointIncludesRealtimeMetadataAndRuntimeFields() throws Exception {
+        concertService.createConcert("Realtime Concert", "Realtime Artist", "Realtime Entertainment");
+
+        mockMvc.perform(get("/api/concerts/search")
+                        .param("keyword", "Realtime")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "title,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.serverNow").isNotEmpty())
+                .andExpect(jsonPath("$.realtimeMode").value("websocket"))
+                .andExpect(jsonPath("$.hybridPollIntervalMillis").value(30000))
+                .andExpect(jsonPath("$.items[0].saleStatus").value("UNSCHEDULED"))
+                .andExpect(jsonPath("$.items[0].reservationButtonVisible").value(false))
+                .andExpect(jsonPath("$.items[0].reservationButtonEnabled").value(false))
+                .andExpect(jsonPath("$.items[0].availableSeatCount").value(0))
+                .andExpect(jsonPath("$.items[0].totalSeatCount").value(0));
+    }
+
+    @Test
     void availableSeatCacheIsEvictedAfterReservation() {
         User user = userRepository.save(new User("cache_user_" + System.nanoTime(), UserTier.BASIC));
         var concert = concertService.createConcert("Cache Invalidation Show", "Cache Artist", "Cache Entertainment");
@@ -111,5 +138,51 @@ class ConcertExplorerIntegrationTest {
         List<Seat> secondRead = concertService.getAvailableSeats(option.getId());
         assertThat(secondRead).hasSize(2);
         assertThat(secondRead).extracting(Seat::getId).doesNotContain(selectedSeatId);
+    }
+
+    @Test
+    void highlightsEndpointReturnsBackendComputedTopLists() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        User user = userRepository.save(new User("highlight_user_" + System.nanoTime(), UserTier.VIP));
+
+        var openingSoonConcert = concertService.createConcert(
+                "Highlights Soon Concert",
+                "Highlights Artist Soon",
+                "Highlights Entertainment Soon"
+        );
+        var openingSoonOption = concertService.addOption(openingSoonConcert.getId(), now.plusDays(1));
+        concertService.createSeats(openingSoonOption.getId(), 120);
+        salesPolicyUseCase.upsert(
+                openingSoonConcert.getId(),
+                new SalesPolicyUpsertCommand(null, null, null, now.plusMinutes(15), 4)
+        );
+
+        var lowStockConcert = concertService.createConcert(
+                "Highlights Low Stock Concert",
+                "Highlights Artist Low",
+                "Highlights Entertainment Low"
+        );
+        var lowStockOption = concertService.addOption(lowStockConcert.getId(), now.plusDays(1));
+        concertService.createSeats(lowStockOption.getId(), 40);
+        salesPolicyUseCase.upsert(
+                lowStockConcert.getId(),
+                new SalesPolicyUpsertCommand(null, null, null, now.minusMinutes(10), 4)
+        );
+
+        List<Seat> lowStockSeats = concertService.getAvailableSeats(lowStockOption.getId());
+        for (int index = 0; index < 30; index++) {
+            reservationService.createReservation(new ReservationCreateCommand(user.getId(), lowStockSeats.get(index).getId()));
+        }
+
+        mockMvc.perform(get("/api/concerts/highlights")
+                        .param("openingSoonLimit", "3")
+                        .param("sellOutRiskLimit", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.generatedAt").isNotEmpty())
+                .andExpect(jsonPath("$.openingSoonWithinHours").value(12))
+                .andExpect(jsonPath("$.sellOutRiskSeatThreshold").value(30))
+                .andExpect(jsonPath("$.sellOutRiskRatioThreshold").value(18))
+                .andExpect(content().string(containsString("Highlights Soon Concert")))
+                .andExpect(content().string(containsString("Highlights Low Stock Concert")));
     }
 }
