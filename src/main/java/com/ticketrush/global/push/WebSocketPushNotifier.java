@@ -8,14 +8,15 @@ import com.ticketrush.application.port.outbound.WebSocketEventDispatchPort;
 import com.ticketrush.application.port.outbound.WebSocketQueueSubscriptionStorePort;
 import com.ticketrush.application.port.outbound.WebSocketSubscriptionPort;
 import com.ticketrush.application.waitingqueue.port.outbound.WaitingQueueConfigPort;
+import com.ticketrush.application.concert.config.ConcertLiveProperties;
 import com.ticketrush.global.monitoring.PushMonitoringMetrics;
 import com.ticketrush.global.sse.SseEventNames;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,16 +26,32 @@ import java.util.Set;
 
 @Slf4j
 @Component("webSocketPushNotifier")
-@RequiredArgsConstructor
 public class WebSocketPushNotifier implements QueueRuntimePushPort, WebSocketSubscriptionPort, WebSocketEventDispatchPort, QueueSubscriberQueryPort {
 
     private static final String WAITING_QUEUE_TOPIC_PREFIX = "/topic/waiting-queue";
     private static final String RESERVATION_TOPIC_PREFIX = "/topic/reservations";
     private static final String SEAT_MAP_TOPIC_PREFIX = "/topic/seats";
+    private static final String CONCERTS_LIVE_TOPIC = "/topic/concerts/live";
 
     private final SimpMessagingTemplate messagingTemplate;
     private final WebSocketQueueSubscriptionStorePort queueSubscriptionStore;
     private final WaitingQueueConfigPort waitingQueueConfig;
+    private final ConcertLivePayloadComposer concertLivePayloadComposer;
+    private final ConcertLiveProperties concertLiveProperties;
+
+    public WebSocketPushNotifier(
+            SimpMessagingTemplate messagingTemplate,
+            WebSocketQueueSubscriptionStorePort queueSubscriptionStore,
+            WaitingQueueConfigPort waitingQueueConfig,
+            ConcertLivePayloadComposer concertLivePayloadComposer,
+            ConcertLiveProperties concertLiveProperties
+    ) {
+        this.messagingTemplate = messagingTemplate;
+        this.queueSubscriptionStore = queueSubscriptionStore;
+        this.waitingQueueConfig = waitingQueueConfig;
+        this.concertLivePayloadComposer = concertLivePayloadComposer;
+        this.concertLiveProperties = concertLiveProperties;
+    }
 
     public String subscribeQueue(Long userId, Long concertId) {
         long nowMillis = System.currentTimeMillis();
@@ -191,6 +208,35 @@ public class WebSocketPushNotifier implements QueueRuntimePushPort, WebSocketSub
                 )
         );
         PushMonitoringMetrics.increment("push", "websocket", queueEventMetricName(eventName));
+    }
+
+    @Override
+    public void sendConcertsRefresh(Long optionId, String timestamp) {
+        Instant serverNow = resolveServerNow(timestamp);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("event", "CONCERTS_REFRESH");
+        payload.put("transport", "websocket");
+        if (optionId != null) {
+            payload.put("optionId", optionId);
+        }
+        payload.put("timestamp", serverNow.toString());
+        payload.put("serverNow", serverNow.toString());
+        payload.put("realtimeMode", concertLiveProperties.normalizedMode());
+        payload.put("hybridPollIntervalMillis", concertLiveProperties.getHybridPollIntervalMillis());
+        payload.put("items", concertLivePayloadComposer.compose(serverNow));
+        messagingTemplate.convertAndSend(CONCERTS_LIVE_TOPIC, payload);
+        PushMonitoringMetrics.increment("push", "websocket", "concerts_refresh");
+    }
+
+    private Instant resolveServerNow(String timestamp) {
+        if (!StringUtils.hasText(timestamp)) {
+            return Instant.now();
+        }
+        try {
+            return Instant.parse(timestamp.trim());
+        } catch (DateTimeException ignored) {
+            return Instant.now();
+        }
     }
 
     private String queueDestination(Long userId, Long concertId) {

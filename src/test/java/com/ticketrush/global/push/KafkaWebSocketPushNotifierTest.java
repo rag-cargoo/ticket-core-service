@@ -65,4 +65,21 @@ class KafkaWebSocketPushNotifierTest {
 
         assertThat(users).containsExactly(100L);
     }
+
+    @Test
+    void sendConcertsRefresh_shouldPublishEventToKafka() {
+        PushEventPublisherPort producer = mock(PushEventPublisherPort.class);
+        QueueSubscriberQueryPort queueSubscriberQueryPort = mock(QueueSubscriberQueryPort.class);
+        KafkaWebSocketPushNotifier notifier = new KafkaWebSocketPushNotifier(producer, queueSubscriberQueryPort);
+
+        notifier.sendConcertsRefresh(33L);
+
+        var eventCaptor = forClass(PushEvent.class);
+        var keyCaptor = forClass(String.class);
+        verify(producer).publish(eventCaptor.capture(), keyCaptor.capture());
+
+        assertThat(eventCaptor.getValue().getType()).isEqualTo(PushEvent.Type.CONCERTS_REFRESH);
+        assertThat(eventCaptor.getValue().getOptionId()).isEqualTo(33L);
+        assertThat(keyCaptor.getValue()).isEqualTo("concerts:refresh:33");
+    }
 }

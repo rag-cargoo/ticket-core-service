@@ -76,4 +76,20 @@ class KafkaPushEventConsumerTest {
 
         verify(webSocketEventDispatchPort).sendSeatMapStatus(7L, 55L, "SELECTING", 100L, "2026-02-22T14:30:00Z");
     }
+
+    @Test
+    void consume_concertsRefresh_shouldDispatchToWebSocketNotifier() {
+        WebSocketEventDispatchPort webSocketEventDispatchPort = mock(WebSocketEventDispatchPort.class);
+        KafkaPushEventConsumer consumer = new KafkaPushEventConsumer(webSocketEventDispatchPort);
+
+        KafkaPushEvent event = KafkaPushEvent.builder()
+                .type(KafkaPushEvent.Type.CONCERTS_REFRESH)
+                .optionId(77L)
+                .timestamp("2026-02-28T05:10:00Z")
+                .build();
+
+        consumer.consume(event);
+
+        verify(webSocketEventDispatchPort).sendConcertsRefresh(77L, "2026-02-28T05:10:00Z");
+    }
 }

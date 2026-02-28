@@ -21,4 +21,19 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     List<Seat> findByConcertOptionIdOrderBySeatNumberAsc(Long concertOptionId);
     List<Seat> findByConcertOptionIdAndStatusInOrderBySeatNumberAsc(Long concertOptionId, Collection<Seat.SeatStatus> statuses);
     boolean existsByConcertOptionId(Long concertOptionId);
+
+    @Query("""
+            SELECT
+                co.concert.id AS concertId,
+                COUNT(s) AS totalSeatCount,
+                SUM(CASE WHEN s.status = :availableStatus THEN 1 ELSE 0 END) AS availableSeatCount
+            FROM Seat s
+            JOIN s.concertOption co
+            WHERE co.concert.id IN :concertIds
+            GROUP BY co.concert.id
+            """)
+    List<ConcertSeatSummaryProjection> summarizeSeatCountsByConcertIds(
+            @Param("concertIds") Collection<Long> concertIds,
+            @Param("availableStatus") Seat.SeatStatus availableStatus
+    );
 }

@@ -1,11 +1,13 @@
 package com.ticketrush.api.dto;
 
+import com.ticketrush.application.concert.model.ConcertCardRuntimeSnapshot;
 import com.ticketrush.application.concert.model.ConcertResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -27,8 +29,20 @@ public class ConcertResponse {
     private String promoterName;
     private String promoterCountryCode;
     private String promoterHomepageUrl;
+    private String saleStatus;
+    private LocalDateTime saleOpensAt;
+    private Long saleOpensInSeconds;
+    private boolean reservationButtonVisible;
+    private boolean reservationButtonEnabled;
+    private long availableSeatCount;
+    private long totalSeatCount;
 
     public static ConcertResponse from(ConcertResult concert) {
+        return from(concert, ConcertCardRuntimeSnapshot.unscheduled());
+    }
+
+    public static ConcertResponse from(ConcertResult concert, ConcertCardRuntimeSnapshot runtimeSnapshot) {
+        ConcertCardRuntimeSnapshot runtime = runtimeSnapshot == null ? ConcertCardRuntimeSnapshot.unscheduled() : runtimeSnapshot;
         return new ConcertResponse(
                 concert.getId(),
                 concert.getTitle(),
@@ -45,7 +59,14 @@ public class ConcertResponse {
                 concert.getPromoterId(),
                 concert.getPromoterName(),
                 concert.getPromoterCountryCode(),
-                concert.getPromoterHomepageUrl()
+                concert.getPromoterHomepageUrl(),
+                runtime.getSaleStatus(),
+                runtime.getSaleOpensAt(),
+                runtime.getSaleOpensInSeconds(),
+                runtime.isReservationButtonVisible(),
+                runtime.isReservationButtonEnabled(),
+                runtime.getAvailableSeatCount(),
+                runtime.getTotalSeatCount()
         );
     }
 }

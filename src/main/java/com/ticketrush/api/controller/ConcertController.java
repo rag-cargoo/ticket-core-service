@@ -1,7 +1,12 @@
 package com.ticketrush.api.controller;
 
+import com.ticketrush.application.concert.model.ConcertCardRuntimeSnapshot;
+import com.ticketrush.application.concert.config.ConcertLiveProperties;
+import com.ticketrush.application.concert.port.inbound.ConcertCardRuntimeUseCase;
+import com.ticketrush.application.concert.port.inbound.ConcertHighlightsUseCase;
 import com.ticketrush.application.reservation.model.SalesPolicyUpsertCommand;
 import com.ticketrush.application.concert.port.inbound.ConcertUseCase;
+import com.ticketrush.api.dto.ConcertHighlightsResponse;
 import com.ticketrush.api.dto.ConcertOptionResponse;
 import com.ticketrush.api.dto.ConcertResponse;
 import com.ticketrush.api.dto.ConcertSearchPageResponse;
@@ -17,8 +22,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,6 +35,9 @@ public class ConcertController {
 
     private final ConcertUseCase concertUseCase;
     private final SalesPolicyUseCase salesPolicyUseCase;
+    private final ConcertCardRuntimeUseCase concertCardRuntimeUseCase;
+    private final ConcertHighlightsUseCase concertHighlightsUseCase;
+    private final ConcertLiveProperties concertLiveProperties;
 
     /**
      * [Admin/Test] 공연 및 좌석 일괄 생성
@@ -103,10 +113,38 @@ public class ConcertController {
         Sort.Direction direction = resolveDirection(sortTokens.length > 1 ? sortTokens[1] : "asc");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        var result = concertUseCase.searchConcertResults(keyword, artistName, entertainmentName, pageable)
-                .map(ConcertResponse::from);
+        Instant serverNow = Instant.now();
+        var searchPage = concertUseCase.searchConcertResults(keyword, artistName, entertainmentName, pageable);
+        List<Long> concertIds = searchPage.getContent().stream()
+                .map(concert -> concert.getId())
+                .filter(id -> id != null)
+                .toList();
+        Map<Long, ConcertCardRuntimeSnapshot> runtimeSnapshotMap =
+                concertCardRuntimeUseCase.resolveSnapshots(concertIds, serverNow);
+        var result = searchPage.map(concert ->
+                ConcertResponse.from(concert, runtimeSnapshotMap.get(concert.getId()))
+        );
 
-        return ResponseEntity.ok(ConcertSearchPageResponse.from(result));
+        return ResponseEntity.ok(
+                ConcertSearchPageResponse.from(
+                        result,
+                        serverNow.toString(),
+                        concertLiveProperties.normalizedMode(),
+                        concertLiveProperties.getHybridPollIntervalMillis()
+                )
+        );
+    }
+
+    @GetMapping("/highlights")
+    public ResponseEntity<ConcertHighlightsResponse> getHighlights(
+            @RequestParam(defaultValue = "3") int openingSoonLimit,
+            @RequestParam(defaultValue = "3") int sellOutRiskLimit
+    ) {
+        return ResponseEntity.ok(
+                ConcertHighlightsResponse.from(
+                        concertHighlightsUseCase.getHighlights(openingSoonLimit, sellOutRiskLimit, Instant.now())
+                )
+        );
     }
 
     /**

@@ -44,6 +44,10 @@ public class KafkaPushEventConsumer {
                     event.getOwnerUserId(),
                     event.getExpiresAt()
             );
+            case CONCERTS_REFRESH -> webSocketEventDispatchPort.sendConcertsRefresh(
+                    event.getOptionId(),
+                    event.getTimestamp()
+            );
             default -> log.debug("Unsupported push event type: {}", event.getType());
         }
     }

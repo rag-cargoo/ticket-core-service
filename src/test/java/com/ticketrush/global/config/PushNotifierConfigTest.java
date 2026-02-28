@@ -3,6 +3,7 @@ package com.ticketrush.global.config;
 import com.ticketrush.application.port.outbound.QueueRuntimePushPort;
 import com.ticketrush.application.port.outbound.ReservationStatusPushPort;
 import com.ticketrush.application.port.outbound.SeatMapPushPort;
+import com.ticketrush.application.port.outbound.ConcertRefreshPushPort;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +75,22 @@ class PushNotifierConfigTest {
         assertThat(config.seatMapPushNotifier(sseProperties, ssePushNotifier, kafkaWebSocketPushNotifier))
                 .isSameAs(ssePushNotifier);
         assertThat(config.seatMapPushNotifier(wsProperties, ssePushNotifier, kafkaWebSocketPushNotifier))
+                .isSameAs(kafkaWebSocketPushNotifier);
+    }
+
+    @Test
+    void concertRefreshPushNotifier_shouldSelectByMode() {
+        PushProperties sseProperties = new PushProperties();
+        sseProperties.setMode(PushProperties.Mode.SSE);
+        PushProperties wsProperties = new PushProperties();
+        wsProperties.setMode(PushProperties.Mode.WEBSOCKET);
+
+        ConcertRefreshPushPort ssePushNotifier = mock(ConcertRefreshPushPort.class);
+        ConcertRefreshPushPort kafkaWebSocketPushNotifier = mock(ConcertRefreshPushPort.class);
+
+        assertThat(config.concertRefreshPushNotifier(sseProperties, ssePushNotifier, kafkaWebSocketPushNotifier))
+                .isSameAs(ssePushNotifier);
+        assertThat(config.concertRefreshPushNotifier(wsProperties, ssePushNotifier, kafkaWebSocketPushNotifier))
                 .isSameAs(kafkaWebSocketPushNotifier);
     }
 }

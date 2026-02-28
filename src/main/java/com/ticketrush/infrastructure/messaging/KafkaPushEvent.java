@@ -30,6 +30,7 @@ public class KafkaPushEvent {
     public enum Type {
         QUEUE_EVENT,
         RESERVATION_STATUS,
-        SEAT_MAP_STATUS
+        SEAT_MAP_STATUS,
+        CONCERTS_REFRESH
     }
 }
