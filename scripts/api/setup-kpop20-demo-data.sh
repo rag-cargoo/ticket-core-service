@@ -215,6 +215,9 @@ compute_general_sale_start() {
     PREOPEN)
       date -u -d "+$((7200 + RANDOM % 86400)) seconds" +"%Y-%m-%dT%H:%M:%S"
       ;;
+    UNSCHEDULED)
+      date -u -d "+30 days" +"%Y-%m-%dT%H:%M:%S"
+      ;;
     *)
       date -u -d "-30 minutes" +"%Y-%m-%dT%H:%M:%S"
       ;;
@@ -535,17 +538,19 @@ seed_single_concert() {
     exit 1
   fi
 
-  policy_payload="$(jq -nc \
-    --arg generalSaleStartAt "${sale_start_at}" \
-    --argjson maxReservationsPerUser "${MAX_RESERVATIONS_PER_USER}" \
-    '{
-      presaleStartAt:null,
-      presaleEndAt:null,
-      presaleMinimumTier:null,
-      generalSaleStartAt:$generalSaleStartAt,
-      maxReservationsPerUser:$maxReservationsPerUser
-    }')"
-  api_json PUT "/admin/concerts/${concert_id}/sales-policy" "${policy_payload}" 1 >/dev/null
+  if [[ "${sale_bucket}" != "UNSCHEDULED" ]]; then
+    policy_payload="$(jq -nc \
+      --arg generalSaleStartAt "${sale_start_at}" \
+      --argjson maxReservationsPerUser "${MAX_RESERVATIONS_PER_USER}" \
+      '{
+        presaleStartAt:null,
+        presaleEndAt:null,
+        presaleMinimumTier:null,
+        generalSaleStartAt:$generalSaleStartAt,
+        maxReservationsPerUser:$maxReservationsPerUser
+      }')"
+    api_json PUT "/admin/concerts/${concert_id}/sales-policy" "${policy_payload}" 1 >/dev/null
+  fi
 
   upload_thumbnail_from_youtube "${concert_id}" "${youtube_url}"
   if ! rewrite_option_seat_numbers_with_layout "${option_id}" "${seat_layout}"; then
@@ -566,7 +571,8 @@ seed_single_concert() {
 
 main() {
   local admin_username admin_user_payload admin_user_response admin_user_id
-  local row index artist entertainment youtube seat_count sale_bucket
+  local row index artist entertainment youtube seat_count sale_bucket dataset_total
+  local dataset_rows
 
   log "seed start api=${API_BASE} tag=${SEED_TAG}"
 
@@ -585,36 +591,48 @@ main() {
   ACCESS_TOKEN="$(build_access_token "${admin_user_id}" "${admin_username}" "ADMIN")"
   create_seed_users "${SEED_USER_COUNT}"
 
+  dataset_rows="$(cat <<'DATASET'
+Stray Kids|JYP Entertainment|https://www.youtube.com/watch?v=0P0aQreFs8w|260|OPEN_SOON_5M
+BTS|BIGHIT MUSIC|https://www.youtube.com/watch?v=gdZLi9oWNZg|320|OPEN
+Saja Boys|Netflix|https://www.youtube.com/watch?v=2FS3JAPTKXs|180|OPEN
+BLACKPINK|YG Entertainment|https://www.youtube.com/watch?v=IHNzOHi8sJs|300|OPEN
+NewJeans|ADOR|https://youtu.be/DAEK5GrLb_Y?si=rhJGnEY4sB0jay5s|260|OPEN_SOON_1H
+LE SSERAFIM|SOURCE MUSIC|https://www.youtube.com/watch?v=pyf8cbqyfPs|240|OPEN_SOON_1H
+TOMORROW X TOGETHER|BIGHIT MUSIC|https://www.youtube.com/watch?v=P9tKTxbgdkk|230|OPEN_SOON_1H
+ITZY|JYP Entertainment|https://www.youtube.com/watch?v=fE2h3lGlOsk|220|PREOPEN
+TWICE|JYP Entertainment|https://www.youtube.com/watch?v=i0p1bmr0EmE|280|PREOPEN
+SEVENTEEN|PLEDIS Entertainment|https://www.youtube.com/watch?v=-GQg25oP0S4|280|PREOPEN
+HUNTRIX|Sony Animation|https://www.youtube.com/watch?v=yebNIHKAC4A|170|SOLD_OUT
+BIGBANG|YG Entertainment|https://www.youtube.com/watch?v=2ips2mM7Zqw|220|SOLD_OUT
+BABYMONSTER|YG Entertainment|https://www.youtube.com/watch?v=2wA_b6YHjqQ|210|SOLD_OUT
+KARA|DSP Media|https://www.youtube.com/watch?v=XwcK-twSXB4|170|SOLD_OUT
+MAMAMOO|RBW|https://www.youtube.com/watch?v=KhTeiaCezwM|200|SOLD_OUT
+(G)I-DLE|CUBE Entertainment|https://www.youtube.com/watch?v=Jh4QFaPmdss|230|SOLD_OUT
+NMIXX|JYP Entertainment|https://www.youtube.com/watch?v=Rd2wppggYxo|200|SOLD_OUT
+aespa|SM Entertainment|https://www.youtube.com/watch?v=4TWR90KJl84|250|UNSCHEDULED
+IVE|STARSHIP Entertainment|https://www.youtube.com/watch?v=6ZUIwj3FgUY|240|OPEN_SOON_1H
+STAYC|High Up Entertainment|https://www.youtube.com/watch?v=SxHmoifp0oQ|190|OPEN_SOON_1H
+KISS OF LIFE|S2 Entertainment|https://www.youtube.com/watch?v=oKVYm8mIUdo|180|UNSCHEDULED
+Red Velvet|SM Entertainment|https://www.youtube.com/watch?v=R9At2ICm4LQ|220|OPEN_SOON_1H
+OH MY GIRL|WM Entertainment|https://www.youtube.com/watch?v=HzOjwL7IP_o|190|OPEN_SOON_1H
+Apink|IST Entertainment|https://www.youtube.com/watch?v=K5H-GvnNz2Y|180|UNSCHEDULED
+DATASET
+)"
+  dataset_total="$(printf '%s\n' "${dataset_rows}" | awk -F'|' 'NF >= 5 {count += 1} END {print count + 0}')"
+  if [[ "${dataset_total}" == "0" ]]; then
+    echo "[ERROR] dataset rows are empty" >&2
+    exit 1
+  fi
+
   index=0
   while IFS='|' read -r artist entertainment youtube seat_count sale_bucket; do
     if [[ -z "${artist}" ]]; then
       continue
     fi
     index=$((index + 1))
-    log "seeding ${index}/20 artist=${artist} status=${sale_bucket}"
+    log "seeding ${index}/${dataset_total} artist=${artist} status=${sale_bucket}"
     seed_single_concert "${index}" "${artist}" "${entertainment}" "${youtube}" "${seat_count}" "${sale_bucket}"
-  done <<'DATASET'
-Stray Kids|JYP Entertainment|https://www.youtube.com/watch?v=0P0aQreFs8w|260|OPEN_SOON_5M
-BTS|BIGHIT MUSIC|https://www.youtube.com/watch?v=gdZLi9oWNZg|320|OPEN
-BLACKPINK|YG Entertainment|https://www.youtube.com/watch?v=IHNzOHi8sJs|300|OPEN
-SEVENTEEN|PLEDIS Entertainment|https://www.youtube.com/watch?v=-GQg25oP0S4|280|OPEN
-TWICE|JYP Entertainment|https://www.youtube.com/watch?v=i0p1bmr0EmE|280|OPEN
-NewJeans|ADOR|https://www.youtube.com/watch?v=ArmDp-zijuc|260|OPEN_SOON_1H
-IVE|STARSHIP Entertainment|https://www.youtube.com/watch?v=6ZUIwj3FgUY|240|OPEN_SOON_1H
-BIGBANG|YG Entertainment|https://www.youtube.com/watch?v=2ips2mM7Zqw|220|OPEN
-LE SSERAFIM|SOURCE MUSIC|https://www.youtube.com/watch?v=pyf8cbqyfPs|240|OPEN
-Saja Boys|Netflix|https://www.youtube.com/watch?v=2FS3JAPTKXs|180|OPEN
-aespa|SM Entertainment|https://www.youtube.com/watch?v=4TWR90KJl84|250|PREOPEN
-HUNTRIX|Sony Animation|https://www.youtube.com/watch?v=yebNIHKAC4A|170|SOLD_OUT
-(G)I-DLE|CUBE Entertainment|https://www.youtube.com/watch?v=Jh4QFaPmdss|230|OPEN
-TOMORROW X TOGETHER|BIGHIT MUSIC|https://www.youtube.com/watch?v=P9tKTxbgdkk|230|OPEN_SOON_1H
-BABYMONSTER|YG Entertainment|https://www.youtube.com/watch?v=2wA_b6YHjqQ|210|OPEN
-MAMAMOO|RBW|https://www.youtube.com/watch?v=KhTeiaCezwM|200|OPEN
-STAYC|High Up Entertainment|https://www.youtube.com/watch?v=SxHmoifp0oQ|190|OPEN_SOON_1H
-KARA|DSP Media|https://www.youtube.com/watch?v=XwcK-twSXB4|170|OPEN
-KISS OF LIFE|S2 Entertainment|https://www.youtube.com/watch?v=oKVYm8mIUdo|180|OPEN
-ITZY|JYP Entertainment|https://www.youtube.com/watch?v=fE2h3lGlOsk|220|PREOPEN
-DATASET
+  done <<< "${dataset_rows}"
 
   log "seed completed. summary:"
   printf '%-6s %-22s %-13s %7s %7s %7s %10s\n' "ID" "ARTIST" "STATUS" "SEATS" "HOLD" "PAYING" "CONFIRMED"

@@ -113,3 +113,7 @@ app:
       options-max-size: ${APP_CACHE_CONCERT_OPTIONS_MAX_SIZE:1000}
       available-seats-ttl: ${APP_CACHE_CONCERT_AVAILABLE_SEATS_TTL:5s}
       available-seats-max-size: ${APP_CACHE_CONCERT_AVAILABLE_SEATS_MAX_SIZE:2000}
+  demo-rebalancer:
+    enabled: ${APP_DEMO_REBALANCER_ENABLED:false}
+    default-interval-minutes: ${APP_DEMO_REBALANCER_DEFAULT_INTERVAL_MINUTES:60}
+    interval-options-minutes: ${APP_DEMO_REBALANCER_INTERVAL_OPTIONS_MINUTES:0,10,30,60}
