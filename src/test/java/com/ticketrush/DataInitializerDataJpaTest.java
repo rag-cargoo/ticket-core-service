@@ -1,5 +1,6 @@
 package com.ticketrush;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ticketrush.domain.artist.ArtistRepository;
 import com.ticketrush.domain.concert.repository.ConcertOptionRepository;
 import com.ticketrush.domain.concert.repository.ConcertRepository;
@@ -13,6 +14,7 @@ import com.ticketrush.domain.venue.VenueRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -46,7 +48,15 @@ class DataInitializerDataJpaTest {
     @Test
     @DisplayName("local profile + portfolio enabled 시 샘플 시드가 1회만 적용된다")
     void seedsPortfolioOnlyOnce() {
-        DataInitializer initializer = buildInitializer("local", true, "portfolio_seed_marker_test", "local,demo");
+        DataInitializer initializer = buildInitializer(
+                "local",
+                true,
+                "portfolio_seed_marker_test",
+                "local,demo",
+                false,
+                "kpop20_seed_marker_test",
+                "local,demo"
+        );
 
         initializer.run();
 
@@ -60,8 +70,8 @@ class DataInitializerDataJpaTest {
         assertThat(userRepository.existsByUsername("admin")).isTrue();
         assertThat(markerCountAfterFirst).isEqualTo(1L);
         assertThat(concertCountAfterFirst).isEqualTo(6L);
-        assertThat(optionCountAfterFirst).isEqualTo(6L);
-        assertThat(seatCountAfterFirst).isEqualTo(108L);
+        assertThat(optionCountAfterFirst).isEqualTo(12L);
+        assertThat(seatCountAfterFirst).isEqualTo(216L);
         assertThat(policyCountAfterFirst).isEqualTo(5L);
 
         initializer.run();
@@ -81,7 +91,85 @@ class DataInitializerDataJpaTest {
     @Test
     @DisplayName("허용되지 않은 profile에서는 portfolio 시드가 실행되지 않는다")
     void skipsPortfolioSeedOnDisallowedProfile() {
-        DataInitializer initializer = buildInitializer("docker", true, "portfolio_seed_marker_test", "local,demo");
+        DataInitializer initializer = buildInitializer(
+                "docker",
+                true,
+                "portfolio_seed_marker_test",
+                "local,demo",
+                false,
+                "kpop20_seed_marker_test",
+                "local,demo"
+        );
+
+        initializer.run();
+
+        assertThat(userRepository.existsByUsername("admin")).isTrue();
+        assertThat(seedMarkerRepository.count()).isZero();
+        assertThat(entertainmentRepository.count()).isZero();
+        assertThat(artistRepository.count()).isZero();
+        assertThat(promoterRepository.count()).isZero();
+        assertThat(venueRepository.count()).isZero();
+        assertThat(concertRepository.count()).isZero();
+        assertThat(concertOptionRepository.count()).isZero();
+        assertThat(seatRepository.count()).isZero();
+        assertThat(salesPolicyRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("local profile + kpop20 enabled 시 JSON dataset 기반 더미 시드가 1회만 적용된다")
+    void seedsKpop20OnlyOnce() {
+        DataInitializer initializer = buildInitializer(
+                "local",
+                false,
+                "portfolio_seed_marker_test",
+                "local,demo",
+                true,
+                "kpop20_seed_marker_test",
+                "local,demo"
+        );
+
+        initializer.run();
+
+        long userCountAfterFirst = userRepository.count();
+        long markerCountAfterFirst = seedMarkerRepository.count();
+        long concertCountAfterFirst = concertRepository.count();
+        long optionCountAfterFirst = concertOptionRepository.count();
+        long seatCountAfterFirst = seatRepository.count();
+        long policyCountAfterFirst = salesPolicyRepository.count();
+
+        assertThat(userRepository.existsByUsername("admin")).isTrue();
+        assertThat(markerCountAfterFirst).isEqualTo(1L);
+        assertThat(concertCountAfterFirst).isEqualTo(24L);
+        assertThat(optionCountAfterFirst).isEqualTo(24L);
+        assertThat(seatCountAfterFirst).isEqualTo(5420L);
+        assertThat(policyCountAfterFirst).isEqualTo(21L);
+        assertThat(concertRepository.findByTitleIgnoreCase("Stray Kids LIVE IN SEOUL KPOP20")).isPresent();
+        assertThat(concertRepository.findByTitleIgnoreCase("BTS LIVE IN SEOUL KPOP20")).isPresent();
+        assertThat(concertRepository.findByTitleIgnoreCase("BLACKPINK LIVE IN SEOUL KPOP20")).isPresent();
+        assertThat(concertRepository.findByTitleIgnoreCase("Apink LIVE IN SEOUL KPOP20")).isPresent();
+
+        initializer.run();
+
+        assertThat(userRepository.count()).isEqualTo(userCountAfterFirst);
+        assertThat(seedMarkerRepository.count()).isEqualTo(markerCountAfterFirst);
+        assertThat(concertRepository.count()).isEqualTo(concertCountAfterFirst);
+        assertThat(concertOptionRepository.count()).isEqualTo(optionCountAfterFirst);
+        assertThat(seatRepository.count()).isEqualTo(seatCountAfterFirst);
+        assertThat(salesPolicyRepository.count()).isEqualTo(policyCountAfterFirst);
+    }
+
+    @Test
+    @DisplayName("허용되지 않은 profile에서는 kpop20 시드가 실행되지 않는다")
+    void skipsKpop20OnDisallowedProfile() {
+        DataInitializer initializer = buildInitializer(
+                "docker",
+                false,
+                "portfolio_seed_marker_test",
+                "local,demo",
+                true,
+                "kpop20_seed_marker_test",
+                "local,demo"
+        );
 
         initializer.run();
 
@@ -101,7 +189,10 @@ class DataInitializerDataJpaTest {
             String activeProfile,
             boolean portfolioEnabled,
             String markerKey,
-            String allowedProfiles
+            String allowedProfiles,
+            boolean kpop20Enabled,
+            String kpop20MarkerKey,
+            String kpop20AllowedProfiles
     ) {
         DataInitializer initializer = new DataInitializer(
                 userRepository,
@@ -114,12 +205,21 @@ class DataInitializerDataJpaTest {
                 concertOptionRepository,
                 seatRepository,
                 salesPolicyRepository,
-                new MockEnvironment().withProperty("spring.profiles.active", activeProfile)
+                new MockEnvironment().withProperty("spring.profiles.active", activeProfile),
+                new ObjectMapper(),
+                new DefaultResourceLoader()
         );
         ReflectionTestUtils.setField(initializer, "createAdminUser", true);
         ReflectionTestUtils.setField(initializer, "portfolioSeedEnabled", portfolioEnabled);
         ReflectionTestUtils.setField(initializer, "portfolioSeedMarkerKey", markerKey);
         ReflectionTestUtils.setField(initializer, "portfolioSeedProfiles", allowedProfiles);
+        ReflectionTestUtils.setField(initializer, "kpop20SeedEnabled", kpop20Enabled);
+        ReflectionTestUtils.setField(initializer, "kpop20SeedMarkerKey", kpop20MarkerKey);
+        ReflectionTestUtils.setField(initializer, "kpop20SeedProfiles", kpop20AllowedProfiles);
+        ReflectionTestUtils.setField(initializer, "kpop20DatasetResource", "classpath:seed/kpop20-demo-dataset.json");
+        ReflectionTestUtils.setField(initializer, "kpop20TitleTag", "KPOP20");
+        ReflectionTestUtils.setField(initializer, "kpop20MaxReservationsPerUser", 8);
+        ReflectionTestUtils.setField(initializer, "kpop20TicketPriceAmount", 132_000L);
         return initializer;
     }
 }

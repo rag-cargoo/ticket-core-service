@@ -74,6 +74,8 @@ app:
     pg-ready-cancel-redirect-url: ${APP_PAYMENT_PG_READY_CANCEL_REDIRECT_URL:/service?payment=cancel}
     pg-ready-failure-redirect-url: ${APP_PAYMENT_PG_READY_FAILURE_REDIRECT_URL:/service?payment=failed}
     default-ticket-price-amount: 100000
+  seed:
+    kpop20-enabled: ${APP_SEED_KPOP20_ENABLED:false}
   waiting-queue:
     queue-key-prefix: "waiting-queue:"
     active-key-prefix: "active-user:"

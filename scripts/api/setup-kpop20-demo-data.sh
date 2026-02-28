@@ -13,7 +13,7 @@ PG_CONTAINER="${PG_CONTAINER:-ticket-core-service_postgres-db_1}"
 PG_USER="${PG_USER:-postgres}"
 PG_DB="${PG_DB:-mydb}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATASET_FILE="${DATASET_FILE:-${SCRIPT_DIR}/data/kpop20-demo-dataset.json}"
+DATASET_FILE="${DATASET_FILE:-${SCRIPT_DIR}/../../src/main/resources/seed/kpop20-demo-dataset.json}"
 
 if [[ -n "${RANDOM_SEED}" ]]; then
   RANDOM="${RANDOM_SEED}"
