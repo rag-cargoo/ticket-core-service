@@ -124,3 +124,7 @@ app:
     enabled: ${APP_DEMO_REBALANCER_ENABLED:false}
     default-interval-minutes: ${APP_DEMO_REBALANCER_DEFAULT_INTERVAL_MINUTES:60}
     interval-options-minutes: ${APP_DEMO_REBALANCER_INTERVAL_OPTIONS_MINUTES:0,10,30,60}
+    cron: ${APP_DEMO_REBALANCER_CRON:0 0 * * * *}
+    cron-zone: ${APP_DEMO_REBALANCER_CRON_ZONE:Asia/Seoul}
+    startup-trigger-enabled: ${APP_DEMO_REBALANCER_STARTUP_TRIGGER_ENABLED:true}
+    startup-trigger-delay-millis: ${APP_DEMO_REBALANCER_STARTUP_TRIGGER_DELAY_MILLIS:30000}

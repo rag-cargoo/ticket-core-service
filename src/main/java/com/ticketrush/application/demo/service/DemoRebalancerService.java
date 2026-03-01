@@ -14,8 +14,11 @@ import com.ticketrush.domain.reservation.repository.SalesPolicyRepository;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.context.event.EventListener;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -30,6 +33,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -74,7 +79,13 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
         thread.setDaemon(true);
         return thread;
     });
+    private final ScheduledExecutorService startupTriggerScheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "demo-rebalancer-startup-trigger");
+        thread.setDaemon(true);
+        return thread;
+    });
     private final AtomicReference<DemoRebalanceJobStatus> currentJobRef = new AtomicReference<>(DemoRebalanceJobStatus.idle());
+    private final AtomicReference<Instant> lastTriggeredAtRef = new AtomicReference<>();
 
     @Override
     public DemoRebalancerSnapshot getSnapshot() {
@@ -83,6 +94,41 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
                 resolveDefaultIntervalMinutes(),
                 resolveIntervalOptions(),
                 currentJobRef.get()
+        );
+    }
+
+    @Scheduled(
+            cron = "${app.demo-rebalancer.cron:0 0 * * * *}",
+            zone = "${app.demo-rebalancer.cron-zone:Asia/Seoul}"
+    )
+    void triggerOnTopOfHour() {
+        triggerNowIfAccepted("cron-top-of-hour");
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    void triggerAfterStartup() {
+        if (!properties.isStartupTriggerEnabled()) {
+            return;
+        }
+        long delayMillis = Math.max(0L, properties.getStartupTriggerDelayMillis());
+        if (delayMillis > 60_000L) {
+            log.warn("DEMO_REBALANCER startup trigger delay exceeds 60s: {}ms", delayMillis);
+        }
+        startupTriggerScheduler.schedule(() -> triggerNowIfAccepted("startup"), delayMillis, TimeUnit.MILLISECONDS);
+    }
+
+    private void triggerNowIfAccepted(String triggerSource) {
+        DemoRebalanceTriggerResult result = triggerNow();
+        if (!result.accepted()) {
+            return;
+        }
+        int intervalMinutes = resolveDefaultIntervalMinutes();
+        Instant triggeredAt = lastTriggeredAtRef.get();
+        log.info(
+                "DEMO_REBALANCER auto trigger accepted source={} intervalMinutes={} triggeredAt={}",
+                triggerSource,
+                intervalMinutes,
+                triggeredAt
         );
     }
 
@@ -110,7 +156,10 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
                 now.toString(),
                 null
         );
-        currentJobRef.set(next);
+        if (!currentJobRef.compareAndSet(current, next)) {
+            return new DemoRebalanceTriggerResult(false, getSnapshot());
+        }
+        lastTriggeredAtRef.set(now);
         executorService.submit(() -> runRebalanceJob(jobId));
         return new DemoRebalanceTriggerResult(true, getSnapshot());
     }
@@ -487,6 +536,7 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
     @PreDestroy
     void shutdownExecutor() {
         executorService.shutdownNow();
+        startupTriggerScheduler.shutdownNow();
     }
 
     private enum DemoBucket {
