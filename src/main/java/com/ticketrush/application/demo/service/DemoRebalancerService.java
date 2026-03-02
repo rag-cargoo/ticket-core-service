@@ -17,13 +17,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -89,10 +93,19 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
 
     @Override
     public DemoRebalancerSnapshot getSnapshot() {
+        Instant serverNowInstant = Instant.now();
+        String serverNow = serverNowInstant.toString();
+        String cronExpression = resolveCronExpression();
+        String cronZone = resolveCronZone();
+        String nextScheduledAt = resolveNextScheduledAt(cronExpression, cronZone, serverNowInstant);
         return new DemoRebalancerSnapshot(
                 properties.isEnabled(),
                 resolveDefaultIntervalMinutes(),
                 resolveIntervalOptions(),
+                serverNow,
+                cronExpression,
+                cronZone,
+                nextScheduledAt,
                 currentJobRef.get()
         );
     }
@@ -531,6 +544,41 @@ public class DemoRebalancerService implements DemoRebalancerUseCase {
             return 60;
         }
         return options.stream().filter(value -> value > 0).findFirst().orElse(0);
+    }
+
+    private String resolveCronExpression() {
+        String configured = properties.getCron();
+        if (configured == null || configured.isBlank()) {
+            return "0 0 * * * *";
+        }
+        return configured.trim();
+    }
+
+    private String resolveCronZone() {
+        String configured = properties.getCronZone();
+        if (configured == null || configured.isBlank()) {
+            return "Asia/Seoul";
+        }
+        String normalized = configured.trim();
+        try {
+            ZoneId.of(normalized);
+            return normalized;
+        } catch (DateTimeException exception) {
+            log.warn("DEMO_REBALANCER invalid cron zone. fallback to Asia/Seoul zone={}", normalized);
+            return "Asia/Seoul";
+        }
+    }
+
+    private String resolveNextScheduledAt(String cronExpression, String cronZone, Instant serverNowInstant) {
+        try {
+            CronExpression cron = CronExpression.parse(cronExpression);
+            ZonedDateTime base = ZonedDateTime.ofInstant(serverNowInstant, ZoneId.of(cronZone));
+            ZonedDateTime next = cron.next(base);
+            return next == null ? null : next.toInstant().toString();
+        } catch (Exception exception) {
+            log.warn("DEMO_REBALANCER invalid cron expression. next schedule unavailable cron={}", cronExpression);
+            return null;
+        }
     }
 
     @PreDestroy

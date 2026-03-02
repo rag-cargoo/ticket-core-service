@@ -13,6 +13,10 @@ public interface DemoRebalancerUseCase {
             boolean enabled,
             int defaultIntervalMinutes,
             List<Integer> intervalOptionsMinutes,
+            String serverNow,
+            String cronExpression,
+            String cronZone,
+            String nextScheduledAt,
             DemoRebalanceJobStatus job
     ) {
     }
